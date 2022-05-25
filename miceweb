@@ -1325,7 +1325,7 @@ history() {
 		>&2 echo ""
 		>&2 echo "NumEntries: $COUNT"
 	else
-		>&2 echo "There are no URLs which was attempted to be saved (see the './save' command) or imported (see the './import' command)"
+		>&2 echo "There are no URLs which was attempted to be saved or imported"
 	fi
 }
 
