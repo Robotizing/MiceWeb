@@ -4,7 +4,7 @@
 
 ## Features:
 
-- Save web page by URL (using wget and wayback_machine_downloader) to the MiceWeb Library, stored in IPFS MFS.
+- Save web page by URL to the MiceWeb Library, stored in IPFS MFS.
 - Share saved versions.
 
 ---
@@ -19,7 +19,7 @@ Clone the repository, open a terminal in the folder and run `./install.sh` (also
 
 ## Installation (Windows):
 
-Install [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) (requires about 2GB disk space), [Cygwin](https://www.cygwin.com/), [Git Bash](http://git-scm.com), or some other tool that enables Bash functionality in Windows.
+Install [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10), [Cygwin](https://www.cygwin.com/), [Git Bash](http://git-scm.com), or some other tool that enables Bash functionality in Windows.
 
 Follow the above section.
 
@@ -38,6 +38,8 @@ Open a terminal and run `miceweb` with arguments.
 
 ### Present saved versions:
 `miceweb present http://www.example.com/page.htm`
+
+`miceweb present url 3b9f590c8de0288d981b09ed06c105098e78e38b`
 
 `miceweb present urls links.html`
 
