@@ -13,7 +13,7 @@
 
 Install [go-ipfs](https://docs.ipfs.io/install/command-line/), [wget](https://www.gnu.org/software/wget/), [jq](https://stedolan.github.io/jq/download/), [htmlq](https://github.com/mgdm/htmlq/) and [Wayback Machine Downloader](https://github.com/ImportTaste/wayback-machine-downloader).
 
-Clone the repository, open a terminal in the folder and run `./install.sh`
+Clone the repository, open a terminal in the folder and run `./install.sh` (also, there is `./update.sh` available).
 
 ---
 
