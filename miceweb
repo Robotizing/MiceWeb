@@ -1350,13 +1350,19 @@ remove() {
 	if [[ "$HASH" != "" ]]; then
 		PRESENT=$(present "$URL" 2>/dev/null)
 		if [[ "$PRESENT" != "" ]]; then
+			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
+			rm "$CACHE_DIR$HASH" 2>/dev/null
 			MFS_ADDR="/MiceWeb/pages/$HASH"
 			ipfs files rm -r $MFS_ADDR
-			>&2 echo "Removed $URL from the MiceWeb Library"
-			>&2 echo ""
-			>&2 echo "You can try to undo that right now by running"
-			>&2 echo " 'ipfs files cp $PRESENT $MFS_ADDR'"
-			return $?
+			if [ $? -eq 0 ]; then
+				>&2 echo "Removed $URL from the MiceWeb Library"
+				>&2 echo ""
+				>&2 echo "You can try to undo that right now by running"
+				>&2 echo " 'ipfs files cp $PRESENT $MFS_ADDR'"
+				return 0
+			else
+				return 1
+			fi
 		fi
 	else
 		return 1	
@@ -1450,11 +1456,14 @@ present() {
 			COUNT=0
 			for I in $("$0" "$@" 2>/dev/null)
 			do
-				HASH=$(hash "$I")
-				ipfs files cp /MiceWeb/pages/$HASH $MFS_ADDR/$HASH
-				if [ $? -eq 0 ]; then
-					((COUNT++))
-				fi
+				for J in $(_similar "$I" 2>/dev/null)
+				do
+					local HASH=$(hash "$J")
+					ipfs files cp /MiceWeb/pages/$HASH $MFS_ADDR/$HASH
+					if [ $? -eq 0 ]; then
+						((COUNT++))
+					fi
+				done
 			done
 			CID="$(ipfs files stat --hash $MFS_ADDR)"
 			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
@@ -1493,19 +1502,50 @@ present() {
 		fi
 		return 1
 	fi
+	
 	URL="$1"
 	HASH=$(hash "$URL" 2>/dev/null)
-	MFS_ADDR="/MiceWeb/pages/$HASH"
-	CID="$(ipfs files stat --hash $MFS_ADDR)"
-	if [[ "$CID" != "" ]]; then
-		if [[ "$HASH" == "" ]]; then
-			>&2 echo "There is a content identifier of the MiceWeb Library,"
-			>&2 echo " sharing (or using with public gateways) is not safe"
-			>&2 echo ""
+
+	if [[ "$HASH" != "" ]]; then
+		MFS_ADDR="/MiceWeb/pages/$HASH"
+		ipfs files ls $MFS_ADDR/URL.txt >/dev/null 2>/dev/null
+		if [ $? -ne 0 ]; then
+			ipfs files mkdir /MiceWeb 2>/dev/null
+			ipfs files mkdir /MiceWeb/pages 2>/dev/null
+			ipfs files mkdir $MFS_ADDR 2>/dev/null
+			URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | ipfs add --quieter --pin=false)"
+			ipfs files cp /ipfs/$URLTXTCID $MFS_ADDR/URL.txt
 		fi
+		ipfs files mkdir /MiceWeb 2>/dev/null
+		ipfs files mkdir /MiceWeb/presents 2>/dev/null
+		DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		MFS_ADDR="/MiceWeb/presents/present-$DT"
+		ipfs files mkdir $MFS_ADDR 2>/dev/null
+		#COUNT=0
+		for I in $(_similar "$URL" 2>/dev/null)
+		do
+			SIMHASH=$(hash "$I")
+			ipfs files cp /MiceWeb/pages/$SIMHASH $MFS_ADDR/$SIMHASH 2>/dev/null
+			#if [ $? -eq 0 ]; then
+			#	((COUNT++))
+			#fi
+		done
+		CID="$(ipfs files stat --hash $MFS_ADDR)/$HASH"
+	else
+		MFS_ADDR="/MiceWeb/pages/"
+		CID="$(ipfs files stat --hash $MFS_ADDR)"
+	fi
+	
+	if [[ "$CID" != "" ]]; then
+		#if [[ "$HASH" == "" ]]; then
+		#	>&2 echo "There is a content identifier of the MiceWeb Library,"
+		#	>&2 echo " sharing (or using with public gateways) is not safe"
+		#	>&2 echo ""
+		#fi
 		GATEWAY=$(ipfs config Addresses.Gateway)
 		if [ $? -eq 0 ]; then
-			>&2 echo "Open http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID"
+			>&2 echo "Open "
+			>&2 echo " http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID"
 			>&2 echo " in a browser on the local machine"
 			>&2 echo ""
 		fi
