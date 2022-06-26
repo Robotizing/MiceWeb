@@ -1106,6 +1106,99 @@ save() {
 	fi
 }
 
+describe "find" <<HEREDOC
+Usage:
+  ${_ME} find <URL>
+
+Description:
+  Find saved web pages in ~/Downloads (use SingleFile or SingleFileZ browser extension)
+HEREDOC
+find() {
+	>&2 echo "Install https://github.com/gildas-lormeau/SingleFile"
+	>&2 echo " or https://github.com/gildas-lormeau/SingleFileZ browser extension,"
+	>&2 echo " then set filename template to some value contains {url-href-digest-sha-1}"
+	>&2 echo "Downloads folder should be inside ~/Downloads (or just create a symlink)"
+	>&2 echo ""
+	local URL="$1"
+	if [[ "$URL" == "" ]]; then
+		>&2 echo "This subcommand requires URL as a parameter"
+		return 1
+	fi
+	for J in $(_similar "$URL" 2>/dev/null); do
+		local HASH=$(hash "$J")
+		if [[ "$HASH" != "" ]]; then
+			command find -L ~/Downloads -name "*$HASH*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$URL\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
+		fi
+	done
+}
+
+_similar() {
+	local URL="$1"
+	local URL1="${URL%/}"
+	local URL2="$URL1/"
+	echo $URL1
+	echo $URL2
+}
+
+#similar() {
+#	_similar "$1"
+#}
+
+describe "import" <<HEREDOC
+Usage:
+  ${_ME} import <URL> <local or IPFS path>
+
+Description:
+  Import web page from file or folder
+HEREDOC
+import() {
+	_upgrade
+	_reprovidingWarning
+	URL="$1"
+	IMPPATH="$2"	#TODO: support /ipfs and /ipns paths
+	if [[ "$URL" == "" || "$IMPPATH" == "" ]]; then
+		>&2 echo "This subcommand requires URL as a first parameter"
+		>&2 echo " and file path as a second parameter"
+		return 1
+	fi
+	_addToHistory "$URL"
+	HASH=$(hash "$URL")
+	if [[ "$HASH" != "" ]]; then
+		MFS_ADDR="/MiceWeb/pages/$HASH"
+		ipfs files ls $MFS_ADDR/URL.txt >/dev/null 2>/dev/null
+		if [ $? -ne 0 ]; then
+			ipfs files mkdir /MiceWeb 2>/dev/null
+			ipfs files mkdir /MiceWeb/pages 2>/dev/null
+			ipfs files mkdir $MFS_ADDR 2>/dev/null
+			URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | ipfs add --quieter --pin=false)"
+			ipfs files cp /ipfs/$URLTXTCID $MFS_ADDR/URL.txt
+		fi
+		if [ -e "$IMPPATH" ]; then
+			DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+			SUBDIR="$DT-import"
+			if [ -d "$IMPPATH" ]; then
+				CID="$(ipfs add --quieter --pin=false -r $IMPPATH)"
+			else
+				CID="$(ipfs add --quieter --pin=false $IMPPATH)"
+			fi
+			ipfs files cp /ipfs/$CID $MFS_ADDR/$SUBDIR
+			if [ $? -eq 0 ]; then
+				IMPPATH0=${IMPPATH%/}
+				IMPBASE=${IMPPATH0%/*}
+				IMPBASEDIR=${IMPBASE##*/}
+				IMPNAME=${IMPPATH0##*/}
+				LOGTXTCID="$(printf "%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" | ipfs add --quieter --pin=false)"
+				ipfs files cp /ipfs/$LOGTXTCID $MFS_ADDR/$SUBDIR.log
+				echo "$HASH/$SUBDIR"
+				return 0
+			fi
+		else
+			>&2 echo "Error: $IMPPATH not found"
+		fi
+	fi
+	return 1
+}
+
 describe "url" <<HEREDOC
 Usage:
   ${_ME} url <file>
