@@ -933,15 +933,15 @@ hash() {
 		>&2 echo "This subcommand requires URL as a parameter"
 		return 1
 	fi
-	local HASH=$(echo -n "$1" | sha1sum 2>/dev/null | cut -d' ' -f1)
+	local HASH=$(printf '%s' "$1" | sha1sum 2>/dev/null | cut -d' ' -f1)
 	if [[ "$HASH" != "" ]]; then
 		echo "$HASH"
 	else
-		HASH=$(echo -n "$1" | openssl sha1 -r 2>/dev/null | cut -d' ' -f1)
+		HASH=$(printf '%s' "$1" | openssl sha1 -r 2>/dev/null | cut -d' ' -f1)
 		if [[ "$HASH" != "" ]]; then
 			echo "$HASH"
 		else
-			HASH=$(echo -n "$1" | shasum -a 1 2>/dev/null | cut -d' ' -f1)
+			HASH=$(printf '%s' "$1" | shasum -a 1 2>/dev/null | cut -d' ' -f1)
 			if [[ "$HASH" != "" ]]; then
 				echo "$HASH"
 			else
