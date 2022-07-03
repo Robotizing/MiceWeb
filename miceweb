@@ -1,25 +1,40 @@
 #!/usr/bin/env bash
 ###############################################################################
-#            _                                                   _
-#  ___ _   _| |__   ___ ___  _ __ ___  _ __ ___   __ _ _ __   __| |___
-# / __| | | | '_ \ / __/ _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` / __|
-# \__ \ |_| | |_) | (_| (_) | | | | | | | | | | | (_| | | | | (_| \__ \
-# |___/\__,_|_.__/ \___\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|___/
 #
-#
-# Boilerplate for creating a bash program with subcommands.
+#                                                
+# 88b           d88  88                           
+# 888b         d888  ""                           
+# 88`8b       d8'88                               
+# 88 `8b     d8' 88  88   ,adPPYba,   ,adPPYba,   
+# 88  `8b   d8'  88  88  a8"     ""  a8P_____88   
+# 88   `8b d8'   88  88  8b          8PP"""""""   
+# 88    `888'    88  88  "8a,   ,aa  "8b,   ,aa   
+# 88     `8'     88  88   `"Ybbd8"'   `"Ybbd8"'   
+#                                                
+#                                                
+#                                                
+# I8,        8        ,8I            88           
+# `8b       d8b       d8'            88           
+#  "8,     ,8"8,     ,8"             88           
+#   Y8     8P Y8     8P   ,adPPYba,  88,dPPYba,   
+#   `8b   d8' `8b   d8'  a8P_____88  88P'    "8a  
+#    `8a a8'   `8a a8'   8PP"""""""  88       d8  
+#     `8a8'     `8a8'    "8b,   ,aa  88b,   ,a8"  
+#      `8'       `8'      `"Ybbd8"'  8Y"Ybbd8"'   
+#                                                
 #
 # Depends on:
-#  list
-#  of
-#  programs
-#  expected
-#  in
-#  environment
+#  https://docs.ipfs.io/install/command-line/
+#  https://www.gnu.org/software/wget/
+#  https://stedolan.github.io/jq/download/
+#  https://github.com/mgdm/htmlq/
+#  https://github.com/ImportTaste/wayback-machine-downloader
+#  https://git-scm.com/downloads
+#  https://www.gnu.org/software/bash/
 #
-# Bash Boilerplate: https://github.com/xwmx/bash-boilerplate
+# MiceWeb: https://github.com/Robotizing/MiceWeb
 #
-# Copyright (c) 2015 William Melody • hi@williammelody.com
+# Copyright (c) 2022 Robotizing Networks • robotizing.net
 ###############################################################################
 
 # Notes #######################################################################
@@ -268,7 +283,7 @@ _function_exists() {
 # Information on why `hash` is used here:
 # http://stackoverflow.com/a/677212
 _command_exists() {
-  hash "${1}" 2>/dev/null
+  command hash "${1}" 2>/dev/null
 }
 
 # _contains()
@@ -620,7 +635,11 @@ help() {
     describe --get "${1}"
   else
     cat <<HEREDOC
-MiceWeb
+  __  __   _                 __        __         _     
+ |  \/  | (_)   ___    ___   \ \      / /   ___  | |__  
+ | |\/| | | |  / __|  / _ \   \ \ /\ / /   / _ \ | '_ \ 
+ | |  | | | | | (__  |  __/    \ V  V /   |  __/ | |_) |
+ |_|  |_| |_|  \___|  \___|     \_/\_/     \___| |_.__/ 
 
 Version: ${_VERSION}
 
@@ -793,7 +812,7 @@ _parse_fragment () {
 }
 
 _random_value() {
-	chars=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
+	local chars=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
 	for i in {1..32} ; do
 		echo -n "${chars:RANDOM%${#chars}:1}"
 	done
@@ -813,22 +832,22 @@ _check_free_space_for_temp() {
 }
 
 _wget() {
-	MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
-	MYTMPFILE=$(mktemp 2>/dev/null || mktemp -t 'mytmpfile')
+	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	local MYTMPFILE=$(mktemp 2>/dev/null || mktemp -t 'mytmpfile')
 	cd $MYTMPDIR
-	RAND="$(_random_value)"
+	local RAND="$(_random_value)"
 	echo "Log $RAND" > $MYTMPFILE
 	echo "$2" >> $MYTMPFILE
-	wget --adjust-extension --no-cache --page-requisites --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=10 --tries=6 --user-agent="Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0" --append-output=$MYTMPFILE $1
-	WGETERR=$?
-	RET=1
+	wget --adjust-extension --no-cache --page-requisites --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=6 --user-agent="Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0" --append-output=$MYTMPFILE $1
+	local WGETERR=$?
+	local RET=1
 	if [[ $WGETERR -eq 0 || $WGETERR -eq 8 ]] && [ $(ls -A "$MYTMPDIR" | wc -l) -ne 0 ]; then
-		CID="$(ipfs add --quieter --pin=false -r $MYTMPDIR)"
-		ipfs files cp /ipfs/$CID $MFS_ADDR/$SUBDIR
+		local CID="$(ipfs add --quieter --pin=false -r $MYTMPDIR)"
+		ipfs files cp /ipfs/$CID $SAVE_MFS_ADDR/$SUBDIR
 		if [ $? -eq 0 ]; then
-			LOGCID="$(ipfs add --quieter --pin=false $MYTMPFILE)"
-			ipfs files cp /ipfs/$LOGCID $MFS_ADDR/$SUBDIR.log
-			echo "$HASH/$SUBDIR"
+			local LOGCID="$(ipfs add --quieter --pin=false $MYTMPFILE)"
+			ipfs files cp /ipfs/$LOGCID $SAVE_MFS_ADDR/$SUBDIR.log
+			echo "$SAVE_HASH/$SUBDIR"
 			RET=0
 		fi
 	else
@@ -841,9 +860,9 @@ _wget() {
 }
 
 _save_wget() {
-	DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-	SUBDIR="$DT-wget"
-	ipfs files ls $MFS_ADDR/$SUBDIR &>/dev/null
+	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	local SUBDIR="$DT-wget"
+	ipfs files ls $SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		_wget $1
 		return $?
@@ -865,12 +884,12 @@ _save_archived() {
 		>&2 echo "Error: jq is not installed (seeing https://stedolan.github.io/jq/download/)"
 		return 127
 	fi
-	RET=1
-	for I in $(wayback_machine_downloader -s -e -l $1 2>/dev/null | jq --raw-output '.. | .timestamp? | strings' | tail -n1); do
-		SUBDIR="${I:0:8}GMT${I:8:6}-archive"
-		ipfs files ls $MFS_ADDR/$SUBDIR &>/dev/null
+	local RET=1
+	for I in $(wayback_machine_downloader -s -e -l "$1" 2>/dev/null | jq --raw-output '.. | .timestamp? | strings' | tail -n1); do
+		local SUBDIR="${I:0:8}GMT${I:8:6}-archive"
+		ipfs files ls $SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
-			_wget "https://web.archive.org/web/$I/$URL"
+			_wget "https://web.archive.org/web/$I/$1"
 			if [ $? -eq 0 ]; then
 				RET=0
 			fi
@@ -881,14 +900,14 @@ _save_archived() {
 	return $RET
 }
 _save_ipns() {
-	DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
-	ADDR=$(ipfs resolve --timeout=60s /ipns/$DOMAIN)
+	local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
+	local ADDR=$(ipfs resolve --timeout=60s /ipns/$DOMAIN)
 	if [[ "$ADDR" != "" ]]; then
-		DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		SUBDIR="$DT-ipns"
-		ipfs files ls $MFS_ADDR/$SUBDIR &>/dev/null
+		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local SUBDIR="$DT-ipns"
+		ipfs files ls $SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
-			GATEWAY=$(ipfs config Addresses.Gateway)
+			local GATEWAY=$(ipfs config Addresses.Gateway)
 			if [ $? -eq 0 ]; then
 				_wget "http://127.0.0.1:${GATEWAY##*/}/ipns/$1" "Resolved /ipns/$DOMAIN to $ADDR"
 				return $?
@@ -901,14 +920,14 @@ _save_ipns() {
 	return 1
 }
 _save_ipfs() {
-	MAIN=$(echo "$1" | awk -F/ '{print $1}')
-	ADDR=$(ipfs resolve --timeout=60s /ipfs/$MAIN)
+	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
+	local ADDR=$(ipfs resolve --timeout=60s /ipfs/$MAIN)
 	if [[ "$ADDR" != "" ]]; then
-		DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		SUBDIR="$DT-ipfs"
-		ipfs files ls $MFS_ADDR/$SUBDIR &>/dev/null
+		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local SUBDIR="$DT-ipfs"
+		ipfs files ls $SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
-			GATEWAY=$(ipfs config Addresses.Gateway)
+			local GATEWAY=$(ipfs config Addresses.Gateway)
 			if [ $? -eq 0 ]; then
 				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$1"
 				return $?
@@ -951,7 +970,7 @@ hash() {
 	fi
 }
 
-_old_hashhash() {
+_old_hash() {
 	if [[ "$1" == "" ]]; then
 		>&2 echo "This subcommand requires URL as a parameter"
 		return 1
@@ -968,12 +987,12 @@ _old_hashhash() {
 
 _addToHistory() {
 	mkdir --parents "$HOME/.miceweb"
-	DT=$(export TZ=GMT ; date '+%Y-%m-%d GMT %H:%M:%S')
+	local DT=$(export TZ=GMT ; date '+%Y-%m-%d GMT %H:%M:%S')
 	printf "%s\t%s\n" "$DT" "$1" >> "$HOME/.miceweb/history.txt"
 }
 
 _reprovidingWarning() {
-	REPROVIDING=$(ipfs config Reprovider.Strategy)
+	local REPROVIDING=$(ipfs config Reprovider.Strategy)
 	if [[ "$REPROVIDING" == "all" ]]; then
 		>&2 echo "Warning: the reprovider announces all IPFS data, including the MiceWeb Library,"
 		>&2 echo " run 'ipfs config Reprovider.Strategy pinned' to announce only pinned data,"
@@ -996,7 +1015,7 @@ save() {
 		_reprovidingWarning
 		for I in $("$0" "$@" 2>/dev/null)
 		do
-			VERSIONS_COUNT=$(_versions $I | grep -e "^.*-wget$" -e "^.*-ip.s$" | wc -l)
+			local VERSIONS_COUNT=$(_versions "$I" | grep -e "^.*-wget$" -e "^.*-ip.s$" | wc -l)
 			if [ "$VERSIONS_COUNT" -eq 0 ]; then
 				>&2 echo -n "Saving $I"
 				local rnumber=$((RANDOM%11+5))
@@ -1005,7 +1024,7 @@ save() {
 					>&2 echo -n "."
 				done
 				>&2 echo ""
-				"$0" save --no-warnings $I
+				"$0" save --no-warnings "$I"
 			fi
 			if ! _check_free_space_for_temp
 			then
@@ -1016,11 +1035,12 @@ save() {
 		>&2 echo "Done"
 		return 0
 	fi
+	local URL=""
 	if [[ "$1" == "url" ]]; then
 		if [[ "$2" != "" ]]; then
 			URL=$(url "$2")
 			if [[ "$URL" != "" ]]; then
-				save $URL
+				save "$URL"
 				return $?
 			fi
 		else
@@ -1028,7 +1048,6 @@ save() {
 		fi
 		return 1
 	fi
-	URL=""
 	local _arguments=()
 	local _warnings=1
 	local _val=
@@ -1066,16 +1085,16 @@ save() {
 		>&2 echo "Error: wget is not installed"
 		return 127
 	fi
-	HASH=$(hash "$URL")
-	if [[ "$HASH" != "" ]]; then
-		MFS_ADDR="/MiceWeb/pages/$HASH"
-		ipfs files ls $MFS_ADDR/URL.txt >/dev/null 2>/dev/null
+	SAVE_HASH=$(hash "$URL")
+	if [[ "$SAVE_HASH" != "" ]]; then
+		SAVE_MFS_ADDR="/MiceWeb/pages/$SAVE_HASH"
+		ipfs files ls $SAVE_MFS_ADDR/URL.txt >/dev/null 2>/dev/null
 		if [ $? -ne 0 ]; then
 			ipfs files mkdir /MiceWeb 2>/dev/null
 			ipfs files mkdir /MiceWeb/pages 2>/dev/null
-			ipfs files mkdir $MFS_ADDR 2>/dev/null
-			URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | ipfs add --quieter --pin=false)"
-			ipfs files cp /ipfs/$URLTXTCID $MFS_ADDR/URL.txt
+			ipfs files mkdir $SAVE_MFS_ADDR 2>/dev/null
+			local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | ipfs add --quieter --pin=false)"
+			ipfs files cp /ipfs/$URLTXTCID $SAVE_MFS_ADDR/URL.txt
 		fi
 		if _check_free_space_for_temp
 		then
@@ -1242,10 +1261,10 @@ Description:
 HEREDOC
 urls() {
 	_upgrade
-	FIL=""
-	PARAM=""
-	GREP=""
-	BASE=""
+	local FIL=""
+	local PARAM=""
+	local GREP=""
+	local BASE=""
 	for I in "$@"; do
 		if [[ $I == "--grep" ]]; then
 		  	PARAM="grep"
@@ -1268,7 +1287,7 @@ urls() {
 		>&2 echo " json - contain URLs in the 'url' field"
 		>&2 echo " html - contain URLs in the 'href' attribute"
 		>&2 echo ""
-		CID="$(ipfs files stat --hash /MiceWeb/pages/)"
+		local CID="$(ipfs files stat --hash /MiceWeb/pages/)"
 		if [[ "$CID" != "" ]]; then
 			>&2 echo "There are URLs already in the MiceWeb Library (see also 'miceweb history'):"
 			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
@@ -1394,12 +1413,12 @@ _versions() {
 }
 
 _upgrade() {
-	TESTHASH1=$(hash "test")
+	local TESTHASH1=$(hash "test")
 	if [[ "$TESTHASH1" != "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3" ]]; then
 		exit 1
 	fi
-	VERTXT="/MiceWeb/attributes.txt"
-	VER=$(ipfs files read $VERTXT 2>/dev/null | sed -n 2p)
+	local VERTXT="/MiceWeb/attributes.txt"
+	local VER=$(ipfs files read $VERTXT 2>/dev/null | sed -n 2p)
 	if [[ $VER == "" ]]; then
 		local TESTHASH2="$(echo -n "test" | ipfs add --only-hash --quieter --cid-version=0)"
 		if [[ "$TESTHASH2" != "QmRf22bZar3WKmojipms22PkXH1MZGmvsqzQtuSvQE3uhm" ]]; then
@@ -1411,10 +1430,10 @@ _upgrade() {
 		if [[ $VER == "" ]]; then
 			ipfs files mkdir /MiceWeb 2>/dev/null
 			ipfs files mkdir /MiceWeb/pages 2>/dev/null
-			CID="$(ipfs files stat --hash /MiceWeb/pages/)"
+			local CID="$(ipfs files stat --hash /MiceWeb/pages/)"
 			if [[ "$CID" != "" ]]; then
 				for I in $(ipfs files ls /MiceWeb/pages/ | grep ^page-Qm); do
-					URL=$(ipfs cat /ipfs/$CID/$I/URL.txt 2>/dev/null | sed -n 2p)
+					local URL=$(ipfs cat /ipfs/$CID/$I/URL.txt 2>/dev/null | sed -n 2p)
 					if [[ "$URL" != "" ]]; then
 						>&2 echo -n "Upgrading $URL..."
 						HASH=$(hash "$URL")
@@ -1425,7 +1444,7 @@ _upgrade() {
 						>&2 echo "."
 					fi
 				done
-				VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "$APPVER" | ipfs add --quieter --pin=false)"
+				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "$APPVER" | ipfs add --quieter --pin=false)"
 				ipfs files cp /ipfs/$VERTXTCID $VERTXT
 				if [ $? -eq 0 ]; then
 					return 0
@@ -1450,24 +1469,24 @@ present() {
 		if [[ "$2" != "" ]]; then
 			ipfs files mkdir /MiceWeb 2>/dev/null
 			ipfs files mkdir /MiceWeb/presents 2>/dev/null
-			DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-			MFS_ADDR="/MiceWeb/presents/present-$DT"
-			ipfs files mkdir $MFS_ADDR 2>/dev/null
-			COUNT=0
+			local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
+			ipfs files mkdir $MFS_PRESENT_ADDR 2>/dev/null
+			local COUNT=0
 			for I in $("$0" "$@" 2>/dev/null)
 			do
 				for J in $(_similar "$I" 2>/dev/null)
 				do
 					local HASH=$(hash "$J")
-					ipfs files cp /MiceWeb/pages/$HASH $MFS_ADDR/$HASH
+					ipfs files cp /MiceWeb/pages/$HASH $MFS_PRESENT_ADDR/$HASH
 					if [ $? -eq 0 ]; then
 						((COUNT++))
 					fi
 				done
 			done
-			CID="$(ipfs files stat --hash $MFS_ADDR)"
+			local CID="$(ipfs files stat --hash $MFS_PRESENT_ADDR)"
 			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
-				GATEWAY=$(ipfs config Addresses.Gateway)
+				local GATEWAY=$(ipfs config Addresses.Gateway)
 				if [ $? -eq 0 ]; then
 					>&2 echo "Open http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID"
 					>&2 echo " in a browser on the local machine"
@@ -1475,7 +1494,7 @@ present() {
 				fi
 				echo "/ipfs/$CID"
 				>&2 echo ""
-				STAT=$", NumURLs: $COUNT"
+				local STAT=$", NumURLs: $COUNT"
 				ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
 				return 0
 			fi
@@ -1490,7 +1509,7 @@ present() {
 		if [[ "$2" != "" ]]; then
 			URL=$(url "$2")
 			if [[ "$URL" != "" ]]; then
-				present $URL
+				present "$URL"
 				if [ $? -eq 0 ]; then
 					return 0
 				#else
@@ -1503,37 +1522,38 @@ present() {
 		return 1
 	fi
 	
-	URL="$1"
-	HASH=$(hash "$URL" 2>/dev/null)
+	local URL="$1"
+	local HASH=$(hash "$URL" 2>/dev/null)
+	local CID=""
 
 	if [[ "$HASH" != "" ]]; then
-		MFS_ADDR="/MiceWeb/pages/$HASH"
-		ipfs files ls $MFS_ADDR/URL.txt >/dev/null 2>/dev/null
+		local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
+		ipfs files ls $MFS_PAGE_ADDR/URL.txt >/dev/null 2>/dev/null
 		if [ $? -ne 0 ]; then
 			ipfs files mkdir /MiceWeb 2>/dev/null
 			ipfs files mkdir /MiceWeb/pages 2>/dev/null
-			ipfs files mkdir $MFS_ADDR 2>/dev/null
-			URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | ipfs add --quieter --pin=false)"
-			ipfs files cp /ipfs/$URLTXTCID $MFS_ADDR/URL.txt
+			ipfs files mkdir $MFS_PAGE_ADDR 2>/dev/null
+			local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | ipfs add --quieter --pin=false)"
+			ipfs files cp /ipfs/$URLTXTCID $MFS_PAGE_ADDR/URL.txt
 		fi
 		ipfs files mkdir /MiceWeb 2>/dev/null
 		ipfs files mkdir /MiceWeb/presents 2>/dev/null
-		DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		MFS_ADDR="/MiceWeb/presents/present-$DT"
-		ipfs files mkdir $MFS_ADDR 2>/dev/null
+		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
+		ipfs files mkdir $MFS_PRESENT_ADDR 2>/dev/null
 		#COUNT=0
 		for I in $(_similar "$URL" 2>/dev/null)
 		do
-			SIMHASH=$(hash "$I")
-			ipfs files cp /MiceWeb/pages/$SIMHASH $MFS_ADDR/$SIMHASH 2>/dev/null
+			local SIMHASH=$(hash "$I")
+			ipfs files cp /MiceWeb/pages/$SIMHASH $MFS_PRESENT_ADDR/$SIMHASH 2>/dev/null
 			#if [ $? -eq 0 ]; then
 			#	((COUNT++))
 			#fi
 		done
-		CID="$(ipfs files stat --hash $MFS_ADDR)/$HASH"
+		CID="$(ipfs files stat --hash $MFS_PRESENT_ADDR)/$HASH"
 	else
-		MFS_ADDR="/MiceWeb/pages/"
-		CID="$(ipfs files stat --hash $MFS_ADDR)"
+		local MFS_PRESENT_ADDR="/MiceWeb/pages/"
+		CID="$(ipfs files stat --hash $MFS_PRESENT_ADDR)"
 	fi
 	
 	if [[ "$CID" != "" ]]; then
@@ -1542,7 +1562,7 @@ present() {
 		#	>&2 echo " sharing (or using with public gateways) is not safe"
 		#	>&2 echo ""
 		#fi
-		GATEWAY=$(ipfs config Addresses.Gateway)
+		local GATEWAY=$(ipfs config Addresses.Gateway)
 		if [ $? -eq 0 ]; then
 			>&2 echo "Open "
 			>&2 echo " http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID"
@@ -1550,7 +1570,7 @@ present() {
 			>&2 echo ""
 		fi
 		if [[ "$1" != "" ]]; then
-			REPROVIDING=$(ipfs config Reprovider.Strategy)
+			local REPROVIDING=$(ipfs config Reprovider.Strategy)
 			if [[ "$REPROVIDING" != "all" ]]; then
 				>&2 echo "If you need to publish or view from an other machine,"
 				>&2 echo " run 'ipfs pin add $CID'"

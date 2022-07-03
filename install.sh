@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Installation script for SaveWeb. It tries to create a symlink of $bin in one of the
+# Installation script for MiceWeb. It creates a symlink of $bin in one of the
 # directories stored in $binpaths.
 
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
