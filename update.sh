@@ -1,7 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 #
-# Installation script for SaveWeb. It tries to move $bin in one of the
-# directories stored in $binpaths.
+# Updater for MiceWeb. It performs 'git pull'.
 
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
 
