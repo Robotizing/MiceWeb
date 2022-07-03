@@ -1,12 +1,12 @@
 #!/bin/sh
 #
-# Installation script for SaveWeb. It tries to move $bin in one of the
+# Installation script for SaveWeb. It tries to create a symlink of $bin in one of the
 # directories stored in $binpaths.
 
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 bin="$INSTALL_DIR/miceweb"
-binpaths="/usr/local/bin"
+binpaths="/usr/local/bin /usr/bin"
 
 # This variable contains a nonzero length string in case the script fails
 # because of missing write permissions.
@@ -22,7 +22,7 @@ for binpath in $binpaths; do
       echo "Check '$binpath/miceweb', move it to other place and run '$0' again"
       exit 1
     fi
-    if [ -d "$binpath" ] && [ ! -w "$binpath" ]; then
+    if [ -d "$binpath" -a ! -w "$binpath" ]; then
       is_write_perm_missing=1
     fi
   fi
