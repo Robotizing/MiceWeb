@@ -19,7 +19,7 @@ Clone the repository, open a terminal in the folder and run `./install.sh` (also
 
 ## Installation (Windows):
 
-Install [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10), [Cygwin](https://www.cygwin.com/), [Git Bash](http://git-scm.com), or some other tool that enables Bash functionality in Windows.
+Install [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10), [Cygwin](https://www.cygwin.com/), [Git Bash](https://git-scm.com/download/win), or some other tool that enables Bash functionality in Windows.
 
 Follow the above section.
 
