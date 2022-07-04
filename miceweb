@@ -1147,14 +1147,16 @@ find() {
 	done
 }
 
-_similar() {
+_similar_but_slash() {
 	local URL="$1"
 	local URL1="${URL%/}"
 	local URL2="$URL1/"
 	echo $URL1
 	echo $URL2
 }
-
+_similar() {
+	_similar_but_slash "$1"
+}
 #similar() {
 #	_similar "$1"
 #}
