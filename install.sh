@@ -13,7 +13,13 @@ binpaths="/usr/local/bin /usr/bin"
 is_write_perm_missing=""
 
 for binpath in $binpaths; do
-  if ln -s "$bin" "$binpath/miceweb" ; then
+  if [ -n "$WINDIR" ]; then
+    cmd <<< "mklink \"${binpath//\//\\}\miceweb\" \"${bin//\//\\}\"" >/dev/null
+  else
+    ln -s "$bin" "$binpath/miceweb"
+  fi
+  #if ln -s "$bin" "$binpath/miceweb" ; then
+  if [ $? -eq 0 ]; then
     echo "Created a symbolic link of $bin in $binpath"
     echo "Run 'miceweb' in the terminal"
     exit 0
