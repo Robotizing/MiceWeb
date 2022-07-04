@@ -12,27 +12,26 @@ binpaths="/usr/local/bin /usr/bin"
 # because of missing write permissions.
 is_write_perm_missing=""
 
-for binpath in $binpaths; do
-  if [ -n "$WINDIR" ]; then
-    cmd <<< "mklink \"${binpath//\//\\}\miceweb\" \"${bin//\//\\}\"" >/dev/null
-  else
-    ln -s "$bin" "$binpath/miceweb"
-  fi
-  #if ln -s "$bin" "$binpath/miceweb" ; then
-  if [ $? -eq 0 ]; then
-    echo "Created a symbolic link of $bin in $binpath"
-    echo "Run 'miceweb' in the terminal"
-    exit 0
-  else
-    if [ -e "$binpath" ]; then
-      echo "Check '$binpath/miceweb', move it to other place and run '$0' again"
-      exit 1
+if [ -n "$WINDIR" ]; then
+  cmd <<< "mklink \"/usr/bin/miceweb\" \"${bin//\//\\}\"" >/dev/null
+  exit 0
+else
+  for binpath in $binpaths; do
+    if ln -s "$bin" "$binpath/miceweb" ; then
+      echo "Created a symbolic link of $bin in $binpath"
+      echo "Run 'miceweb' in the terminal"
+      exit 0
+    else
+      if [ -e "$binpath" ]; then
+        echo "Check '$binpath/miceweb', move it to other place and run '$0' again"
+        exit 1
+      fi
+      if [ -d "$binpath" -a ! -w "$binpath" ]; then
+        is_write_perm_missing=1
+      fi
     fi
-    if [ -d "$binpath" -a ! -w "$binpath" ]; then
-      is_write_perm_missing=1
-    fi
-  fi
-done
+  done
+fi
 
 echo "We cannot install $bin in $binpaths"
 
