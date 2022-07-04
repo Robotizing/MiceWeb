@@ -8,8 +8,9 @@ OLDVER="$(miceweb version)"
 cd "$INSTALL_DIR"
 git pull
 RET=$?
-cd -
+cd - >/dev/null
 if [ $RET -ne 0 ]; then
+	echo "Try to run 'git pull' manually"
 	exit 1
 fi
 NEWVER="$(miceweb version)"
