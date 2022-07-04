@@ -8,9 +8,18 @@ OLDVER="$(miceweb version)"
 cd "$INSTALL_DIR"
 git pull
 RET=$?
+if [ $RET -ne 0 ]; then
+    git stash
+    RET=$?
+    if [ $RET -eq 0 ]; then
+	echo "Stashed local changes, run 'git stash pop' to bring back them"
+	git pull
+	RET=$?
+    fi
+fi
 cd - >/dev/null
 if [ $RET -ne 0 ]; then
-	echo "Try to run 'git pull' manually"
+	echo "Can't update MiceWeb, try to run 'git pull' manually"
 	exit 1
 fi
 NEWVER="$(miceweb version)"
