@@ -635,20 +635,16 @@ help() {
     describe --get "${1}"
   else
     cat <<HEREDOC
-  __  __   _                 __        __         _     
- |  \/  | (_)   ___    ___   \ \      / /   ___  | |__  
- | |\/| | | |  / __|  / _ \   \ \ /\ / /   / _ \ | '_ \ 
- | |  | | | | | (__  |  __/    \ V  V /   |  __/ | |_) |
- |_|  |_| |_|  \___|  \___|     \_/\_/     \___| |_.__/ 
+  __  __   _                 __        __        _     
+ |  \/  | (_)   ___    ___   \ \      / /  ___  | |__  
+ | |\/| | | |  / __|  / _ \   \ \ /\ / /  / _ \ | '_ \ 
+ | |  | | | | | (__  |  __/    \ V  V /  |  __/ | |_) |
+ |_|  |_| |_|  \___|  \___|     \_/\_/    \___| |_.__/ 
 
 Version: ${_VERSION}
 
 Usage:
   ${_ME} <subcommand> [--subcommand-options] [<arguments>]
-  ${_ME} -h | --help
-
-Options:
-  -h --help  Display this help information.
 
 Help:
   ${_ME} help [<subcommand>]
