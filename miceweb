@@ -1426,9 +1426,10 @@ _upgrade() {
 	local APPVER="v.${_VERSION}"
 	if [[ $APPVER != $VER ]]; then
 		if [[ $VER == "" ]]; then
-			ipfs files mkdir //MiceWeb 2>/dev/null
-			ipfs files mkdir //MiceWeb/pages 2>/dev/null
+			ipfs files mkdir //MiceWeb #2>/dev/null
+			ipfs files mkdir //MiceWeb/pages #2>/dev/null
 			local CID="$(ipfs files stat --hash //MiceWeb/pages/)"
+			&2 echo $CID
 			if [[ "$CID" != "" ]]; then
 				for I in $(ipfs files ls //MiceWeb/pages/ | grep ^page-Qm); do
 					local URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
@@ -1443,6 +1444,7 @@ _upgrade() {
 					fi
 				done
 				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "$APPVER" | ipfs add --quieter --pin=false)"
+				&2 echo $VERTXTCID
 				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
 				if [ $? -eq 0 ]; then
 					return 0
