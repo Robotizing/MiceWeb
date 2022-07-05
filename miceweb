@@ -1613,7 +1613,6 @@ present() {
 			fi
 		fi
 		echo "/ipfs/$CID"
-		>&2 echo ""
 		local STAT=""
 		local COUNT=0
 		if [[ $HASH != */* ]]; then
