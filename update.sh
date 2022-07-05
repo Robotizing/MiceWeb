@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Updater for MiceWeb. It performs 'git pull'.
+# Updater for MiceWeb. It performs 'git pull' and then runs 'install.sh'.
 
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
 

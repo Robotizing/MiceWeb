@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Installation script for MiceWeb. It creates a symlink of $bin in one of the
+# Installation script for MiceWeb. It copies $bin to one of the
 # directories stored in $binpaths.
 
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
