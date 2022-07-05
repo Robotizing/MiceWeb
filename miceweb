@@ -990,12 +990,12 @@ _addToHistory() {
 _reprovidingWarning() {
 	local REPROVIDING=$(ipfs config Reprovider.Strategy)
 	if [[ "$REPROVIDING" == "all" ]]; then
-		>&2 echo "Warning: the reprovider announces all IPFS data, including the MiceWeb Library,"
-		>&2 echo " run 'ipfs config Reprovider.Strategy pinned' to announce only pinned data,"
-		>&2 echo " see also https://github.com/ipfs/go-ipfs/blob/master/docs/config.md#reproviderstrategy"
+		>&2 echo "Warning: the reprovider announces all IPFS data including the MiceWeb Library,"
+		>&2 echo " run 'ipfs config Reprovider.Strategy pinned'"
+		>&2 echo " to announce only pinned data, see also"
+		>&2 echo " https://github.com/ipfs/go-ipfs/blob/master/docs/config.md#reproviderstrategy"
 	fi
 }
-
 
 describe "save" <<HEREDOC
 Usage:
