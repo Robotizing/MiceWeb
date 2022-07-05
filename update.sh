@@ -22,6 +22,7 @@ if [ $RET -ne 0 ]; then
 	echo "Can't update MiceWeb, try to run 'git pull' manually"
 	exit 1
 fi
+"$INSTALL_DIR/install.sh"
 NEWVER="$(miceweb version)"
 if [ "$OLDVER" != "$NEWVER" ]; then
 	echo "Updated from v.$OLDVER to v.$NEWVER"
