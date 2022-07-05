@@ -1526,7 +1526,6 @@ present() {
 					>&2 echo ""
 				fi
 				echo "/ipfs/$CID"
-				>&2 echo ""
 				local STAT=$", NumURLs: $COUNT"
 				ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
 				return 0
