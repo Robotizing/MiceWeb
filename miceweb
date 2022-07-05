@@ -1147,6 +1147,18 @@ find() {
 	done
 }
 
+_similar_but_scheme() {
+	local URL="$1"
+	if [[ $URL == http://* ]]; then
+		echo $URL
+		echo "https://${URL#http://}"
+	elif [[ $URL == https://* ]]; then
+		echo "http://${URL#https://}"
+		echo $URL
+	else
+		echo $URL
+	fi
+}
 _similar_but_slash() {
 	local URL="$1"
 	local URL1="${URL%/}"
@@ -1155,7 +1167,11 @@ _similar_but_slash() {
 	echo $URL2
 }
 _similar() {
-	_similar_but_slash "$1"
+	for I in $(_similar_but_scheme "$1"); do
+		for J in $(_similar_but_slash "$I"); do
+			echo "$J"
+		done
+	done
 }
 #similar() {
 #	_similar "$1"
