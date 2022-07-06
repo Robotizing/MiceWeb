@@ -897,7 +897,7 @@ _save_archived() {
 }
 _save_ipns() {
 	local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
-	local ADDR=$(ipfs resolve --recursive=true --timeout=60s /ipns/$DOMAIN)	#TODO: make compatible with Git Bash
+	local ADDR=$(ipfs name resolve --recursive=true --timeout=60s $DOMAIN)
 	if [[ "$ADDR" != "" ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		local SUBDIR="$DT-ipns"
