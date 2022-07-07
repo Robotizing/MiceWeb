@@ -1179,7 +1179,7 @@ _similar() {
 
 describe "import" <<HEREDOC
 Usage:
-  ${_ME} import <URL> <local path>
+  ${_ME} import <URL> <local/ipfs/ipns path>
 
 Description:
   Import web page from file or folder
@@ -1188,10 +1188,12 @@ import() {
 	_upgrade
 	_reprovidingWarning
 	URL="$1"
-	IMPPATH="$2"	#TODO: support /ipfs and /ipns paths
+	IMPPATH="$2"
+	COMMENT="$3"
 	if [[ "$URL" == "" || "$IMPPATH" == "" ]]; then
 		>&2 echo "This subcommand requires URL as a first parameter"
-		>&2 echo " and file path as a second parameter"
+		>&2 echo " and local/ipfs/ipns path as a second parameter,"
+		>&2 echo " some comment can be specified as a third parameter"
 		return 1
 	fi
 	_addToHistory "$URL"
@@ -1206,9 +1208,38 @@ import() {
 			URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | ipfs add --quieter --pin=false)"
 			ipfs files cp //ipfs/$URLTXTCID /$MFS_ADDR/URL.txt
 		fi
-		if [ -e "$IMPPATH" ]; then
-			DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-			SUBDIR="$DT-import"
+		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local SUBDIR="$DT-import"
+		local CID=""
+		local LOGTXTCID=""
+		if [[ "$IMPPATH" == /ipfs/* || "$IMPPATH" == /ipns/* ]]; then
+			local ADDR=""
+			if [[ "$IMPPATH" == /ipns/* ]]; then
+				ADDR=$(ipfs name resolve --recursive=true --timeout=60s "${IMPPATH#/ipns/}")
+			else
+				ADDR="$IMPPATH"
+			fi
+			if [[ "$ADDR" != "" ]]; then
+				local ADDR2=$(ipfs resolve --timeout=60s "${ADDR#/ipfs/}")
+				if [[ "$ADDR2" != "" ]]; then
+					local SUBDIR0="$SUBDIR"ing
+					if ipfs files cp /$ADDR2 /$MFS_ADDR/$SUBDIR0; then
+						local RESOLVED="resolved to $ADDR"
+						if [[ "$ADDR" != "$ADDR2" ]]; then
+							RESOLVED="$RESOLVED, then to $ADDR2"
+						fi
+						LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH, which $RESOLVED" "$COMMENT" | ipfs add --quieter --pin=false)"
+						ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
+						if ipfs dag stat "${ADDR2#/ipfs/}"; then
+							if ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
+								echo "$HASH/$SUBDIR"
+								return 0
+							fi
+						fi
+					fi
+				fi
+			fi
+		elif [ -e "$IMPPATH" ]; then
 			if [ -d "$IMPPATH" ]; then
 				CID="$(ipfs add --quieter --pin=false -r "$IMPPATH")"
 			else
@@ -1216,11 +1247,11 @@ import() {
 			fi
 			ipfs files cp //ipfs/$CID /$MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
-				IMPPATH0=${IMPPATH%/}
-				IMPBASE=${IMPPATH0%/*}
-				IMPBASEDIR=${IMPBASE##*/}
-				IMPNAME=${IMPPATH0##*/}
-				LOGTXTCID="$(printf "%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" | ipfs add --quieter --pin=false)"
+				local IMPPATH0=${IMPPATH%/}
+				local IMPBASE=${IMPPATH0%/*}
+				local IMPBASEDIR=${IMPBASE##*/}
+				local IMPNAME=${IMPPATH0##*/}
+				LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" "$COMMENT" | ipfs add --quieter --pin=false)"
 				ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
 				echo "$HASH/$SUBDIR"
 				return 0
@@ -1544,6 +1575,7 @@ present() {
 				echo "/ipfs/$CID"
 				local STAT=$", NumURLs: $COUNT"
 				ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
+				#TODO: rename *-imported to *-import
 				return 0
 			fi
 		else
@@ -1644,6 +1676,7 @@ present() {
 				STAT=$", NumVersions: $COUNT"
 			fi
 		fi
+		#TODO: rename *-imported to *-import
 		ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
 	else
 		>&2 echo "Run 'miceweb save ${@@Q}'"
