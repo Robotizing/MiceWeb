@@ -1225,7 +1225,7 @@ import() {
 					local SUBDIR0="$SUBDIR"ing
 					if ipfs files cp /$ADDR2 /$MFS_ADDR/$SUBDIR0; then
 						local RESOLVED="resolved to $ADDR"
-						if [[ "$ADDR" != "$ADDR2" ]]; then
+						if [[ "${ADDR%/}" != "$ADDR2" ]]; then
 							RESOLVED="$RESOLVED, then to $ADDR2"
 						fi
 						LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH, which $RESOLVED" "$COMMENT" | ipfs add --quieter --pin=false)"
@@ -1575,7 +1575,7 @@ present() {
 				echo "/ipfs/$CID"
 				local STAT=$", NumURLs: $COUNT"
 				ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
-				#TODO: rename *-imported to *-import
+				#TODO: rename *-importing to *-import
 				return 0
 			fi
 		else
@@ -1676,7 +1676,7 @@ present() {
 				STAT=$", NumVersions: $COUNT"
 			fi
 		fi
-		#TODO: rename *-imported to *-import
+		#TODO: rename *-importing to *-import
 		ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
 	else
 		>&2 echo "Run 'miceweb save ${@@Q}'"
