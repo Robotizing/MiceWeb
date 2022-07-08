@@ -1013,6 +1013,11 @@ save() {
 		do
 			local VERSIONS_COUNT=$(_versions "$I" | grep -e "^.*-wget$" -e "^.*-ip.s$" | wc -l)
 			if [ "$VERSIONS_COUNT" -eq 0 ]; then
+				if ! _check_free_space_for_temp
+				then
+					>&2 echo "Free disk space for temporary files and run the command again"
+					return 1
+				fi
 				>&2 echo -n "Saving $I"
 				local rnumber=$((RANDOM%11+5))
 				for (( i = 1; i <= $rnumber; i++ )) ; do
@@ -1020,12 +1025,7 @@ save() {
 					>&2 echo -n "."
 				done
 				>&2 echo ""
-				"$0" save --no-warnings "$I"
-			fi
-			if ! _check_free_space_for_temp
-			then
-				>&2 echo "Free disk space for temporary files and run the command again"
-				return 1
+				save --no-warnings "$I"
 			fi
 		done
 		>&2 echo "Run 'miceweb present $@' to view saved snapshots"
