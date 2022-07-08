@@ -1433,6 +1433,8 @@ remove() {
 				>&2 echo ""
 				>&2 echo "You can try to undo that right now by running"
 				>&2 echo " 'ipfs files cp $PRESENT $MFS_PAGE_ADDR'"
+				>&2 echo ""
+				>&2 echo "Also, look into 'miceweb cleanup'"
 				return 0
 			else
 				return 1
@@ -1440,6 +1442,36 @@ remove() {
 		fi
 	else
 		return 1	
+	fi
+}
+
+describe "cleanup" <<HEREDOC
+Usage:
+  ${_ME} cleanup
+
+Description:
+  Cleanup service data
+HEREDOC
+cleanup() {
+	if [[ "$1" != "" ]]; then
+		>&2 echo "This sub command doesn't require parameters"
+		return 1
+	fi
+	local MFS_PRESENTS_ADDR="/MiceWeb/presents"
+	local CID="$(ipfs files stat --hash /$MFS_PRESENTS_ADDR)"
+	if [[ "$CID" == "" ]]; then
+		>&2 echo "Failed to cleanup"
+		return 1
+	fi
+	if ipfs files rm -r /$MFS_PRESENTS_ADDR; then
+		>&2 echo "Removed the history of presents"
+		>&2 echo ""
+		>&2 echo "You can try to undo that right now by running"
+		>&2 echo " 'ipfs files cp /ipfs/$CID $MFS_PRESENTS_ADDR'"
+		return 0
+	else
+		>&2 echo "Failed to cleanup"
+		return 1
 	fi
 }
 
