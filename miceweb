@@ -1028,7 +1028,7 @@ save() {
 				return 1
 			fi
 		done
-		>&2 echo "Done"
+		>&2 echo "Run 'miceweb present $@' to view saved snapshots"
 		return 0
 	fi
 	local URL=""
@@ -1111,6 +1111,9 @@ save() {
 				_save_ipfs "${PARSEDPATH#/ipfs/}"
 			elif [[ $URL == http*://*.*/ipns/* ]]; then
 				_save_ipns "${PARSEDPATH#/ipns/}"
+			fi
+			if [ $_warnings -eq 1 ]; then
+				>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
 			fi
 		else
 			>&2 echo "Error: insufficient disk space for temporary files"
@@ -1214,8 +1217,10 @@ import() {
 		local LOGTXTCID=""
 		if [[ "$IMPPATH" == /ipfs/* || "$IMPPATH" == /ipns/* ]]; then
 			local ADDR=""
+			local RESOLVED=""
 			if [[ "$IMPPATH" == /ipns/* ]]; then
 				ADDR=$(ipfs name resolve --recursive=true --timeout=60s "${IMPPATH#/ipns/}")
+				RESOLVED=", which resolved to $ADDR"
 			else
 				ADDR="$IMPPATH"
 			fi
@@ -1224,15 +1229,19 @@ import() {
 				if [[ "$ADDR2" != "" ]]; then
 					local SUBDIR0="$SUBDIR"ing
 					if ipfs files cp /$ADDR2 /$MFS_ADDR/$SUBDIR0; then
-						local RESOLVED="resolved to $ADDR"
 						if [[ "${ADDR%/}" != "$ADDR2" ]]; then
-							RESOLVED="$RESOLVED, then to $ADDR2"
+							if [[ "$RESOLVED" == "" ]]; then
+								RESOLVED=", which resolved to $ADDR2"
+							else
+								RESOLVED="$RESOLVED, then to $ADDR2"
+							fi
 						fi
-						LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH, which $RESOLVED" "$COMMENT" | ipfs add --quieter --pin=false)"
+						LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | ipfs add --quieter --pin=false)"
 						ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
 						if ipfs dag stat "${ADDR2#/ipfs/}"; then
 							if ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
 								echo "$HASH/$SUBDIR"
+								>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
 								return 0
 							fi
 						fi
@@ -1254,6 +1263,7 @@ import() {
 				LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" "$COMMENT" | ipfs add --quieter --pin=false)"
 				ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
 				echo "$HASH/$SUBDIR"
+				>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
 				return 0
 			fi
 		else
@@ -1637,11 +1647,6 @@ present() {
 	fi
 	
 	if [[ "$CID" != "" ]]; then
-		#if [[ "$HASH" == "" ]]; then
-		#	>&2 echo "There is a content identifier of the MiceWeb Library,"
-		#	>&2 echo " sharing (or using with public gateways) is not safe"
-		#	>&2 echo ""
-		#fi
 		local GATEWAY=$(ipfs config Addresses.Gateway)
 		if [ $? -eq 0 ]; then
 			>&2 echo "Open "
@@ -1649,8 +1654,8 @@ present() {
 			>&2 echo " in a browser on the local machine"
 			>&2 echo ""
 		fi
+		local REPROVIDING=$(ipfs config Reprovider.Strategy)
 		if [[ "$1" != "" ]]; then
-			local REPROVIDING=$(ipfs config Reprovider.Strategy)
 			if [[ "$REPROVIDING" != "all" ]]; then
 				>&2 echo "If you need to publish or view from an other machine,"
 				>&2 echo " run 'ipfs pin add $CID'"
@@ -1659,6 +1664,14 @@ present() {
 				fi
 				>&2 echo ""
 			fi
+		else
+			>&2 echo "There is a content identifier of current state of all the MiceWeb Library"
+			>&2 echo "It's not recommended to share it because security and other reasons,"
+			>&2 echo " however, if you need it, pin $CID"
+			if [[ "$REPROVIDING" == "roots" ]]; then
+				>&2 echo " and run 'ipfs config Reprovider.Strategy pinned'"
+			fi
+			>&2 echo ""
 		fi
 		echo "/ipfs/$CID"
 		local STAT=""
