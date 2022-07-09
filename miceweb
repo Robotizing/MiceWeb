@@ -815,6 +815,24 @@ _random_value() {
 	echo
 }
 
+_print_hyperlink() {
+	local URL="$1"
+	local URLTEXT="$2"
+	if [[ "$URLTEXT" == "" ]]; then
+		URLTEXT="$URL"
+	fi
+	printf '\e]8;;%s\e\\%s\e]8;;\e\\' "$URL" "$URLTEXT"
+}
+
+_print_with_hyperlink() {
+	local PREFIX="$1"
+	local URL="$2"
+	local SUFFIX="$3"
+	printf '%s' "$PREFIX"
+	_print_hyperlink "$URL"
+	printf '%s\n' "$SUFFIX"
+}
+
 _free_space() {
 	echo $(df -Pk $1 | sed 1d | grep -v used | awk '{ print $4 "\t" }')
 }
@@ -877,7 +895,7 @@ _save_archived() {
 	type -P jq &>/dev/null && ISINST=1 || ISINST=0
 	if [ $ISINST -eq 0 ]
 	then
-		>&2 echo "Error: jq is not installed (seeing https://stedolan.github.io/jq/download/)"
+		>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
 		return 127
 	fi
 	local RET=1
@@ -1132,8 +1150,8 @@ Description:
   Find saved web pages in ~/Downloads (use SingleFile or SingleFileZ browser extension)
 HEREDOC
 find() {
-	>&2 echo "Install https://github.com/gildas-lormeau/SingleFile"
-	>&2 echo " or https://github.com/gildas-lormeau/SingleFileZ browser extension,"
+	>&2 _print_with_hyperlink "Install " "https://github.com/gildas-lormeau/SingleFile"
+	>&2 _print_with_hyperlink " or " "https://github.com/gildas-lormeau/SingleFileZ" " browser extension,"
 	>&2 echo " then set filename template to some value contains {url-href-digest-sha-1}"
 	>&2 echo "Downloads folder should be inside ~/Downloads (or just create a symlink)"
 	>&2 echo ""
@@ -1377,7 +1395,7 @@ urls() {
 		type -P jq &>/dev/null && ISINST=1 || ISINST=0
 		if [ $ISINST -eq 0 ]
 		then
-			>&2 echo "Error: jq is not installed (seeing https://stedolan.github.io/jq/download/)"
+			>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
 			exit 127
 		fi
 		if [[ "$BASE" != "" ]]; then
@@ -1389,7 +1407,7 @@ urls() {
 		type -P htmlq &>/dev/null && ISINST=1 || ISINST=0
 		if [ $ISINST -eq 0 ]
 		then
-			>&2 echo "Error: htmlq is not installed (seeing https://github.com/mgdm/htmlq/)"
+			>&2 _print_with_hyperlink "Error: htmlq is not installed (seeing " "https://github.com/mgdm/htmlq/" ")"
 			exit 127
 		fi
 		if [[ "$BASE" != "" ]]; then
@@ -1541,7 +1559,7 @@ _upgrade() {
 	if [[ $VER == "" ]]; then
 		local TESTHASH2="$(echo -n "test" | ipfs add --only-hash --quieter --cid-version=0)"
 		if [[ "$TESTHASH2" != "QmRf22bZar3WKmojipms22PkXH1MZGmvsqzQtuSvQE3uhm" ]]; then
-			_exit_1 printf "Installed https://github.com/ipfs/go-ipfs is required for MiceWeb\n"
+			_exit_1 _print_with_hyperlink "Installed " "https://github.com/ipfs/go-ipfs" " is required for MiceWeb"
 		fi
 	fi
 	local APPVER="v.${_VERSION}"
@@ -1610,7 +1628,7 @@ present() {
 			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
 				local GATEWAY=$(ipfs config Addresses.Gateway)
 				if [ $? -eq 0 ]; then
-					>&2 echo "Open http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID"
+					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID"
 					>&2 echo " in a browser on the local machine"
 					>&2 echo ""
 				fi
@@ -1681,8 +1699,7 @@ present() {
 	if [[ "$CID" != "" ]]; then
 		local GATEWAY=$(ipfs config Addresses.Gateway)
 		if [ $? -eq 0 ]; then
-			>&2 echo "Open "
-			>&2 echo " http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID"
+			>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID"
 			>&2 echo " in a browser on the local machine"
 			>&2 echo ""
 		fi
