@@ -1443,7 +1443,9 @@ remove() {
 		local PRESENT=$(present "$URL" 2>/dev/null)
 		if [[ "$PRESENT" != "" ]]; then
 			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
-			rm "$CACHE_DIR$HASH" 2>/dev/null
+			if [ -e "$CACHE_DIR$HASH" ]; then
+				rm "$CACHE_DIR$HASH"
+			fi
 			local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
 			ipfs files rm -r /$MFS_PAGE_ADDR
 			if [ $? -eq 0 ]; then
