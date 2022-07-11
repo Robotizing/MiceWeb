@@ -1163,7 +1163,7 @@ find() {
 	for J in $(_similar "$URL" 2>/dev/null); do
 		local HASH=$(hash "$J")
 		if [[ "$HASH" != "" ]]; then
-			command find -L ~/Downloads -name "*$HASH*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$URL\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
+			command find -L ~/Downloads -name "*$HASH*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$J\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
 		fi
 	done
 }
