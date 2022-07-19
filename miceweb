@@ -1634,6 +1634,14 @@ present() {
 					>&2 echo " in a browser on the local machine"
 					>&2 echo ""
 				fi
+				if [[ "$REPROVIDING" != "all" ]]; then
+					>&2 echo "If you need to publish or view from an other machine,"
+					>&2 echo " run 'ipfs pin add $CID'"
+					if [[ "$REPROVIDING" == "roots" ]]; then
+						>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+					fi
+					>&2 echo ""
+				fi
 				echo "/ipfs/$CID"
 				local STAT=$", NumURLs: $COUNT"
 				ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
@@ -1666,6 +1674,7 @@ present() {
 	
 	local URL="$1"
 	local HASH=$(hash "$URL" 2>/dev/null)
+	local CID0=""
 	local CID=""
 
 	if [[ "$HASH" != "" ]]; then
@@ -1692,10 +1701,12 @@ present() {
 			#	((COUNT++))
 			#fi
 		done
-		CID="$(ipfs files stat --hash /$MFS_PRESENT_ADDR)/$HASH"
+		CID0="$(ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+		CID="$CID0/$HASH"
 	else
 		local MFS_PRESENT_ADDR="/MiceWeb/pages/"
-		CID="$(ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+		CID0="$(ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+		CID="$CID0"
 	fi
 	
 	if [[ "$CID" != "" ]]; then
@@ -1709,7 +1720,7 @@ present() {
 		if [[ "$1" != "" ]]; then
 			if [[ "$REPROVIDING" != "all" ]]; then
 				>&2 echo "If you need to publish or view from an other machine,"
-				>&2 echo " run 'ipfs pin add $CID'"
+				>&2 echo " run 'ipfs pin add $CID0'"
 				if [[ "$REPROVIDING" == "roots" ]]; then
 					>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
 				fi
@@ -1718,7 +1729,7 @@ present() {
 		else
 			>&2 echo "There is a content identifier of current state of all the MiceWeb Library"
 			>&2 echo "It's not recommended to share it because security and other reasons,"
-			>&2 echo " however, if you need it, pin $CID"
+			>&2 echo " however, if you need it, pin $CID0"
 			if [[ "$REPROVIDING" == "roots" ]]; then
 				>&2 echo " and run 'ipfs config Reprovider.Strategy pinned'"
 			fi
