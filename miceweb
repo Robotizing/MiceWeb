@@ -1190,6 +1190,12 @@ _similar_but_scheme() {
 	elif [[ $URL == https://* ]]; then
 		echo "http://${URL#https://}"
 		echo $URL
+	elif [[ $URL == ftp://* ]]; then
+		echo $URL
+		echo "ftps://${URL#ftp://}"
+	elif [[ $URL == ftps://* ]]; then
+		echo "ftp://${URL#ftps://}"
+		echo $URL
 	else
 		echo $URL
 	fi
