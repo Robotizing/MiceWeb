@@ -954,14 +954,16 @@ _save_ipfs() {
 	return 1
 }
 
-describe "hash" <<HEREDOC
-Usage:
-  ${_ME} hash <URL>
+_check_url() {
+	local URL="$1"
+	if [[ "$URL" != http://* && "$URL" != https://* && "$URL" != ipns://* && "$URL" != ipfs://* && "$URL" != ftp://* && "$URL" != ftps://* ]]; then
+		return 1
+	else
+		return 0
+	fi
+}
 
-Description:
-  Calculate hash for URL
-HEREDOC
-hash() {
+_hash() {
 	if [[ "$1" == "" ]]; then
 		>&2 echo "This subcommand requires URL as a parameter"
 		return 1
@@ -984,19 +986,21 @@ hash() {
 	fi
 }
 
-_old_hash() {
-	if [[ "$1" == "" ]]; then
-		>&2 echo "This subcommand requires URL as a parameter"
+describe "hash" <<HEREDOC
+Usage:
+  ${_ME} hash <URL>
+
+Description:
+  Calculate hash for URL
+HEREDOC
+hash() {
+	local URL="$1"
+	if ! _check_url "$URL"; then
+		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
 		return 1
 	fi
-	local HASH="$(echo $1 | ipfs add --only-hash --quieter --cid-version=0)"
-	if [[ "$HASH" != "" ]]; then
-		HASH="page-$HASH"
-		echo "$HASH"
-	else
-		>&2 echo "Installed ipfs-go is required for MiceWeb"
-		return 1
-	fi
+	_hash "$URL"
+	return $?
 }
 
 _addToHistory() {
@@ -1085,9 +1089,6 @@ save() {
 		;;
 	esac
 	done
-	if [ $_warnings -eq 1 ]; then
-		_reprovidingWarning
-	fi
 	if [[ "$URL" == "" ]]; then
 		>&2 echo "This subcommand requires URL as a parameter"
 		return 1
@@ -1099,7 +1100,14 @@ save() {
 		>&2 echo "Error: wget is not installed"
 		return 127
 	fi
-	SAVE_HASH=$(hash "$URL")
+	if ! _check_url "$URL"; then
+		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
+		return 1
+	fi
+	if [ $_warnings -eq 1 ]; then
+		_reprovidingWarning
+	fi
+	SAVE_HASH=$(_hash "$URL")
 	if [[ "$SAVE_HASH" != "" ]]; then
 		SAVE_MFS_ADDR="/MiceWeb/pages/$SAVE_HASH"
 		ipfs files ls /$SAVE_MFS_ADDR/URL.txt >/dev/null 2>/dev/null
@@ -1160,8 +1168,12 @@ find() {
 		>&2 echo "This subcommand requires URL as a parameter"
 		return 1
 	fi
+	if ! _check_url "$URL"; then
+		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
+		return 1
+	fi
 	for J in $(_similar "$URL" 2>/dev/null); do
-		local HASH=$(hash "$J")
+		local HASH=$(_hash "$J")
 		if [[ "$HASH" != "" ]]; then
 			command find -L ~/Downloads -name "*$HASH*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$J\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
 		fi
@@ -1207,7 +1219,6 @@ Description:
 HEREDOC
 import() {
 	_upgrade
-	_reprovidingWarning
 	URL="$1"
 	IMPPATH="$2"
 	COMMENT="$3"
@@ -1218,7 +1229,12 @@ import() {
 		return 1
 	fi
 	_addToHistory "$URL"
-	HASH=$(hash "$URL")
+	if ! _check_url "$URL"; then
+		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
+		return 1
+	fi
+	_reprovidingWarning
+	HASH=$(_hash "$URL")
 	if [[ "$HASH" != "" ]]; then
 		MFS_ADDR="/MiceWeb/pages/$HASH"
 		ipfs files ls /$MFS_ADDR/URL.txt >/dev/null 2>/dev/null
@@ -1307,7 +1323,7 @@ url() {
 	local CACHE_FILE="$HOME/.miceweb/cache/urls/$1"
 	local URL=$(grep "" "$CACHE_FILE" 2>/dev/null)
 	if [[ "$URL" != "" ]]; then
-		local HASH=$(hash "$URL")
+		local HASH=$(_hash "$URL")
 		if [[ "$1" == "$HASH" ]]; then
 			echo "$URL"
 			return 0
@@ -1315,7 +1331,7 @@ url() {
 	fi
 	URL=$(ipfs files read //MiceWeb/pages/$1/URL.txt | sed -n 2p)
 	if [[ "$URL" != "" ]]; then
-		local HASH=$(hash "$URL")
+		local HASH=$(_hash "$URL")
 		if [[ "$1" == "$HASH" ]]; then
 			echo "$URL" > "$CACHE_FILE"
 			echo "$URL"
@@ -1438,7 +1454,7 @@ remove() {
 		>&2 echo "This subcommand requires URL as a parameter"
 		return 1
 	fi
-	local HASH=$(hash "$URL")
+	local HASH=$(_hash "$URL")
 	if [[ "$HASH" != "" ]]; then
 		local PRESENT=$(present "$URL" 2>/dev/null)
 		if [[ "$PRESENT" != "" ]]; then
@@ -1508,7 +1524,7 @@ _versions() {
 		>&2 echo "This sub command requires URL as a parameter"
 		return 1
 	fi
-	local HASH=$(hash "$URL")
+	local HASH=$(_hash "$URL")
 	if [[ "$HASH" != "" ]]; then
 		for I in $(ipfs files ls //MiceWeb/pages/$HASH 2>/dev/null | sed 's/^/'"$HASH"'\//')
 		do
@@ -1550,9 +1566,13 @@ _vercomp () {
     done
     return 0
 }
+#vercomp() {
+#	_vercomp $@
+#	echo $?
+#}
 
 _upgrade() {
-	local TESTHASH1=$(hash "test")
+	local TESTHASH1=$(_hash "test")
 	if [[ "$TESTHASH1" != "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3" ]]; then
 		exit 1
 	fi
@@ -1575,7 +1595,7 @@ _upgrade() {
 					local URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
 					if [[ "$URL" != "" ]]; then
 						>&2 echo -n "Upgrading $URL..."
-						local HASH=$(hash "$URL")
+						local HASH=$(_hash "$URL")
 						>&2 echo -n "."
 						if [[ "$HASH" != "" ]]; then
 							ipfs files mv //MiceWeb/pages/$I "//MiceWeb/pages/$HASH"
@@ -1619,7 +1639,7 @@ present() {
 			do
 				for J in $(_similar "$I" 2>/dev/null)
 				do
-					local HASH=$(hash "$J")
+					local HASH=$(_hash "$J")
 					ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH
 					if [ $? -eq 0 ]; then
 						((COUNT++))
@@ -1673,7 +1693,7 @@ present() {
 	fi
 	
 	local URL="$1"
-	local HASH=$(hash "$URL" 2>/dev/null)
+	local HASH=$(_hash "$URL" 2>/dev/null)
 	local CID0=""
 	local CID=""
 
@@ -1681,11 +1701,16 @@ present() {
 		local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
 		ipfs files ls /$MFS_PAGE_ADDR/URL.txt >/dev/null 2>/dev/null
 		if [ $? -ne 0 ]; then
-			ipfs files mkdir //MiceWeb 2>/dev/null
-			ipfs files mkdir //MiceWeb/pages 2>/dev/null
-			ipfs files mkdir /$MFS_PAGE_ADDR 2>/dev/null
-			local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | ipfs add --quieter --pin=false)"
-			ipfs files cp //ipfs/$URLTXTCID /$MFS_PAGE_ADDR/URL.txt
+			if _check_url "$URL"; then
+				ipfs files mkdir //MiceWeb 2>/dev/null
+				ipfs files mkdir //MiceWeb/pages 2>/dev/null
+				ipfs files mkdir /$MFS_PAGE_ADDR 2>/dev/null
+				local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | ipfs add --quieter --pin=false)"
+				ipfs files cp //ipfs/$URLTXTCID /$MFS_PAGE_ADDR/URL.txt
+			else
+				>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
+				return 1
+			fi
 		fi
 		ipfs files mkdir //MiceWeb 2>/dev/null
 		ipfs files mkdir //MiceWeb/presents 2>/dev/null
@@ -1695,7 +1720,7 @@ present() {
 		#COUNT=0
 		for I in $(_similar "$URL" 2>/dev/null)
 		do
-			local SIMHASH=$(hash "$I")
+			local SIMHASH=$(_hash "$I")
 			ipfs files cp //MiceWeb/pages/$SIMHASH /$MFS_PRESENT_ADDR/$SIMHASH 2>/dev/null
 			#if [ $? -eq 0 ]; then
 			#	((COUNT++))
