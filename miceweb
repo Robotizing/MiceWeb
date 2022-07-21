@@ -1175,6 +1175,9 @@ find() {
 		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
 		return 1
 	fi
+	local filename=$(basename "$URL")
+	command find -L ~/Downloads -name "$filename" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$URL\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
+	command find -L ~/Downloads -name "$filename.*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$URL\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
 	for J in $(_similar "$URL" 2>/dev/null); do
 		if [[ "$J" == http*://* ]]; then
 			local HASH=$(_hash "$J")
