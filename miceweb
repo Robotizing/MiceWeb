@@ -846,13 +846,16 @@ _check_free_space_for_temp() {
 }
 
 _wget() {
+	local URL="$1"
+	local options="$2"
+	local comment="$3"
 	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
 	local MYTMPFILE=$(mktemp 2>/dev/null || mktemp -t 'mytmpfile')
 	cd $MYTMPDIR
 	local RAND="$(_random_value)"
 	echo "Log $RAND" > $MYTMPFILE
-	echo "$2" >> $MYTMPFILE
-	wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=6 --user-agent="Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0" --append-output=$MYTMPFILE $1
+	echo "$comment" >> $MYTMPFILE
+	wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=6 --user-agent="Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0" $options --append-output=$MYTMPFILE "$URL"
 	local WGETERR=$?
 	local RET=1
 	if [[ $WGETERR -eq 0 || $WGETERR -eq 8 ]] && [ $(ls -A "$MYTMPDIR" | wc -l) -ne 0 ]; then
@@ -903,7 +906,7 @@ _save_archived() {
 		local SUBDIR="${I:0:8}GMT${I:8:6}-archive"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
-			_wget "https://web.archive.org/web/$I/$1"
+			_wget "https://web.archive.org/web/$I/$1" --cut-dirs=1
 			if [ $? -eq 0 ]; then
 				RET=0
 			fi
@@ -923,7 +926,7 @@ _save_ipns() {
 		if [ $? -ne 0 ]; then
 			local GATEWAY=$(ipfs config Addresses.Gateway)
 			if [ $? -eq 0 ]; then
-				_wget "http://127.0.0.1:${GATEWAY##*/}/ipns/$1" "Resolved /ipns/$DOMAIN to $ADDR"
+				_wget "http://127.0.0.1:${GATEWAY##*/}/ipns/$1" --cut-dirs=1 "Resolved /ipns/$DOMAIN to $ADDR"
 				return $?
 			fi
 		else
@@ -943,7 +946,7 @@ _save_ipfs() {
 		if [ $? -ne 0 ]; then
 			local GATEWAY=$(ipfs config Addresses.Gateway)
 			if [ $? -eq 0 ]; then
-				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$1"
+				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$1" --cut-dirs=1
 				return $?
 			fi
 		else
