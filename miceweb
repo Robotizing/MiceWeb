@@ -459,6 +459,65 @@ _main() {
 
 # --------------------------------------------------------------------- functions
 
+_addToHistory() {
+	mkdir --parents "$HOME/.miceweb"
+	local DT=$(export TZ=GMT ; date '+%Y-%m-%d GMT %H:%M:%S')
+	printf "%s\t%s\n" "$DT" "$1" >> "$HOME/.miceweb/history.txt"
+}
+
+_check_free_space_for_temp() {
+	if [ $(_free_space $(dirname $(mktemp -u 2>/dev/null || mktemp -u -t 'mytmpdir'))) -gt 102400 ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+_check_url() {
+	local URL="$1"
+	if [[ "$URL" != http://* && "$URL" != https://* && "$URL" != ipns://* && "$URL" != ipfs://* && "$URL" != ftp://* && "$URL" != ftps://* ]]; then
+		return 1
+	else
+		return 0
+	fi
+}
+
+_free_space() {
+	echo $(df -Pk $1 | sed 1d | grep -v used | awk '{ print $4 "\t" }')
+}
+
+_has_url_fragment() {
+	local URL="$1"
+	if [[ "$URL" =~ ['#'] ]]; then
+		return 0;
+	else
+		return 1;
+	fi
+}
+
+_hash() {
+	_hash_string "$(_url_but_fragment "$1")"
+}
+
+_hash_string() {
+	local HASH=$(printf '%s' "$1" | sha1sum 2>/dev/null | cut -d' ' -f1)
+	if [[ "$HASH" != "" ]]; then
+		echo "$HASH"
+	else
+		HASH=$(printf '%s' "$1" | openssl sha1 -r 2>/dev/null | cut -d' ' -f1)
+		if [[ "$HASH" != "" ]]; then
+			echo "$HASH"
+		else
+			HASH=$(printf '%s' "$1" | shasum -a 1 2>/dev/null | cut -d' ' -f1)
+			if [[ "$HASH" != "" ]]; then
+				echo "$HASH"
+			else
+				_exit_1 printf "Installed sha1sum, shasum or openssl is required for MiceWeb\n"
+			fi
+		fi
+	fi
+}
+
 # https://www.rfc-editor.org/rfc/rfc3986#appendix-B
 #
 readonly URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^?#]*))(\?([^#]*))?(#(.*))?'
@@ -495,14 +554,6 @@ _parse_fragment () {
     [[ "$@" =~ $URI_REGEX ]] && echo "${BASH_REMATCH[15]}"
 }
 
-_random_value() {
-	local chars=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
-	for i in {1..32} ; do
-		echo -n "${chars:RANDOM%${#chars}:1}"
-	done
-	echo
-}
-
 _print_hyperlink() {
 	local URL="$1"
 	local URLTEXT="$2"
@@ -511,7 +562,6 @@ _print_hyperlink() {
 	fi
 	printf '\e]8;;%s\e\\%s\e]8;;\e\\' "$URL" "$URLTEXT"
 }
-
 _print_with_hyperlink() {
 	local PREFIX="$1"
 	local URL="$2"
@@ -521,61 +571,24 @@ _print_with_hyperlink() {
 	printf '%s\n' "$SUFFIX"
 }
 
-_free_space() {
-	echo $(df -Pk $1 | sed 1d | grep -v used | awk '{ print $4 "\t" }')
+_random_value() {
+	local chars=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
+	for i in {1..32} ; do
+		echo -n "${chars:RANDOM%${#chars}:1}"
+	done
+	echo
 }
 
-_check_free_space_for_temp() {
-	if [ $(_free_space $(dirname $(mktemp -u 2>/dev/null || mktemp -u -t 'mytmpdir'))) -gt 102400 ]; then
-		return 0
-	else
-		return 1
+_reprovidingWarning() {
+	local REPROVIDING=$(ipfs config Reprovider.Strategy)
+	if [[ "$REPROVIDING" == "all" ]]; then
+		>&2 echo "Warning: the reprovider announces all IPFS data including the MiceWeb Library,"
+		>&2 echo " run 'ipfs config Reprovider.Strategy pinned'"
+		>&2 echo " to announce only pinned data, see also"
+		>&2 echo " https://github.com/ipfs/go-ipfs/blob/master/docs/config.md#reproviderstrategy"
 	fi
 }
 
-_wget() {
-	local URL="$1"
-	local options="$2"
-	local comment="$3"
-	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
-	local MYTMPFILE=$(mktemp 2>/dev/null || mktemp -t 'mytmpfile')
-	cd $MYTMPDIR
-	local RAND="$(_random_value)"
-	echo "Log $RAND" > $MYTMPFILE
-	echo "$comment" >> $MYTMPFILE
-	wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=6 --user-agent="Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0" $options --append-output=$MYTMPFILE "$URL"
-	local WGETERR=$?
-	local RET=1
-	if [[ $WGETERR -eq 0 || $WGETERR -eq 8 ]] && [ $(ls -A "$MYTMPDIR" | wc -l) -ne 0 ]; then
-		local CID="$(ipfs add --quieter --pin=false -r $MYTMPDIR)"
-		ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
-		if [ $? -eq 0 ]; then
-			local LOGCID="$(ipfs add --quieter --pin=false $MYTMPFILE)"
-			ipfs files cp //ipfs/$LOGCID /$SAVE_MFS_ADDR/$SUBDIR.log
-			echo "$SAVE_HASH/$SUBDIR"
-			RET=0
-		fi
-	else
-		>&2 echo "Error: wget can't download $1 (err. $WGETERR)"
-	fi
-	cd ..
-	rm -r $MYTMPDIR
-	rm $MYTMPFILE
-	return $RET
-}
-
-_save_wget() {
-	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-	local SUBDIR="$DT-wget"
-	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
-	if [ $? -ne 0 ]; then
-		_wget $1
-		return $?
-	else
-		>&2 echo "$SUBDIR exists"
-		return 0
-	fi
-}
 _save_archived() {
 	type -P wayback_machine_downloader &>/dev/null && ISINST=1 || ISINST=0
 	if [ $ISINST -eq 0 ]
@@ -604,27 +617,6 @@ _save_archived() {
 	done
 	return $RET
 }
-_save_ipns() {
-	local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
-	local ADDR=$(ipfs name resolve --recursive=true --timeout=60s $DOMAIN)
-	if [[ "$ADDR" != "" ]]; then
-		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		local SUBDIR="$DT-ipns"
-		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
-		if [ $? -ne 0 ]; then
-			local GATEWAY=$(ipfs config Addresses.Gateway)
-			# TODO: use ipfs.io when gateway is not available (output a warning) or --tor=always
-			if [ $? -eq 0 ]; then
-				_wget "http://127.0.0.1:${GATEWAY##*/}/ipns/$1" --cut-dirs=1 "Resolved /ipns/$DOMAIN to $ADDR"
-				return $?
-			fi
-		else
-			>&2 echo "$SUBDIR exists"
-			return 0
-		fi
-	fi
-	return 1
-}
 _save_ipfs() {
 	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
 	local ADDR=$(ipfs resolve --timeout=60s $MAIN)
@@ -646,206 +638,86 @@ _save_ipfs() {
 	fi
 	return 1
 }
-
-_check_url() {
-	local URL="$1"
-	if [[ "$URL" != http://* && "$URL" != https://* && "$URL" != ipns://* && "$URL" != ipfs://* && "$URL" != ftp://* && "$URL" != ftps://* ]]; then
-		return 1
+_save_ipns() {
+	local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
+	local ADDR=$(ipfs name resolve --recursive=true --timeout=60s $DOMAIN)
+	if [[ "$ADDR" != "" ]]; then
+		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local SUBDIR="$DT-ipns"
+		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+		if [ $? -ne 0 ]; then
+			local GATEWAY=$(ipfs config Addresses.Gateway)
+			# TODO: use ipfs.io when gateway is not available (output a warning) or --tor=always
+			if [ $? -eq 0 ]; then
+				_wget "http://127.0.0.1:${GATEWAY##*/}/ipns/$1" --cut-dirs=1 "Resolved /ipns/$DOMAIN to $ADDR"
+				return $?
+			fi
+		else
+			>&2 echo "$SUBDIR exists"
+			return 0
+		fi
+	fi
+	return 1
+}
+_save_wget() {
+	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	local SUBDIR="$DT-wget"
+	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	if [ $? -ne 0 ]; then
+		_wget $1
+		return $?
 	else
+		>&2 echo "$SUBDIR exists"
 		return 0
 	fi
 }
 
-_has_url_fragment() {
-	local URL="$1"
-	if [[ "$URL" =~ ['#'] ]]; then
-		return 0;
-	else
-		return 1;
-	fi
-}
-_url_but_fragment() {
-	local URL="$1"
-	local fragment=$(_parse_fragment "$URL")
-	if _has_url_fragment "$URL"; then
-		echo "${URL%#$fragment}"
-	else
-		echo "$URL"
-	fi
-}
-
-_hash_string() {
-	local HASH=$(printf '%s' "$1" | sha1sum 2>/dev/null | cut -d' ' -f1)
-	if [[ "$HASH" != "" ]]; then
-		echo "$HASH"
-	else
-		HASH=$(printf '%s' "$1" | openssl sha1 -r 2>/dev/null | cut -d' ' -f1)
-		if [[ "$HASH" != "" ]]; then
-			echo "$HASH"
-		else
-			HASH=$(printf '%s' "$1" | shasum -a 1 2>/dev/null | cut -d' ' -f1)
-			if [[ "$HASH" != "" ]]; then
-				echo "$HASH"
-			else
-				_exit_1 printf "Installed sha1sum, shasum or openssl is required for MiceWeb\n"
-			fi
-		fi
-	fi
-}
-
-_hash() {
-	_hash_string "$(_url_but_fragment "$1")"
-}
-
-_versions() {
-	local URL="$1"
-	if [[ "$URL" == "" ]]; then
-		>&2 echo "This sub command requires URL as a parameter"
-		return 1
-	fi
-	local HASH=$(_hash "$URL")
-	if [[ "$HASH" != "" ]]; then
-		for I in $(ipfs files ls //MiceWeb/pages/$HASH 2>/dev/null | sed 's/^/'"$HASH"'\//')
-		do
-			if [[ $I != *.* ]]; then
-				echo $I
-			fi
+_similar() {
+	local URL="$(_url_but_fragment "$1")"
+	for I in $(_similar_but_scheme "$URL"); do
+		for J in $(_similar_but_slash "$I"); do
+			for K in $(_similar_concrete "$J"); do
+				echo "$K"
+			done
 		done
-	fi
+	done
 }
-
-_subcommands() {
-  if [[ "${1:-}" == "--raw" ]]
-  then
-    printf "%s\\n" "${_DEFINED_SUBCOMMANDS[@]}"
-  else
-    printf "Available subcommands:\\n"
-    printf "  %s\\n" "${_DEFINED_SUBCOMMANDS[@]}"
-  fi
-}
-
-# https://stackoverflow.com/questions/4023830/how-to-compare-two-strings-in-dot-separated-version-format-in-bash
-_vercomp () {
-    if [[ $1 == $2 ]]
-    then
-        return 0
-    fi
-    local IFS=.
-    local i ver1=($1) ver2=($2)
-    # fill empty fields in ver1 with zeros
-    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
-    do
-        ver1[i]=0
-    done
-    for ((i=0; i<${#ver1[@]}; i++))
-    do
-        if [[ -z ${ver2[i]} ]]
-        then
-            # fill empty fields in ver2 with zeros
-            ver2[i]=0
-        fi
-        if ((10#${ver1[i]} > 10#${ver2[i]}))
-        then
-            return 1
-        fi
-        if ((10#${ver1[i]} < 10#${ver2[i]}))
-        then
-            return 2
-        fi
-    done
-    return 0
-}
-
-_upgrade() {
-	local TESTHASH1=$(_hash "test")
-	if [[ "$TESTHASH1" != "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3" ]]; then
-		exit 1
-	fi
-	local VERTXT="/MiceWeb/attributes.txt"
-	local VER=$(ipfs files read /$VERTXT 2>/dev/null | sed -n 2p)
-	if [[ $VER == "" ]]; then
-		local TESTHASH2="$(echo -n "test" | ipfs add --only-hash --quieter --cid-version=0)"
-		if [[ "$TESTHASH2" != "QmRf22bZar3WKmojipms22PkXH1MZGmvsqzQtuSvQE3uhm" ]]; then
-			_exit_1 _print_with_hyperlink "Installed " "https://github.com/ipfs/go-ipfs" " is required for MiceWeb"
-		fi
-	fi
-	local APPVER="v.${_VERSION}"
-	if [[ $APPVER != $VER ]]; then
-		if [[ $VER == "" ]]; then
-			if ! ipfs files ls //MiceWeb &>/dev/null; then
-				ipfs files mkdir //MiceWeb 2>/dev/null
-				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "$APPVER" | ipfs add --quieter --pin=false)"
-				if ipfs files cp //ipfs/$VERTXTCID /$VERTXT; then
-					return 0
-				else
-					_exit_1 printf "Can't create the MiceWeb Library\n"
-				fi
-			fi
-			backup >/dev/null
-			ipfs files mkdir //MiceWeb/pages 2>/dev/null
-			local CID="$(ipfs files stat --hash //MiceWeb/pages/)"
-			if [[ "$CID" != "" ]]; then
-				for I in $(ipfs files ls //MiceWeb/pages/ | grep ^page-Qm); do
-					local URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
-					if [[ "$URL" != "" ]]; then
-						>&2 echo -n "Upgrading $URL..."
-						local HASH=$(_hash "$URL")
-						>&2 echo -n "."
-						if [[ "$HASH" != "" ]]; then
-							ipfs files mv //MiceWeb/pages/$I "//MiceWeb/pages/$HASH"
-						fi
-						>&2 echo "."
-					fi
-				done
-				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.2" | ipfs add --quieter --pin=false)"
-				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
-				if [ $? -eq 0 ]; then
-					>&2 echo "Upgraded the MiceWeb Library to v.0.2"
-					_upgrade
-					return $?
-				fi
-			fi
-			_exit_1 printf "Can't upgrade the MiceWeb Library\n"
+_similar_but_scheme() {
+	local URL="$1"
+	local host="$(_parse_host "$URL/")"
+	if [[ $host == *.* ]]; then
+		if [[ $URL == http://* ]]; then
+			echo $URL
+			echo "https://${URL#http://}"
+			echo "ipns://${URL#http://}"
+		elif [[ $URL == https://* ]]; then
+			echo "http://${URL#https://}"
+			echo $URL
+			echo "ipns://${URL#https://}"
+		elif [[ $URL == ipns://* ]]; then
+			echo "http://${URL#ipns://}"
+			echo "https://${URL#ipns://}"
+			echo $URL
+		elif [[ $URL == ftp://* ]]; then
+			echo $URL
+			echo "ftps://${URL#ftp://}"
+		elif [[ $URL == ftps://* ]]; then
+			echo "ftp://${URL#ftps://}"
+			echo $URL
 		else
-			_vercomp "${_VERSION}" "${VER#v.}"
-			if [ $? -eq 1 ]; then
-				# updating to v.0.3
-				backup >/dev/null
-				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.3" | ipfs add --quieter --pin=false)"
-				ipfs files rm /$VERTXT
-				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
-				if [ $? -eq 0 ]; then
-					>&2 echo "Upgraded the MiceWeb Library to v.0.3"
-					>&2 echo "It's recommended to run 'miceweb save urls --grep=#'"
-					save urls --grep="#"
-					>&2 echo ""
-					return 0
-				fi
-				_exit_1 printf "Can't upgrade the MiceWeb Library\n"
-			else
-				_exit_1 printf "MiceWeb $VER+ is required to work with the current MiceWeb Library\nThe current app version is $APPVER\nRun './update.sh' in the MiceWeb repository\n"
-			fi
+			echo $URL
 		fi
-	fi
-	return 0
-}
-
-_addToHistory() {
-	mkdir --parents "$HOME/.miceweb"
-	local DT=$(export TZ=GMT ; date '+%Y-%m-%d GMT %H:%M:%S')
-	printf "%s\t%s\n" "$DT" "$1" >> "$HOME/.miceweb/history.txt"
-}
-
-_reprovidingWarning() {
-	local REPROVIDING=$(ipfs config Reprovider.Strategy)
-	if [[ "$REPROVIDING" == "all" ]]; then
-		>&2 echo "Warning: the reprovider announces all IPFS data including the MiceWeb Library,"
-		>&2 echo " run 'ipfs config Reprovider.Strategy pinned'"
-		>&2 echo " to announce only pinned data, see also"
-		>&2 echo " https://github.com/ipfs/go-ipfs/blob/master/docs/config.md#reproviderstrategy"
+	else
+		echo $URL
 	fi
 }
-
+_similar_but_slash() {
+	local URL="$1"
+	local URL1="${URL%/}"
+	local URL2="$URL1/"
+	echo $URL1
+	echo $URL2
+}
 _similar_concrete() {
 	local URL="$1"
 	local host=$(_parse_host "$URL/")
@@ -922,57 +794,183 @@ _similar_concrete() {
 		echo "https://youtu.be/${URL#https://www.youtube.com/watch?v=}"
 	fi
 }
-_similar_but_scheme() {
-	local URL="$1"
-	local host="$(_parse_host "$URL/")"
-	if [[ $host == *.* ]]; then
-		if [[ $URL == http://* ]]; then
-			echo $URL
-			echo "https://${URL#http://}"
-			echo "ipns://${URL#http://}"
-		elif [[ $URL == https://* ]]; then
-			echo "http://${URL#https://}"
-			echo $URL
-			echo "ipns://${URL#https://}"
-		elif [[ $URL == ipns://* ]]; then
-			echo "http://${URL#ipns://}"
-			echo "https://${URL#ipns://}"
-			echo $URL
-		elif [[ $URL == ftp://* ]]; then
-			echo $URL
-			echo "ftps://${URL#ftp://}"
-		elif [[ $URL == ftps://* ]]; then
-			echo "ftp://${URL#ftps://}"
-			echo $URL
-		else
-			echo $URL
-		fi
-	else
-		echo $URL
-	fi
-}
-_similar_but_slash() {
-	local URL="$1"
-	local URL1="${URL%/}"
-	local URL2="$URL1/"
-	echo $URL1
-	echo $URL2
-}
-_similar() {
-	local URL="$(_url_but_fragment "$1")"
-	for I in $(_similar_but_scheme "$URL"); do
-		for J in $(_similar_but_slash "$I"); do
-			for K in $(_similar_concrete "$J"); do
-				echo "$K"
-			done
-		done
-	done
-}
 #similar() {
 #	_similar "$1"
 #}
 
+_subcommands() {
+  if [[ "${1:-}" == "--raw" ]]
+  then
+    printf "%s\\n" "${_DEFINED_SUBCOMMANDS[@]}"
+  else
+    printf "Available subcommands:\\n"
+    printf "  %s\\n" "${_DEFINED_SUBCOMMANDS[@]}"
+  fi
+}
 
+_upgrade() {
+	local TESTHASH1=$(_hash "test")
+	if [[ "$TESTHASH1" != "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3" ]]; then
+		exit 1
+	fi
+	local VERTXT="/MiceWeb/attributes.txt"
+	local VER=$(ipfs files read /$VERTXT 2>/dev/null | sed -n 2p)
+	if [[ $VER == "" ]]; then
+		local TESTHASH2="$(echo -n "test" | ipfs add --only-hash --quieter --cid-version=0)"
+		if [[ "$TESTHASH2" != "QmRf22bZar3WKmojipms22PkXH1MZGmvsqzQtuSvQE3uhm" ]]; then
+			_exit_1 _print_with_hyperlink "Installed " "https://github.com/ipfs/go-ipfs" " is required for MiceWeb"
+		fi
+	fi
+	local APPVER="v.${_VERSION}"
+	if [[ $APPVER != $VER ]]; then
+		if [[ $VER == "" ]]; then
+			if ! ipfs files ls //MiceWeb &>/dev/null; then
+				ipfs files mkdir //MiceWeb 2>/dev/null
+				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "$APPVER" | ipfs add --quieter --pin=false)"
+				if ipfs files cp //ipfs/$VERTXTCID /$VERTXT; then
+					return 0
+				else
+					_exit_1 printf "Can't create the MiceWeb Library\n"
+				fi
+			fi
+			backup >/dev/null
+			ipfs files mkdir //MiceWeb/pages 2>/dev/null
+			local CID="$(ipfs files stat --hash //MiceWeb/pages/)"
+			if [[ "$CID" != "" ]]; then
+				for I in $(ipfs files ls //MiceWeb/pages/ | grep ^page-Qm); do
+					local URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
+					if [[ "$URL" != "" ]]; then
+						>&2 echo -n "Upgrading $URL..."
+						local HASH=$(_hash "$URL")
+						>&2 echo -n "."
+						if [[ "$HASH" != "" ]]; then
+							ipfs files mv //MiceWeb/pages/$I "//MiceWeb/pages/$HASH"
+						fi
+						>&2 echo "."
+					fi
+				done
+				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.2" | ipfs add --quieter --pin=false)"
+				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
+				if [ $? -eq 0 ]; then
+					>&2 echo "Upgraded the MiceWeb Library to v.0.2"
+					_upgrade
+					return $?
+				fi
+			fi
+			_exit_1 printf "Can't upgrade the MiceWeb Library\n"
+		else
+			_vercomp "${_VERSION}" "${VER#v.}"
+			if [ $? -eq 1 ]; then
+				# updating to v.0.3
+				backup >/dev/null
+				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.3" | ipfs add --quieter --pin=false)"
+				ipfs files rm /$VERTXT
+				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
+				if [ $? -eq 0 ]; then
+					>&2 echo "Upgraded the MiceWeb Library to v.0.3"
+					>&2 echo "It's recommended to run 'miceweb save urls --grep=#'"
+					save urls --grep="#"
+					>&2 echo ""
+					return 0
+				fi
+				_exit_1 printf "Can't upgrade the MiceWeb Library\n"
+			else
+				_exit_1 printf "MiceWeb $VER+ is required to work with the current MiceWeb Library\nThe current app version is $APPVER\nRun './update.sh' in the MiceWeb repository\n"
+			fi
+		fi
+	fi
+	return 0
+}
+
+_url_but_fragment() {
+	local URL="$1"
+	local fragment=$(_parse_fragment "$URL")
+	if _has_url_fragment "$URL"; then
+		echo "${URL%#$fragment}"
+	else
+		echo "$URL"
+	fi
+}
+
+# https://stackoverflow.com/questions/4023830/how-to-compare-two-strings-in-dot-separated-version-format-in-bash
+_vercomp () {
+    if [[ $1 == $2 ]]
+    then
+        return 0
+    fi
+    local IFS=.
+    local i ver1=($1) ver2=($2)
+    # fill empty fields in ver1 with zeros
+    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+    do
+        ver1[i]=0
+    done
+    for ((i=0; i<${#ver1[@]}; i++))
+    do
+        if [[ -z ${ver2[i]} ]]
+        then
+            # fill empty fields in ver2 with zeros
+            ver2[i]=0
+        fi
+        if ((10#${ver1[i]} > 10#${ver2[i]}))
+        then
+            return 1
+        fi
+        if ((10#${ver1[i]} < 10#${ver2[i]}))
+        then
+            return 2
+        fi
+    done
+    return 0
+}
+
+_versions() {
+	local URL="$1"
+	if [[ "$URL" == "" ]]; then
+		>&2 echo "This sub command requires URL as a parameter"
+		return 1
+	fi
+	local HASH=$(_hash "$URL")
+	if [[ "$HASH" != "" ]]; then
+		for I in $(ipfs files ls //MiceWeb/pages/$HASH 2>/dev/null | sed 's/^/'"$HASH"'\//')
+		do
+			if [[ $I != *.* ]]; then
+				echo $I
+			fi
+		done
+	fi
+}
+
+_wget() {
+	local URL="$1"
+	local options="$2"
+	local comment="$3"
+	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	local MYTMPFILE=$(mktemp 2>/dev/null || mktemp -t 'mytmpfile')
+	cd $MYTMPDIR
+	local RAND="$(_random_value)"
+	echo "Log $RAND" > $MYTMPFILE
+	echo "$comment" >> $MYTMPFILE
+	wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=6 --user-agent="Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0" $options --append-output=$MYTMPFILE "$URL"
+	local WGETERR=$?
+	local RET=1
+	if [[ $WGETERR -eq 0 || $WGETERR -eq 8 ]] && [ $(ls -A "$MYTMPDIR" | wc -l) -ne 0 ]; then
+		local CID="$(ipfs add --quieter --pin=false -r $MYTMPDIR)"
+		ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+		if [ $? -eq 0 ]; then
+			local LOGCID="$(ipfs add --quieter --pin=false $MYTMPFILE)"
+			ipfs files cp //ipfs/$LOGCID /$SAVE_MFS_ADDR/$SUBDIR.log
+			echo "$SAVE_HASH/$SUBDIR"
+			RET=0
+		fi
+	else
+		>&2 echo "Error: wget can't download $1 (err. $WGETERR)"
+	fi
+	cd ..
+	rm -r $MYTMPDIR
+	rm $MYTMPFILE
+	return $RET
+}
 
 ###############################################################################
 # Subcommands
