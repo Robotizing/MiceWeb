@@ -37,121 +37,6 @@
 # Copyright (c) 2022 Robotizing Networks • robotizing.net
 ###############################################################################
 
-# Notes #######################################################################
-
-# Extensive descriptions are included for easy reference.
-#
-# Explicitness and clarity are generally preferable, especially since bash can
-# be difficult to read. This leads to noisier, longer code, but should be
-# easier to maintain. As a result, some general design preferences:
-#
-# - Use leading underscores on internal variable and function names in order
-#   to avoid name collisions. For unintentionally global variables defined
-#   without `local`, such as those defined outside of a function or
-#   automatically through a `for` loop, prefix with double underscores.
-# - Always use braces when referencing variables, preferring `${NAME}` instead
-#   of `$NAME`. Braces are only required for variable references in some cases,
-#   but the cognitive overhead involved in keeping track of which cases require
-#   braces can be reduced by simply always using them.
-# - Prefer `printf` over `echo`. For more information, see:
-#   http://unix.stackexchange.com/a/65819
-# - Prefer `$_explicit_variable_name` over names like `$var`.
-# - Use the `#!/usr/bin/env bash` shebang in order to run the preferred
-#   Bash version rather than hard-coding a `bash` executable path.
-# - Prefer splitting statements across multiple lines rather than writing
-#   one-liners.
-# - Group related code into sections with large, easily scannable headers.
-# - Describe behavior in comments as much as possible, assuming the reader is
-#   a programmer familiar with the shell, but not necessarily experienced
-#   writing shell scripts.
-
-###############################################################################
-# Strict Mode
-###############################################################################
-
-# Treat unset variables and parameters other than the special parameters ‘@’ or
-# ‘*’ as an error when performing parameter expansion. An 'unbound variable'
-# error message will be written to the standard error, and a non-interactive
-# shell will exit.
-#
-# This requires using parameter expansion to test for unset variables.
-#
-# http://www.gnu.org/software/bash/manual/bashref.html#Shell-Parameter-Expansion
-#
-# The two approaches that are probably the most appropriate are:
-#
-# ${parameter:-word}
-#   If parameter is unset or null, the expansion of word is substituted.
-#   Otherwise, the value of parameter is substituted. In other words, "word"
-#   acts as a default value when the value of "$parameter" is blank. If "word"
-#   is not present, then the default is blank (essentially an empty string).
-#
-# ${parameter:?word}
-#   If parameter is null or unset, the expansion of word (or a message to that
-#   effect if word is not present) is written to the standard error and the
-#   shell, if it is not interactive, exits. Otherwise, the value of parameter
-#   is substituted.
-#
-# Examples
-# ========
-#
-# Arrays:
-#
-#   ${some_array[@]:-}              # blank default value
-#   ${some_array[*]:-}              # blank default value
-#   ${some_array[0]:-}              # blank default value
-#   ${some_array[0]:-default_value} # default value: the string 'default_value'
-#
-# Positional variables:
-#
-#   ${1:-alternative} # default value: the string 'alternative'
-#   ${2:-}            # blank default value
-#
-# With an error message:
-#
-#   ${1:?'error message'}  # exit with 'error message' if variable is unbound
-#
-# Short form: set -u
-#set -o nounset
-
-# Exit immediately if a pipeline returns non-zero.
-#
-# NOTE: This can cause unexpected behavior. When using `read -rd ''` with a
-# heredoc, the exit status is non-zero, even though there isn't an error, and
-# this setting then causes the script to exit. `read -rd ''` is synonymous with
-# `read -d $'\0'`, which means `read` until it finds a `NUL` byte, but it
-# reaches the end of the heredoc without finding one and exits with status `1`.
-#
-# Two ways to `read` with heredocs and `set -e`:
-#
-# 1. set +e / set -e again:
-#
-#     set +e
-#     read -rd '' variable <<HEREDOC
-#     HEREDOC
-#     set -e
-#
-# 2. Use `<<HEREDOC || true:`
-#
-#     read -rd '' variable <<HEREDOC || true
-#     HEREDOC
-#
-# More information:
-#
-# https://www.mail-archive.com/bug-bash@gnu.org/msg12170.html
-#
-# Short form: set -e
-#set -o errexit
-
-# Print a helpful message if a pipeline with non-zero exit code causes the
-# script to exit as described above.
-#trap 'echo "Aborting due to errexit on line $LINENO. Exit code: $?" >&2' ERR
-
-# Allow the above trap be inherited by all functions in the script.
-#
-# Short form: set -E
-#set -o errtrace
-
 # Return value of a pipeline is the value of the last (rightmost) command to
 # exit with a non-zero status, or zero if all commands in the pipeline exit
 # successfully.
@@ -254,38 +139,6 @@ _warn() {
 # Utility Functions
 ###############################################################################
 
-# _function_exists()
-#
-# Usage:
-#   _function_exists <name>
-#
-# Exit / Error Status:
-#   0 (success, true) If function with <name> is defined in the current
-#                     environment.
-#   1 (error,  false) If not.
-#
-# Other implementations, some with better performance:
-# http://stackoverflow.com/q/85880
-_function_exists() {
-  [ "$(type -t "${1}")" == 'function' ]
-}
-
-# _command_exists()
-#
-# Usage:
-#   _command_exists <name>
-#
-# Exit / Error Status:
-#   0 (success, true) If a command with <name> is defined in the current
-#                     environment.
-#   1 (error,  false) If not.
-#
-# Information on why `hash` is used here:
-# http://stackoverflow.com/a/677212
-_command_exists() {
-  command hash "${1}" 2>/dev/null
-}
-
 # _contains()
 #
 # Usage:
@@ -347,18 +200,6 @@ _join() {
 #   1 (error,  false)  If <argument> is present and not null.
 _blank() {
   [[ -z "${1:-}" ]]
-}
-
-# _present()
-#
-# Usage:
-#   _present <argument>
-#
-# Exit / Error Status:
-#   0 (success, true)  If <argument> is present and not null.
-#   1 (error,  false)  If <argument> is not present or null.
-_present() {
-  [[ -n "${1:-}" ]]
 }
 
 # _interactive_input()
@@ -1948,31 +1789,24 @@ urls() {
 			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
 			mkdir --parents "$CACHE_DIR"
 			for I in $(ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f]); do
-				#if [[ $I == page-* ]]; then
-					#MD5=`echo "$I" | md5sum | awk '{ print $1 }'`
-					local CACHE_FILE="$CACHE_DIR$I"
-					local URL=$(grep "" "$CACHE_FILE" 2>/dev/null)
+				local CACHE_FILE="$CACHE_DIR$I"
+				local URL=$(grep "" "$CACHE_FILE" 2>/dev/null)
+				if [[ "$URL" != "" ]]; then
+					echo "$URL" | grep "$GREP"
+				else
+					URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
 					if [[ "$URL" != "" ]]; then
+						echo "$URL" > "$CACHE_FILE"
 						echo "$URL" | grep "$GREP"
 					else
-						URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
-						if [[ "$URL" != "" ]]; then
-							echo "$URL" > "$CACHE_FILE"
-							echo "$URL" | grep "$GREP"
-						else
-							>&2 echo "Error: $I not resolved"
-						fi
+						>&2 echo "Error: $I not resolved"
 					fi
-				#fi
+				fi
 			done
 			>&2 echo ""
 		fi
 		return
 	fi
-	#while read line
-	#do
-	#	echo "$line"
-	#done < "${1:-/dev/stdin}"
 	if [[ $FIL == *.json ]]; then
 		type -P jq &>/dev/null && ISINST=1 || ISINST=0
 		if [ $ISINST -eq 0 ]
