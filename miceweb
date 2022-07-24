@@ -676,48 +676,6 @@ _subcommands() {
   fi
 }
 
-# version #####################################################################
-
-describe "version" <<HEREDOC
-Usage:
-  ${_ME} version
-
-Description:
-  Display the current program version
-
-  To save you the trouble, the current version is ${_VERSION}
-HEREDOC
-version() {
-  printf "%s\\n" "${_VERSION}"
-}
-
-###############################################################################
-# Subcommands
-# ===========..................................................................
-#
-# Example subcommand group structure:
-#
-# describe example ""   - Optional. A short description for the subcommand.
-# example() { : }   - The subcommand called by the user.
-#
-#
-# describe example <<HEREDOC
-#   Usage:
-#     $_ME example
-#
-#   Description:
-#     Print "Hello, World!"
-#
-#     For usage formatting conventions see:
-#     - http://docopt.org/
-#     - http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html
-# HEREDOC
-# example() {
-#   printf "Hello, World!\\n"
-# }
-#
-###############################################################################
-
 # Example Section #############################################################
 
 # --------------------------------------------------------------------- example
@@ -768,6 +726,7 @@ _example() {
     printf "%s, World!\\n" "${_greeting}"
   fi
 }
+
 
 # --------------------------------------------------------------------- functions
 
@@ -1009,50 +968,127 @@ _hash() {
 	_hash_string "$(_url_but_fragment "$1")"
 }
 
-describe "hash" <<HEREDOC
-Usage:
-  ${_ME} hash <URL>
-
-Description:
-  Calculate SHA-1 hash for URL (but fragment)
-HEREDOC
-hash() {
+_versions() {
 	local URL="$1"
 	if [[ "$URL" == "" ]]; then
-		>&2 echo "This subcommand requires URL as a parameter"
+		>&2 echo "This sub command requires URL as a parameter"
 		return 1
 	fi
-	if ! _check_url "$URL"; then
-		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
-		return 1
+	local HASH=$(_hash "$URL")
+	if [[ "$HASH" != "" ]]; then
+		for I in $(ipfs files ls //MiceWeb/pages/$HASH 2>/dev/null | sed 's/^/'"$HASH"'\//')
+		do
+			if [[ $I != *.* ]]; then
+				echo $I
+			fi
+		done
 	fi
-	_hash "$URL"
-	return $?
 }
 
-describe "backup" <<HEREDOC
-Usage:
-  ${_ME} backup
+# https://stackoverflow.com/questions/4023830/how-to-compare-two-strings-in-dot-separated-version-format-in-bash
+_vercomp () {
+    if [[ $1 == $2 ]]
+    then
+        return 0
+    fi
+    local IFS=.
+    local i ver1=($1) ver2=($2)
+    # fill empty fields in ver1 with zeros
+    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+    do
+        ver1[i]=0
+    done
+    for ((i=0; i<${#ver1[@]}; i++))
+    do
+        if [[ -z ${ver2[i]} ]]
+        then
+            # fill empty fields in ver2 with zeros
+            ver2[i]=0
+        fi
+        if ((10#${ver1[i]} > 10#${ver2[i]}))
+        then
+            return 1
+        fi
+        if ((10#${ver1[i]} < 10#${ver2[i]}))
+        then
+            return 2
+        fi
+    done
+    return 0
+}
 
-Description:
-  Backup CID of the MiceWeb Library
-HEREDOC
-backup() {
-	mkdir --parents "$HOME/.miceweb"
-	local DT=$(export TZ=GMT ; date '+%Y-%m-%d GMT %H:%M:%S')
-	local CID="$(ipfs files stat --hash //MiceWeb)"
-	if [[ "$CID" != "" ]]; then
-		printf "%s\t%s\n" "$DT" "$CID" >> "$HOME/.miceweb/backup.txt"
-		if [ $? -eq 0 ]; then
-			>&2 echo "Added CID of /MiceWeb in MFS to ~/.miceweb/backup.txt"
-			echo $CID
-		else
-			echo $CID
-			_exit_1 printf "Can't backup CID to ~/.miceweb/backup.txt"
-		fi
-	else
-		_exit_1 printf "Can't obtain CID of the MiceWeb Library"
+_upgrade() {
+	local TESTHASH1=$(_hash "test")
+	if [[ "$TESTHASH1" != "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3" ]]; then
+		exit 1
 	fi
+	local VERTXT="/MiceWeb/attributes.txt"
+	local VER=$(ipfs files read /$VERTXT 2>/dev/null | sed -n 2p)
+	if [[ $VER == "" ]]; then
+		local TESTHASH2="$(echo -n "test" | ipfs add --only-hash --quieter --cid-version=0)"
+		if [[ "$TESTHASH2" != "QmRf22bZar3WKmojipms22PkXH1MZGmvsqzQtuSvQE3uhm" ]]; then
+			_exit_1 _print_with_hyperlink "Installed " "https://github.com/ipfs/go-ipfs" " is required for MiceWeb"
+		fi
+	fi
+	local APPVER="v.${_VERSION}"
+	if [[ $APPVER != $VER ]]; then
+		if [[ $VER == "" ]]; then
+			if ! ipfs files ls //MiceWeb &>/dev/null; then
+				ipfs files mkdir //MiceWeb 2>/dev/null
+				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "$APPVER" | ipfs add --quieter --pin=false)"
+				if ipfs files cp //ipfs/$VERTXTCID /$VERTXT; then
+					return 0
+				else
+					_exit_1 printf "Can't create the MiceWeb Library\n"
+				fi
+			fi
+			backup >/dev/null
+			ipfs files mkdir //MiceWeb/pages 2>/dev/null
+			local CID="$(ipfs files stat --hash //MiceWeb/pages/)"
+			if [[ "$CID" != "" ]]; then
+				for I in $(ipfs files ls //MiceWeb/pages/ | grep ^page-Qm); do
+					local URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
+					if [[ "$URL" != "" ]]; then
+						>&2 echo -n "Upgrading $URL..."
+						local HASH=$(_hash "$URL")
+						>&2 echo -n "."
+						if [[ "$HASH" != "" ]]; then
+							ipfs files mv //MiceWeb/pages/$I "//MiceWeb/pages/$HASH"
+						fi
+						>&2 echo "."
+					fi
+				done
+				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.2" | ipfs add --quieter --pin=false)"
+				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
+				if [ $? -eq 0 ]; then
+					>&2 echo "Upgraded the MiceWeb Library to v.0.2"
+					_upgrade
+					return $?
+				fi
+			fi
+			_exit_1 printf "Can't upgrade the MiceWeb Library\n"
+		else
+			_vercomp "${_VERSION}" "${VER#v.}"
+			if [ $? -eq 1 ]; then
+				# updating to v.0.3
+				backup >/dev/null
+				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.3" | ipfs add --quieter --pin=false)"
+				ipfs files rm /$VERTXT
+				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
+				if [ $? -eq 0 ]; then
+					>&2 echo "Upgraded the MiceWeb Library to v.0.3"
+					>&2 echo "It's recommended to run 'miceweb save urls --grep=#'"
+					save urls --grep="#"
+					>&2 echo ""
+					return 0
+				fi
+				_exit_1 printf "Can't upgrade the MiceWeb Library\n"
+			else
+				_exit_1 printf "MiceWeb $VER+ is required to work with the current MiceWeb Library\nThe current app version is $APPVER\nRun './update.sh' in the MiceWeb repository\n"
+			fi
+		fi
+	fi
+	return 0
 }
 
 _addToHistory() {
@@ -1069,177 +1105,6 @@ _reprovidingWarning() {
 		>&2 echo " to announce only pinned data, see also"
 		>&2 echo " https://github.com/ipfs/go-ipfs/blob/master/docs/config.md#reproviderstrategy"
 	fi
-}
-
-describe "save" <<HEREDOC
-Usage:
-  ${_ME} save <URL>
-  ${_ME} save url <SHA-1 hash>
-  ${_ME} save urls [--grep=<expression>] [<local file path>]
-
-Description:
-  Save web page snapshot(s)
-HEREDOC
-save() {
-	_upgrade
-	#TODO: --archives={default|none|last|set}, --tor={default|none|always}
-	if [[ "$1" == "urls" ]]; then
-		_reprovidingWarning
-		for I in $("$0" "$@" 2>/dev/null)
-		do
-			if _check_url "$I"; then
-				local VERSIONS_COUNT=$(_versions "$I" | grep -e "^.*-wget$" -e "^.*-ip.s$" | wc -l)
-				if [ "$VERSIONS_COUNT" -eq 0 ]; then
-					if ! _check_free_space_for_temp
-					then
-						>&2 echo "Free disk space for temporary files and run the command again"
-						return 1
-					fi
-					>&2 echo -n "Saving $I"
-					local rnumber=$((RANDOM%11+5))
-					for (( i = 1; i <= $rnumber; i++ )) ; do
-						sleep 1
-						>&2 echo -n "."
-					done
-					>&2 echo ""
-					save --no-warnings "$I"
-				fi
-			fi
-		done
-		#TODO: fix and implement something like >&2 echo "Run 'miceweb present $@' to view saved snapshots"
-		return 0
-	fi
-	local URL=""
-	if [[ "$1" == "url" ]]; then
-		if [[ "$2" != "" ]]; then
-			URL=$(url "$2")
-			if [[ "$URL" != "" ]]; then
-				save "$URL"
-				return $?
-			fi
-		else
-			url
-		fi
-		return 1
-	fi
-	local _arguments=()
-	local _warnings=1
-	local _val=
-	for __arg in "${@:-}"
-	do
-	case ${__arg} in
-	  --no-warnings)
-		_warnings=0
-		;;
-	  -*)
-		_exit_1 printf "Unexpected option: %s\\n" "${__arg}"
-		;;
-	  *)
-		if _blank "${_URL}"
-		then
-		  _val="${__arg}"
-		  URL="$_val"
-		else
-		  _arguments+=("${__arg}")
-		fi
-		;;
-	esac
-	done
-	if [[ "$URL" == "" ]]; then
-		>&2 echo "This subcommand requires URL as a parameter"
-		return 1
-	fi
-	if ! _check_url "$URL"; then
-		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
-		return 1
-	fi
-	_addToHistory "$URL"
-	type -P wget &>/dev/null && ISINST=1 || ISINST=0
-	if [ $ISINST -eq 0 ]
-	then
-		>&2 echo "Error: wget is not installed"
-		return 127
-	fi
-	if [ $_warnings -eq 1 ]; then
-		_reprovidingWarning
-	fi
-	local URL0=$(_url_but_fragment "$URL")
-	SAVE_HASH=$(_hash "$URL")
-	if [[ "$SAVE_HASH" != "" ]]; then
-		SAVE_MFS_ADDR="/MiceWeb/pages/$SAVE_HASH"
-		ipfs files ls /$SAVE_MFS_ADDR/URL.txt >/dev/null 2>/dev/null
-		if [ $? -ne 0 ]; then
-			ipfs files mkdir //MiceWeb 2>/dev/null
-			ipfs files mkdir //MiceWeb/pages 2>/dev/null
-			ipfs files mkdir /$SAVE_MFS_ADDR 2>/dev/null
-			local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | ipfs add --quieter --pin=false)"
-			ipfs files cp //ipfs/$URLTXTCID /$SAVE_MFS_ADDR/URL.txt
-		fi
-		if _check_free_space_for_temp
-		then
-			if [[ $URL == ipns://* ]]; then
-				_save_ipns "${URL#ipns://}"
-			elif [[ $URL == ipfs://* ]]; then
-				_save_ipfs "${URL#ipfs://}"
-			else
-				_save_wget $URL
-				if [ $? -ne 0 ]; then
-					_save_archived $URL
-				fi
-			fi
-			PARSEDPATH=$(_parse_path $URL)
-			if [[ $URL != *://* ]]; then
-				_save_ipns $URL
-			elif [[ $URL == http*://*.*/ipfs/* ]]; then
-				_save_ipfs "${PARSEDPATH#/ipfs/}"
-			elif [[ $URL == http*://*.*/ipns/* ]]; then
-				_save_ipns "${PARSEDPATH#/ipns/}"
-			fi
-			if [ $_warnings -eq 1 ]; then
-				>&2 echo "Run 'miceweb present \"$URL0\"' to view saved snapshots"
-			fi
-		else
-			>&2 echo "Error: insufficient disk space for temporary files"
-			return 1
-		fi
-	else
-		return 1
-	fi
-}
-
-describe "find" <<HEREDOC
-Usage:
-  ${_ME} find <URL>
-
-Description:
-  Find saved web pages in ~/Downloads (use SingleFile or SingleFileZ browser extension)
-HEREDOC
-find() {
-	>&2 _print_with_hyperlink "Install " "https://github.com/gildas-lormeau/SingleFile"
-	>&2 _print_with_hyperlink " or " "https://github.com/gildas-lormeau/SingleFileZ" " browser extension,"
-	>&2 echo " then set filename template to some value contains {url-href-digest-sha-1}"
-	>&2 echo "Downloads folder should be inside ~/Downloads (or just create a symlink)"
-	>&2 echo ""
-	local URL="$(_url_but_fragment "$1")"
-	if [[ "$URL" == "" ]]; then
-		>&2 echo "This subcommand requires URL as a parameter"
-		return 1
-	fi
-	if ! _check_url "$URL"; then
-		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
-		return 1
-	fi
-	local filename=$(basename "$URL")
-	command find -L ~/Downloads -name "$filename" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$URL\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
-	command find -L ~/Downloads -name "$filename.*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$URL\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
-	for J in $(_similar "$URL" 2>/dev/null); do
-		if [[ "$J" == http*://* ]]; then
-			local HASH=$(_hash "$J")
-			if [[ "$HASH" != "" ]]; then
-				command find -L ~/Downloads -name "*$HASH*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$J\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
-			fi
-		fi
-	done
 }
 
 _similar_concrete() {
@@ -1368,6 +1233,167 @@ _similar() {
 #	_similar "$1"
 #}
 
+
+
+###############################################################################
+# Subcommands
+# ===========..................................................................
+#
+# Example subcommand group structure:
+#
+# describe example ""   - Optional. A short description for the subcommand.
+# example() { : }   - The subcommand called by the user.
+#
+#
+# describe example <<HEREDOC
+#   Usage:
+#     $_ME example
+#
+#   Description:
+#     Print "Hello, World!"
+#
+#     For usage formatting conventions see:
+#     - http://docopt.org/
+#     - http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html
+# HEREDOC
+# example() {
+#   printf "Hello, World!\\n"
+# }
+#
+###############################################################################
+
+
+describe "backup" <<HEREDOC
+Usage:
+  ${_ME} backup
+
+Description:
+  Backup CID of the MiceWeb Library
+HEREDOC
+backup() {
+	mkdir --parents "$HOME/.miceweb"
+	local DT=$(export TZ=GMT ; date '+%Y-%m-%d GMT %H:%M:%S')
+	local CID="$(ipfs files stat --hash //MiceWeb)"
+	if [[ "$CID" != "" ]]; then
+		printf "%s\t%s\n" "$DT" "$CID" >> "$HOME/.miceweb/backup.txt"
+		if [ $? -eq 0 ]; then
+			>&2 echo "Added CID of /MiceWeb in MFS to ~/.miceweb/backup.txt"
+			echo $CID
+		else
+			echo $CID
+			_exit_1 printf "Can't backup CID to ~/.miceweb/backup.txt"
+		fi
+	else
+		_exit_1 printf "Can't obtain CID of the MiceWeb Library"
+	fi
+}
+
+describe "cleanup" <<HEREDOC
+Usage:
+  ${_ME} cleanup
+
+Description:
+  Cleanup service data
+HEREDOC
+cleanup() {
+	if [[ "$1" != "" ]]; then
+		>&2 echo "This subcommand doesn't require parameters"
+		return 1
+	fi
+	local MFS_PRESENTS_ADDR="/MiceWeb/presents"
+	local CID="$(ipfs files stat --hash /$MFS_PRESENTS_ADDR)"
+	if [[ "$CID" == "" ]]; then
+		>&2 echo "Failed to cleanup"
+		return 1
+	fi
+	if ipfs files rm -r /$MFS_PRESENTS_ADDR; then
+		>&2 echo "Removed the history of presents"
+		>&2 echo ""
+		>&2 echo "You can try to undo that right now by running"
+		>&2 echo " 'ipfs files cp /ipfs/$CID $MFS_PRESENTS_ADDR'"
+		return 0
+	else
+		>&2 echo "Failed to cleanup"
+		return 1
+	fi
+}
+
+describe "find" <<HEREDOC
+Usage:
+  ${_ME} find <URL>
+
+Description:
+  Find saved web pages in ~/Downloads (use SingleFile or SingleFileZ browser extension)
+HEREDOC
+find() {
+	>&2 _print_with_hyperlink "Install " "https://github.com/gildas-lormeau/SingleFile"
+	>&2 _print_with_hyperlink " or " "https://github.com/gildas-lormeau/SingleFileZ" " browser extension,"
+	>&2 echo " then set filename template to some value contains {url-href-digest-sha-1}"
+	>&2 echo "Downloads folder should be inside ~/Downloads (or just create a symlink)"
+	>&2 echo ""
+	local URL="$(_url_but_fragment "$1")"
+	if [[ "$URL" == "" ]]; then
+		>&2 echo "This subcommand requires URL as a parameter"
+		return 1
+	fi
+	if ! _check_url "$URL"; then
+		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
+		return 1
+	fi
+	local filename=$(basename "$URL")
+	command find -L ~/Downloads -name "$filename" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$URL\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
+	command find -L ~/Downloads -name "$filename.*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$URL\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
+	for J in $(_similar "$URL" 2>/dev/null); do
+		if [[ "$J" == http*://* ]]; then
+			local HASH=$(_hash "$J")
+			if [[ "$HASH" != "" ]]; then
+				command find -L ~/Downloads -name "*$HASH*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$J\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
+			fi
+		fi
+	done
+}
+
+describe "hash" <<HEREDOC
+Usage:
+  ${_ME} hash <URL>
+
+Description:
+  Calculate SHA-1 hash for URL (but fragment)
+HEREDOC
+hash() {
+	local URL="$1"
+	if [[ "$URL" == "" ]]; then
+		>&2 echo "This subcommand requires URL as a parameter"
+		return 1
+	fi
+	if ! _check_url "$URL"; then
+		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
+		return 1
+	fi
+	_hash "$URL"
+	return $?
+}
+
+describe "history" <<HEREDOC
+Usage:
+  ${_ME} history
+
+Description:
+  List URLs which were attempted to be saved or imported
+HEREDOC
+history() {
+	FN="$HOME/.miceweb/history.txt"
+	COUNT=$(cat $FN 2>/dev/null | wc -l)
+	if [ $COUNT -ne 0 ]; then
+		>&2 echo "There is a list of URLs which was attempted to be saved or imported:"
+		cat $FN
+		>&2 echo ""
+		>&2 echo "NumEntries: $COUNT"
+	else
+		>&2 echo "There are no URLs which was attempted to be saved or imported"
+	fi
+}
+
 describe "import" <<HEREDOC
 Usage:
   ${_ME} import <URL> <local/ipfs/ipns path>
@@ -1463,343 +1489,6 @@ import() {
 		fi
 	fi
 	return 1
-}
-
-describe "url" <<HEREDOC
-Usage:
-  ${_ME} url <SHA-1 hash>
-
-Description:
-  Return URL by SHA-1 hash
-HEREDOC
-url() {
-	_upgrade
-	if [[ "$1" == "" ]]; then
-		>&2 echo "This subcommand requires SHA-1 hash as a parameter"
-		return 1
-	fi
-	local CACHE_FILE="$HOME/.miceweb/cache/urls/$1"
-	local URL=$(grep "" "$CACHE_FILE" 2>/dev/null)
-	if [[ "$URL" != "" ]]; then
-		local HASH=$(_hash "$URL")
-		if [[ "$1" == "$HASH" ]]; then
-			echo "$URL"
-			return 0
-		fi
-	fi
-	URL=$(ipfs files read //MiceWeb/pages/$1/URL.txt | sed -n 2p)
-	if [[ "$URL" != "" ]]; then
-		local HASH=$(_hash "$URL")
-		if [[ "$1" == "$HASH" ]]; then
-			echo "$URL" > "$CACHE_FILE"
-			echo "$URL"
-			return 0
-		fi
-	fi
-	return 1
-}
-
-describe "urls" <<HEREDOC
-Usage:
-  ${_ME} save urls [--grep=<expression>] [<local file path>]
-
-Description:
-  List URLs from file (text or json or html) or from the MiceWeb Library
-HEREDOC
-urls() {
-	_upgrade
-	local FIL=""
-	local PARAM=""
-	local GREP=""
-	local BASE=""
-	for I in "$@"; do
-		if [[ $I == "--grep" ]]; then
-		  	PARAM="grep"
-		elif [[ $I == "--base" ]]; then
-		  	PARAM="base"
-		else
-			if [[ $PARAM == "grep" ]]; then
-				GREP=$I
-			elif [[ $PARAM == "base" ]]; then
-				BASE=$I
-			else
-				FIL=$I
-			fi
-			PARAM=""
-		fi
-	done
-	if [[ "$FIL" == "" ]]; then
-		>&2 echo "This subcommand requires file as a parameter:"
-		>&2 echo " txt - contain URLs in separate lines"
-		>&2 echo " json - contain URLs in the 'url' field"
-		>&2 echo " html - contain URLs in the 'href' attribute"
-		>&2 echo ""
-		local CID="$(ipfs files stat --hash //MiceWeb/pages/)"
-		if [[ "$CID" != "" ]]; then
-			>&2 echo "There are URLs already in the MiceWeb Library (see also 'miceweb history'):"
-			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
-			mkdir --parents "$CACHE_DIR"
-			for I in $(ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f]); do
-				#if [[ $I == page-* ]]; then
-					#MD5=`echo "$I" | md5sum | awk '{ print $1 }'`
-					local CACHE_FILE="$CACHE_DIR$I"
-					local URL=$(grep "" "$CACHE_FILE" 2>/dev/null)
-					if [[ "$URL" != "" ]]; then
-						echo "$URL" | grep "$GREP"
-					else
-						URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
-						if [[ "$URL" != "" ]]; then
-							echo "$URL" > "$CACHE_FILE"
-							echo "$URL" | grep "$GREP"
-						else
-							>&2 echo "Error: $I not resolved"
-						fi
-					fi
-				#fi
-			done
-			>&2 echo ""
-		fi
-		return
-	fi
-	#while read line
-	#do
-	#	echo "$line"
-	#done < "${1:-/dev/stdin}"
-	if [[ $FIL == *.json ]]; then
-		type -P jq &>/dev/null && ISINST=1 || ISINST=0
-		if [ $ISINST -eq 0 ]
-		then
-			>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
-			exit 127
-		fi
-		if [[ "$BASE" != "" ]]; then
-			>&2 echo "Attribute --base is only supported for html files"
-			exit 1
-		fi
-		cat $FIL | jq --raw-output '.. | .url? | strings' | grep "$GREP" | awk '!a[$0]++; fflush()'
-	elif [[ $FIL == *.htm* ]]; then
-		type -P htmlq &>/dev/null && ISINST=1 || ISINST=0
-		if [ $ISINST -eq 0 ]
-		then
-			>&2 _print_with_hyperlink "Error: htmlq is not installed (seeing " "https://github.com/mgdm/htmlq/" ")"
-			exit 127
-		fi
-		if [[ "$BASE" != "" ]]; then
-			cat $FIL | htmlq --base="$BASE" --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
-		else
-			cat $FIL | htmlq --detect-base --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
-		fi
-	else
-		if [[ "$BASE" != "" ]]; then
-			>&2 echo "Attribute --base is only supported for html files"
-			exit 1
-		fi
-		grep "$GREP" $FIL | awk '!a[$0]++; fflush()'
-	fi
-}
-
-describe "remove" <<HEREDOC
-Usage:
-  ${_ME} remove <URL>
-
-Description:
-  Remove all saved snapshots of web page by URL
-HEREDOC
-remove() {
-	_upgrade
-	local URL="$1"
-	if [[ "$URL" == "" ]]; then
-		>&2 echo "This subcommand requires URL as a parameter"
-		return 1
-	fi
-	local HASH=$(_hash "$URL")
-	if [[ "$HASH" != "" ]]; then
-		local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
-		if ipfs files ls /$MFS_PAGE_ADDR >/dev/null; then
-			local CID="$(ipfs files stat --hash /$MFS_PAGE_ADDR)"
-			if [[ "$CID" != "" ]]; then
-				local CACHE_DIR="$HOME/.miceweb/cache/urls/"
-				if [ -e "$CACHE_DIR$HASH" ]; then
-					rm "$CACHE_DIR$HASH"
-				fi
-				ipfs files rm -r /$MFS_PAGE_ADDR
-				if [ $? -eq 0 ]; then
-					>&2 echo "Removed $URL from the MiceWeb Library"
-					>&2 echo ""
-					>&2 echo "You can try to undo that right now by running"
-					>&2 echo " 'ipfs files cp /ipfs/$CID $MFS_PAGE_ADDR'"
-					>&2 echo ""
-					>&2 echo "Also, look into 'miceweb cleanup'"
-					return 0
-				fi
-			fi
-		fi
-	fi
-	return 1
-}
-
-describe "cleanup" <<HEREDOC
-Usage:
-  ${_ME} cleanup
-
-Description:
-  Cleanup service data
-HEREDOC
-cleanup() {
-	if [[ "$1" != "" ]]; then
-		>&2 echo "This subcommand doesn't require parameters"
-		return 1
-	fi
-	local MFS_PRESENTS_ADDR="/MiceWeb/presents"
-	local CID="$(ipfs files stat --hash /$MFS_PRESENTS_ADDR)"
-	if [[ "$CID" == "" ]]; then
-		>&2 echo "Failed to cleanup"
-		return 1
-	fi
-	if ipfs files rm -r /$MFS_PRESENTS_ADDR; then
-		>&2 echo "Removed the history of presents"
-		>&2 echo ""
-		>&2 echo "You can try to undo that right now by running"
-		>&2 echo " 'ipfs files cp /ipfs/$CID $MFS_PRESENTS_ADDR'"
-		return 0
-	else
-		>&2 echo "Failed to cleanup"
-		return 1
-	fi
-}
-
-#describe "versions" <<HEREDOC
-#Usage:
-#  ${_ME} versions <URL>
-#
-#Description:
-#  List saved versions of web page by URL
-#HEREDOC
-_versions() {
-	local URL="$1"
-	if [[ "$URL" == "" ]]; then
-		>&2 echo "This sub command requires URL as a parameter"
-		return 1
-	fi
-	local HASH=$(_hash "$URL")
-	if [[ "$HASH" != "" ]]; then
-		for I in $(ipfs files ls //MiceWeb/pages/$HASH 2>/dev/null | sed 's/^/'"$HASH"'\//')
-		do
-			if [[ $I != *.* ]]; then
-				echo $I
-			fi
-		done
-	fi
-}
-
-# https://stackoverflow.com/questions/4023830/how-to-compare-two-strings-in-dot-separated-version-format-in-bash
-_vercomp () {
-    if [[ $1 == $2 ]]
-    then
-        return 0
-    fi
-    local IFS=.
-    local i ver1=($1) ver2=($2)
-    # fill empty fields in ver1 with zeros
-    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
-    do
-        ver1[i]=0
-    done
-    for ((i=0; i<${#ver1[@]}; i++))
-    do
-        if [[ -z ${ver2[i]} ]]
-        then
-            # fill empty fields in ver2 with zeros
-            ver2[i]=0
-        fi
-        if ((10#${ver1[i]} > 10#${ver2[i]}))
-        then
-            return 1
-        fi
-        if ((10#${ver1[i]} < 10#${ver2[i]}))
-        then
-            return 2
-        fi
-    done
-    return 0
-}
-#vercomp() {
-#	_vercomp $@
-#	echo $?
-#}
-
-_upgrade() {
-	local TESTHASH1=$(_hash "test")
-	if [[ "$TESTHASH1" != "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3" ]]; then
-		exit 1
-	fi
-	local VERTXT="/MiceWeb/attributes.txt"
-	local VER=$(ipfs files read /$VERTXT 2>/dev/null | sed -n 2p)
-	if [[ $VER == "" ]]; then
-		local TESTHASH2="$(echo -n "test" | ipfs add --only-hash --quieter --cid-version=0)"
-		if [[ "$TESTHASH2" != "QmRf22bZar3WKmojipms22PkXH1MZGmvsqzQtuSvQE3uhm" ]]; then
-			_exit_1 _print_with_hyperlink "Installed " "https://github.com/ipfs/go-ipfs" " is required for MiceWeb"
-		fi
-	fi
-	local APPVER="v.${_VERSION}"
-	if [[ $APPVER != $VER ]]; then
-		if [[ $VER == "" ]]; then
-			if ! ipfs files ls //MiceWeb &>/dev/null; then
-				ipfs files mkdir //MiceWeb 2>/dev/null
-				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "$APPVER" | ipfs add --quieter --pin=false)"
-				if ipfs files cp //ipfs/$VERTXTCID /$VERTXT; then
-					return 0
-				else
-					_exit_1 printf "Can't create the MiceWeb Library\n"
-				fi
-			fi
-			backup >/dev/null
-			ipfs files mkdir //MiceWeb/pages 2>/dev/null
-			local CID="$(ipfs files stat --hash //MiceWeb/pages/)"
-			if [[ "$CID" != "" ]]; then
-				for I in $(ipfs files ls //MiceWeb/pages/ | grep ^page-Qm); do
-					local URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
-					if [[ "$URL" != "" ]]; then
-						>&2 echo -n "Upgrading $URL..."
-						local HASH=$(_hash "$URL")
-						>&2 echo -n "."
-						if [[ "$HASH" != "" ]]; then
-							ipfs files mv //MiceWeb/pages/$I "//MiceWeb/pages/$HASH"
-						fi
-						>&2 echo "."
-					fi
-				done
-				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.2" | ipfs add --quieter --pin=false)"
-				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
-				if [ $? -eq 0 ]; then
-					>&2 echo "Upgraded the MiceWeb Library to v.0.2"
-					_upgrade
-					return $?
-				fi
-			fi
-			_exit_1 printf "Can't upgrade the MiceWeb Library\n"
-		else
-			_vercomp "${_VERSION}" "${VER#v.}"
-			if [ $? -eq 1 ]; then
-				# updating to v.0.3
-				backup >/dev/null
-				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.3" | ipfs add --quieter --pin=false)"
-				ipfs files rm /$VERTXT
-				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
-				if [ $? -eq 0 ]; then
-					>&2 echo "Upgraded the MiceWeb Library to v.0.3"
-					>&2 echo "It's recommended to run 'miceweb save urls --grep=#'"
-					save urls --grep="#"
-					>&2 echo ""
-					return 0
-				fi
-				_exit_1 printf "Can't upgrade the MiceWeb Library\n"
-			else
-				_exit_1 printf "MiceWeb $VER+ is required to work with the current MiceWeb Library\nThe current app version is $APPVER\nRun './update.sh' in the MiceWeb repository\n"
-			fi
-		fi
-	fi
-	return 0
 }
 
 describe "present" <<HEREDOC
@@ -2008,25 +1697,328 @@ present() {
 	fi
 }
 
-describe "history" <<HEREDOC
+describe "save" <<HEREDOC
 Usage:
-  ${_ME} history
+  ${_ME} save <URL>
+  ${_ME} save url <SHA-1 hash>
+  ${_ME} save urls [--grep=<expression>] [<local file path>]
 
 Description:
-  List URLs which were attempted to be saved or imported
+  Save web page snapshot(s)
 HEREDOC
-history() {
-	FN="$HOME/.miceweb/history.txt"
-	COUNT=$(cat $FN 2>/dev/null | wc -l)
-	if [ $COUNT -ne 0 ]; then
-		>&2 echo "There is a list of URLs which was attempted to be saved or imported:"
-		cat $FN
-		>&2 echo ""
-		>&2 echo "NumEntries: $COUNT"
+save() {
+	_upgrade
+	#TODO: --archives={default|none|last|set}, --tor={default|none|always}
+	if [[ "$1" == "urls" ]]; then
+		_reprovidingWarning
+		for I in $("$0" "$@" 2>/dev/null)
+		do
+			if _check_url "$I"; then
+				local VERSIONS_COUNT=$(_versions "$I" | grep -e "^.*-wget$" -e "^.*-ip.s$" | wc -l)
+				if [ "$VERSIONS_COUNT" -eq 0 ]; then
+					if ! _check_free_space_for_temp
+					then
+						>&2 echo "Free disk space for temporary files and run the command again"
+						return 1
+					fi
+					>&2 echo -n "Saving $I"
+					local rnumber=$((RANDOM%11+5))
+					for (( i = 1; i <= $rnumber; i++ )) ; do
+						sleep 1
+						>&2 echo -n "."
+					done
+					>&2 echo ""
+					save --no-warnings "$I"
+				fi
+			fi
+		done
+		#TODO: fix and implement something like >&2 echo "Run 'miceweb present $@' to view saved snapshots"
+		return 0
+	fi
+	local URL=""
+	if [[ "$1" == "url" ]]; then
+		if [[ "$2" != "" ]]; then
+			URL=$(url "$2")
+			if [[ "$URL" != "" ]]; then
+				save "$URL"
+				return $?
+			fi
+		else
+			url
+		fi
+		return 1
+	fi
+	local _arguments=()
+	local _warnings=1
+	local _val=
+	for __arg in "${@:-}"
+	do
+	case ${__arg} in
+	  --no-warnings)
+		_warnings=0
+		;;
+	  -*)
+		_exit_1 printf "Unexpected option: %s\\n" "${__arg}"
+		;;
+	  *)
+		if _blank "${_URL}"
+		then
+		  _val="${__arg}"
+		  URL="$_val"
+		else
+		  _arguments+=("${__arg}")
+		fi
+		;;
+	esac
+	done
+	if [[ "$URL" == "" ]]; then
+		>&2 echo "This subcommand requires URL as a parameter"
+		return 1
+	fi
+	if ! _check_url "$URL"; then
+		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
+		return 1
+	fi
+	_addToHistory "$URL"
+	type -P wget &>/dev/null && ISINST=1 || ISINST=0
+	if [ $ISINST -eq 0 ]
+	then
+		>&2 echo "Error: wget is not installed"
+		return 127
+	fi
+	if [ $_warnings -eq 1 ]; then
+		_reprovidingWarning
+	fi
+	local URL0=$(_url_but_fragment "$URL")
+	SAVE_HASH=$(_hash "$URL")
+	if [[ "$SAVE_HASH" != "" ]]; then
+		SAVE_MFS_ADDR="/MiceWeb/pages/$SAVE_HASH"
+		ipfs files ls /$SAVE_MFS_ADDR/URL.txt >/dev/null 2>/dev/null
+		if [ $? -ne 0 ]; then
+			ipfs files mkdir //MiceWeb 2>/dev/null
+			ipfs files mkdir //MiceWeb/pages 2>/dev/null
+			ipfs files mkdir /$SAVE_MFS_ADDR 2>/dev/null
+			local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | ipfs add --quieter --pin=false)"
+			ipfs files cp //ipfs/$URLTXTCID /$SAVE_MFS_ADDR/URL.txt
+		fi
+		if _check_free_space_for_temp
+		then
+			if [[ $URL == ipns://* ]]; then
+				_save_ipns "${URL#ipns://}"
+			elif [[ $URL == ipfs://* ]]; then
+				_save_ipfs "${URL#ipfs://}"
+			else
+				_save_wget $URL
+				if [ $? -ne 0 ]; then
+					_save_archived $URL
+				fi
+			fi
+			PARSEDPATH=$(_parse_path $URL)
+			if [[ $URL != *://* ]]; then
+				_save_ipns $URL
+			elif [[ $URL == http*://*.*/ipfs/* ]]; then
+				_save_ipfs "${PARSEDPATH#/ipfs/}"
+			elif [[ $URL == http*://*.*/ipns/* ]]; then
+				_save_ipns "${PARSEDPATH#/ipns/}"
+			fi
+			if [ $_warnings -eq 1 ]; then
+				>&2 echo "Run 'miceweb present \"$URL0\"' to view saved snapshots"
+			fi
+		else
+			>&2 echo "Error: insufficient disk space for temporary files"
+			return 1
+		fi
 	else
-		>&2 echo "There are no URLs which was attempted to be saved or imported"
+		return 1
 	fi
 }
+
+describe "remove" <<HEREDOC
+Usage:
+  ${_ME} remove <URL>
+
+Description:
+  Remove all saved snapshots of web page by URL
+HEREDOC
+remove() {
+	_upgrade
+	local URL="$1"
+	if [[ "$URL" == "" ]]; then
+		>&2 echo "This subcommand requires URL as a parameter"
+		return 1
+	fi
+	local HASH=$(_hash "$URL")
+	if [[ "$HASH" != "" ]]; then
+		local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
+		if ipfs files ls /$MFS_PAGE_ADDR >/dev/null; then
+			local CID="$(ipfs files stat --hash /$MFS_PAGE_ADDR)"
+			if [[ "$CID" != "" ]]; then
+				local CACHE_DIR="$HOME/.miceweb/cache/urls/"
+				if [ -e "$CACHE_DIR$HASH" ]; then
+					rm "$CACHE_DIR$HASH"
+				fi
+				ipfs files rm -r /$MFS_PAGE_ADDR
+				if [ $? -eq 0 ]; then
+					>&2 echo "Removed $URL from the MiceWeb Library"
+					>&2 echo ""
+					>&2 echo "You can try to undo that right now by running"
+					>&2 echo " 'ipfs files cp /ipfs/$CID $MFS_PAGE_ADDR'"
+					>&2 echo ""
+					>&2 echo "Also, look into 'miceweb cleanup'"
+					return 0
+				fi
+			fi
+		fi
+	fi
+	return 1
+}
+
+describe "url" <<HEREDOC
+Usage:
+  ${_ME} url <SHA-1 hash>
+
+Description:
+  Return URL by SHA-1 hash
+HEREDOC
+url() {
+	_upgrade
+	if [[ "$1" == "" ]]; then
+		>&2 echo "This subcommand requires SHA-1 hash as a parameter"
+		return 1
+	fi
+	local CACHE_FILE="$HOME/.miceweb/cache/urls/$1"
+	local URL=$(grep "" "$CACHE_FILE" 2>/dev/null)
+	if [[ "$URL" != "" ]]; then
+		local HASH=$(_hash "$URL")
+		if [[ "$1" == "$HASH" ]]; then
+			echo "$URL"
+			return 0
+		fi
+	fi
+	URL=$(ipfs files read //MiceWeb/pages/$1/URL.txt | sed -n 2p)
+	if [[ "$URL" != "" ]]; then
+		local HASH=$(_hash "$URL")
+		if [[ "$1" == "$HASH" ]]; then
+			echo "$URL" > "$CACHE_FILE"
+			echo "$URL"
+			return 0
+		fi
+	fi
+	return 1
+}
+
+describe "urls" <<HEREDOC
+Usage:
+  ${_ME} save urls [--grep=<expression>] [<local file path>]
+
+Description:
+  List URLs from file (text or json or html) or from the MiceWeb Library
+HEREDOC
+urls() {
+	_upgrade
+	local FIL=""
+	local PARAM=""
+	local GREP=""
+	local BASE=""
+	for I in "$@"; do
+		if [[ $I == "--grep" ]]; then
+		  	PARAM="grep"
+		elif [[ $I == "--base" ]]; then
+		  	PARAM="base"
+		else
+			if [[ $PARAM == "grep" ]]; then
+				GREP=$I
+			elif [[ $PARAM == "base" ]]; then
+				BASE=$I
+			else
+				FIL=$I
+			fi
+			PARAM=""
+		fi
+	done
+	if [[ "$FIL" == "" ]]; then
+		>&2 echo "This subcommand requires file as a parameter:"
+		>&2 echo " txt - contain URLs in separate lines"
+		>&2 echo " json - contain URLs in the 'url' field"
+		>&2 echo " html - contain URLs in the 'href' attribute"
+		>&2 echo ""
+		local CID="$(ipfs files stat --hash //MiceWeb/pages/)"
+		if [[ "$CID" != "" ]]; then
+			>&2 echo "There are URLs already in the MiceWeb Library (see also 'miceweb history'):"
+			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
+			mkdir --parents "$CACHE_DIR"
+			for I in $(ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f]); do
+				#if [[ $I == page-* ]]; then
+					#MD5=`echo "$I" | md5sum | awk '{ print $1 }'`
+					local CACHE_FILE="$CACHE_DIR$I"
+					local URL=$(grep "" "$CACHE_FILE" 2>/dev/null)
+					if [[ "$URL" != "" ]]; then
+						echo "$URL" | grep "$GREP"
+					else
+						URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
+						if [[ "$URL" != "" ]]; then
+							echo "$URL" > "$CACHE_FILE"
+							echo "$URL" | grep "$GREP"
+						else
+							>&2 echo "Error: $I not resolved"
+						fi
+					fi
+				#fi
+			done
+			>&2 echo ""
+		fi
+		return
+	fi
+	#while read line
+	#do
+	#	echo "$line"
+	#done < "${1:-/dev/stdin}"
+	if [[ $FIL == *.json ]]; then
+		type -P jq &>/dev/null && ISINST=1 || ISINST=0
+		if [ $ISINST -eq 0 ]
+		then
+			>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
+			exit 127
+		fi
+		if [[ "$BASE" != "" ]]; then
+			>&2 echo "Attribute --base is only supported for html files"
+			exit 1
+		fi
+		cat $FIL | jq --raw-output '.. | .url? | strings' | grep "$GREP" | awk '!a[$0]++; fflush()'
+	elif [[ $FIL == *.htm* ]]; then
+		type -P htmlq &>/dev/null && ISINST=1 || ISINST=0
+		if [ $ISINST -eq 0 ]
+		then
+			>&2 _print_with_hyperlink "Error: htmlq is not installed (seeing " "https://github.com/mgdm/htmlq/" ")"
+			exit 127
+		fi
+		if [[ "$BASE" != "" ]]; then
+			cat $FIL | htmlq --base="$BASE" --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
+		else
+			cat $FIL | htmlq --detect-base --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
+		fi
+	else
+		if [[ "$BASE" != "" ]]; then
+			>&2 echo "Attribute --base is only supported for html files"
+			exit 1
+		fi
+		grep "$GREP" $FIL | awk '!a[$0]++; fflush()'
+	fi
+}
+
+describe "version" <<HEREDOC
+Usage:
+  ${_ME} version
+
+Description:
+  Display the current program version
+
+  To save you the trouble, the current version is ${_VERSION}
+HEREDOC
+version() {
+  printf "%s\\n" "${_VERSION}"
+}
+
 
 ###############################################################################
 # Run Program
