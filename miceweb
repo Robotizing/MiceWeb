@@ -457,118 +457,6 @@ _main() {
   fi
 }
 
-###############################################################################
-# Default Subcommands
-###############################################################################
-
-# help ########################################################################
-
-describe "help" <<HEREDOC
-Usage:
-  ${_ME} help [<subcommand>]
-
-Description:
-  Display help information for ${_ME} or a specified subcommand.
-HEREDOC
-help() {
-  if [[ "${1:-}" ]]
-  then
-    describe --get "${1}"
-  else
-    cat <<HEREDOC
-  __  __   _                 __        __        _     
- |  \/  | (_)   ___    ___   \ \      / /  ___  | |__  
- | |\/| | | |  / __|  / _ \   \ \ /\ / /  / _ \ | '_ \ 
- | |  | | | | | (__  |  __/    \ V  V /  |  __/ | |_) |
- |_|  |_| |_|  \___|  \___|     \_/\_/    \___| |_.__/ 
-
-Version: ${_VERSION}
-
-Usage:
-  ${_ME} <subcommand> [--subcommand-options] [<arguments>]
-
-Help:
-  ${_ME} help [<subcommand>]
-
-$(_subcommands --)
-HEREDOC
-  fi
-}
-
-# subcommands #################################################################
-
-describe "subcommands" <<HEREDOC
-Usage:
-  ${_ME} subcommands [--raw]
-
-Options:
-  --raw  Display the subcommand list without formatting.
-
-Description:
-  Display the list of available subcommands.
-HEREDOC
-_subcommands() {
-  if [[ "${1:-}" == "--raw" ]]
-  then
-    printf "%s\\n" "${_DEFINED_SUBCOMMANDS[@]}"
-  else
-    printf "Available subcommands:\\n"
-    printf "  %s\\n" "${_DEFINED_SUBCOMMANDS[@]}"
-  fi
-}
-
-# Example Section #############################################################
-
-# --------------------------------------------------------------------- example
-
-describe "example" <<HEREDOC
-Usage:
-  ${_ME} example [<name>] [--farewell]
-
-Options:
-  --farewell  Print "Goodbye, World!"
-
-Description:
-  Print "Hello, World!"
-HEREDOC
-_example() {
-  local _arguments=()
-  local _greeting="Hello"
-  local _name=
-
-  for __arg in "${@:-}"
-  do
-    case ${__arg} in
-      --farewell)
-        _greeting="Goodbye"
-        ;;
-      -*)
-        _exit_1 printf "Unexpected option: %s\\n" "${__arg}"
-        ;;
-      *)
-        if _blank "${_name}"
-        then
-          _name="${__arg}"
-        else
-          _arguments+=("${__arg}")
-        fi
-        ;;
-    esac
-  done
-
-
-  if [[ "${_name}" == "Moon" ]]
-  then
-    printf "%s, Luna!\\n" "${_greeting}"
-  elif [[ -n "${_name}" ]]
-  then
-    printf "%s, %s!\\n" "${_greeting}" "${_name}"
-  else
-    printf "%s, World!\\n" "${_greeting}"
-  fi
-}
-
-
 # --------------------------------------------------------------------- functions
 
 # https://www.rfc-editor.org/rfc/rfc3986#appendix-B
@@ -824,6 +712,16 @@ _versions() {
 			fi
 		done
 	fi
+}
+
+_subcommands() {
+  if [[ "${1:-}" == "--raw" ]]
+  then
+    printf "%s\\n" "${_DEFINED_SUBCOMMANDS[@]}"
+  else
+    printf "Available subcommands:\\n"
+    printf "  %s\\n" "${_DEFINED_SUBCOMMANDS[@]}"
+  fi
 }
 
 # https://stackoverflow.com/questions/4023830/how-to-compare-two-strings-in-dot-separated-version-format-in-bash
@@ -1104,6 +1002,8 @@ _similar() {
 ###############################################################################
 
 
+# backup ######################################################################
+
 describe "backup" <<HEREDOC
 Usage:
   ${_ME} backup
@@ -1128,6 +1028,8 @@ backup() {
 		_exit_1 printf "Can't obtain CID of the MiceWeb Library"
 	fi
 }
+
+# cleanup #####################################################################
 
 describe "cleanup" <<HEREDOC
 Usage:
@@ -1158,6 +1060,8 @@ cleanup() {
 		return 1
 	fi
 }
+
+# find ########################################################################
 
 describe "find" <<HEREDOC
 Usage:
@@ -1194,6 +1098,8 @@ find() {
 	done
 }
 
+# hash ########################################################################
+
 describe "hash" <<HEREDOC
 Usage:
   ${_ME} hash <URL>
@@ -1215,6 +1121,42 @@ hash() {
 	return $?
 }
 
+# help ########################################################################
+
+describe "help" <<HEREDOC
+Usage:
+  ${_ME} help [<subcommand>]
+
+Description:
+  Display help information for ${_ME} or a specified subcommand
+HEREDOC
+help() {
+  if [[ "${1:-}" ]]
+  then
+    describe --get "${1}"
+  else
+    cat <<HEREDOC
+  __  __   _                 __        __        _     
+ |  \/  | (_)   ___    ___   \ \      / /  ___  | |__  
+ | |\/| | | |  / __|  / _ \   \ \ /\ / /  / _ \ | '_ \ 
+ | |  | | | | | (__  |  __/    \ V  V /  |  __/ | |_) |
+ |_|  |_| |_|  \___|  \___|     \_/\_/    \___| |_.__/ 
+
+Version: ${_VERSION}
+
+Usage:
+  ${_ME} <subcommand> [--subcommand-options] [<arguments>]
+
+Help:
+  ${_ME} help [<subcommand>]
+
+$(_subcommands --)
+HEREDOC
+  fi
+}
+
+# history #####################################################################
+
 describe "history" <<HEREDOC
 Usage:
   ${_ME} history
@@ -1234,6 +1176,8 @@ history() {
 		>&2 echo "There are no URLs which was attempted to be saved or imported"
 	fi
 }
+
+# import ######################################################################
 
 describe "import" <<HEREDOC
 Usage:
@@ -1331,6 +1275,8 @@ import() {
 	fi
 	return 1
 }
+
+# present #####################################################################
 
 describe "present" <<HEREDOC
 Usage:
@@ -1538,6 +1484,8 @@ present() {
 	fi
 }
 
+# save ########################################################################
+
 describe "save" <<HEREDOC
 Usage:
   ${_ME} save <URL>
@@ -1674,6 +1622,21 @@ save() {
 	fi
 }
 
+# subcommands #################################################################
+
+describe "subcommands" <<HEREDOC
+Usage:
+  ${_ME} subcommands
+
+Description:
+  Display the list of available subcommands
+HEREDOC
+subcommands() {
+	_subcommands --raw $1
+}
+
+# remove ######################################################################
+
 describe "remove" <<HEREDOC
 Usage:
   ${_ME} remove <URL>
@@ -1714,6 +1677,8 @@ remove() {
 	return 1
 }
 
+# url #########################################################################
+
 describe "url" <<HEREDOC
 Usage:
   ${_ME} url <SHA-1 hash>
@@ -1747,6 +1712,8 @@ url() {
 	fi
 	return 1
 }
+
+# urls ########################################################################
 
 describe "urls" <<HEREDOC
 Usage:
@@ -1839,6 +1806,8 @@ urls() {
 		grep "$GREP" $FIL | awk '!a[$0]++; fflush()'
 	fi
 }
+
+# version #####################################################################
 
 describe "version" <<HEREDOC
 Usage:
