@@ -599,8 +599,7 @@ _reprovidingWarning() {
 	local REPROVIDING=$(ipfs config Reprovider.Strategy)
 	if [[ "$REPROVIDING" == "all" ]]; then
 		>&2 echo "Warning: the reprovider announces all IPFS data including the MiceWeb Library,"
-		>&2 echo " run 'ipfs config Reprovider.Strategy pinned'"
-		>&2 echo " to announce only pinned data, see also"
+		>&2 echo " consider to run 'ipfs config Reprovider.Strategy pinned', seeing"
 		>&2 echo " https://github.com/ipfs/go-ipfs/blob/master/docs/config.md#reproviderstrategy"
 	fi
 }
@@ -975,7 +974,7 @@ _wget() {
 		wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=5 --user-agent="$USERAGENT" $options --append-output=$MYTMPFILE "$URL"
 	else
 		if _command_exists torsocks; then
-			torsocks --isolate wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=1 --user-agent="$USERAGENT" --append-output=$MYTMPFILE "$URL"
+			torsocks --isolate wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=1 --user-agent="$USERAGENT" --append-output=$MYTMPFILE "$URL" 2>/dev/null
 		fi
 	fi
 	local WGETERR=$?
