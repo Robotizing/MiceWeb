@@ -26,6 +26,7 @@
 # Depends on:
 #  https://docs.ipfs.io/install/command-line/
 #  https://www.gnu.org/software/wget/
+#  https://curl.se/
 #  https://stedolan.github.io/jq/download/
 #  https://github.com/mgdm/htmlq/
 #  https://github.com/ImportTaste/wayback-machine-downloader
@@ -631,6 +632,35 @@ _save_archived() {
 		fi
 	done
 	return $RET
+}
+_save_curl() {
+	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	local SUBDIR="$DT-curl"
+	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	if [ $? -ne 0 ]; then
+		local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
+		local CID=$(curl -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter)
+		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
+			ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+			if [ $? -eq 0 ]; then
+				echo "$SAVE_HASH/$SUBDIR"
+				return 0
+			fi
+		else
+			CID=$(torsocks --isolate curl -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter)
+			if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
+				ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+				if [ $? -eq 0 ]; then
+					echo "$SAVE_HASH/$SUBDIR"
+					return 0
+				fi
+			fi
+		fi
+		return 1
+	else
+		>&2 echo "$SUBDIR exists"
+		return 0
+	fi
 }
 _save_ipfs() {
 	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
@@ -1625,6 +1655,7 @@ save() {
 				_save_wget $URL
 				if [ $? -ne 0 ]; then
 					_save_archived $URL
+					_save_curl $URL
 				fi
 			fi
 			PARSEDPATH=$(_parse_path $URL)
