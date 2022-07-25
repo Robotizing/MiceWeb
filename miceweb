@@ -1336,7 +1336,7 @@ import() {
 describe "present" <<HEREDOC
 Usage:
   ${_ME} present <URL>
-  ${_ME} present url <SHA-1 hash>
+  ${_ME} present <SHA-1 hash>
   ${_ME} present urls [--grep=<expression>] [<local/ipfs/ipns file path>]
   ${_ME} present
 
@@ -1406,19 +1406,11 @@ present() {
 		#TODO: fix and implement something like >&2 echo "Run 'miceweb save ${@@Q}'"
 		return 1
 	fi
-	if [[ "$1" == "url" ]]; then
-		if [[ "$2" != "" ]]; then
-			URL=$(url "$2")
-			if [[ "$URL" != "" ]]; then
-				present "$URL"
-				if [ $? -eq 0 ]; then
-					return 0
-				#else
-					#>&2 echo "Run 'miceweb save ""$URL""'"
-				fi
-			fi
-		else
-			url
+	if [[ "$1"  =~ ^[0-9a-f]{40}$ ]]; then
+		URL=$(url "$1")
+		if [[ "$URL" != "" ]]; then
+			present "$URL"
+			return $?
 		fi
 		return 1
 	fi
@@ -1544,7 +1536,7 @@ present() {
 describe "save" <<HEREDOC
 Usage:
   ${_ME} save <URL>
-  ${_ME} save url <SHA-1 hash>
+  ${_ME} save <SHA-1>
   ${_ME} save urls [--grep=<expression>] [<local/ipfs/ipns file path>]
 
 Description:
@@ -1580,15 +1572,11 @@ save() {
 		return 0
 	fi
 	local URL=""
-	if [[ "$1" == "url" ]]; then
-		if [[ "$2" != "" ]]; then
-			URL=$(url "$2")
-			if [[ "$URL" != "" ]]; then
-				save "$URL"
-				return $?
-			fi
-		else
-			url
+	if [[ "$1"  =~ ^[0-9a-f]{40}$ ]]; then
+		URL=$(url "$1")
+		if [[ "$URL" != "" ]]; then
+			save "$URL"
+			return $?
 		fi
 		return 1
 	fi
