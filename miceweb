@@ -139,6 +139,22 @@ _warn() {
 # Utility Functions
 ###############################################################################
 
+# _command_exists()
+#
+# Usage:
+#   _command_exists <name>
+#
+# Exit / Error Status:
+#   0 (success, true) If a command with <name> is defined in the current
+#                     environment.
+#   1 (error,  false) If not.
+#
+# Information on why `hash` is used here:
+# http://stackoverflow.com/a/677212
+_command_exists() {
+  command hash "${1}" 2>/dev/null
+}
+
 # _contains()
 #
 # Usage:
@@ -626,7 +642,7 @@ _save_ipfs() {
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local GATEWAY=$(ipfs config Addresses.Gateway)
-			# TODO: use ipfs.io when gateway is not available (output a warning) or --tor=always
+			# TODO: use ipfs.io when gateway is not available (output a warning)
 			if [ $? -eq 0 ]; then
 				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$1" --cut-dirs=1
 				return $?
@@ -647,7 +663,7 @@ _save_ipns() {
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local GATEWAY=$(ipfs config Addresses.Gateway)
-			# TODO: use ipfs.io when gateway is not available (output a warning) or --tor=always
+			# TODO: use ipfs.io when gateway is not available (output a warning)
 			if [ $? -eq 0 ]; then
 				_wget "http://127.0.0.1:${GATEWAY##*/}/ipns/$1" --cut-dirs=1 "Resolved /ipns/$DOMAIN to $ADDR"
 				return $?
@@ -665,6 +681,9 @@ _save_wget() {
 	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		_wget $1
+		if [ $? -ne 0 ]; then
+			_wget $1 --torsocks
+		fi
 		return $?
 	else
 		>&2 echo "$SUBDIR exists"
@@ -951,7 +970,14 @@ _wget() {
 	local RAND="$(_random_value)"
 	echo "Log $RAND" > $MYTMPFILE
 	echo "$comment" >> $MYTMPFILE
-	wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=6 --user-agent="Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0" $options --append-output=$MYTMPFILE "$URL"
+	local USERAGENT="Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0"
+	if [ "$options" != "--torsocks" ]; then
+		wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=5 --user-agent="$USERAGENT" $options --append-output=$MYTMPFILE "$URL"
+	else
+		if _command_exists torsocks; then
+			torsocks --isolate wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=1 --user-agent="$USERAGENT" --append-output=$MYTMPFILE "$URL"
+		fi
+	fi
 	local WGETERR=$?
 	local RET=1
 	if [[ $WGETERR -eq 0 || $WGETERR -eq 8 ]] && [ $(ls -A "$MYTMPDIR" | wc -l) -ne 0 ]; then
@@ -964,7 +990,9 @@ _wget() {
 			RET=0
 		fi
 	else
-		>&2 echo "Error: wget can't download $1 (err. $WGETERR)"
+		if [ "$options" != "--torsocks" ]; then
+			>&2 echo "Error: wget can't download $1 (err. $WGETERR)"
+		fi
 	fi
 	cd ..
 	rm -r $MYTMPDIR
@@ -1346,7 +1374,7 @@ present() {
 			present
 			return $?
 		fi
-		>&2 echo "Run 'miceweb save ${@@Q}'"
+		#TODO: fix and implement something like >&2 echo "Run 'miceweb save ${@@Q}'"
 		return 1
 	fi
 	if [[ "$1" == "url" ]]; then
@@ -1495,7 +1523,7 @@ Description:
 HEREDOC
 save() {
 	_upgrade
-	#TODO: --archives={default|none|last|set}, --tor={default|none|always}
+	#TODO: --archives={default|none|last|set}
 	if [[ "$1" == "urls" ]]; then
 		_reprovidingWarning
 		for I in $("$0" "$@" 2>/dev/null)
@@ -1601,9 +1629,7 @@ save() {
 				fi
 			fi
 			PARSEDPATH=$(_parse_path $URL)
-			if [[ $URL != *://* ]]; then
-				_save_ipns $URL
-			elif [[ $URL == http*://*.*/ipfs/* ]]; then
+			if [[ $URL == http*://*.*/ipfs/* ]]; then
 				_save_ipfs "${PARSEDPATH#/ipfs/}"
 			elif [[ $URL == http*://*.*/ipns/* ]]; then
 				_save_ipns "${PARSEDPATH#/ipns/}"
