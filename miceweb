@@ -1337,7 +1337,7 @@ describe "present" <<HEREDOC
 Usage:
   ${_ME} present <URL>
   ${_ME} present url <SHA-1 hash>
-  ${_ME} present urls [--grep=<expression>] [<local file path>]
+  ${_ME} present urls [--grep=<expression>] [<local/ipfs/ipns file path>]
   ${_ME} present
 
 Description:
@@ -1354,7 +1354,7 @@ present() {
 			ipfs files mkdir /$MFS_PRESENT_ADDR 2>/dev/null
 			local COUNT=0
 			local HASH=""
-			for I in $("$0" "$@" 2>/dev/null)
+			for I in $("$0" "$@")
 			do
 				HASH=$(_hash "$I")
 				ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH 2>/dev/null
@@ -1545,7 +1545,7 @@ describe "save" <<HEREDOC
 Usage:
   ${_ME} save <URL>
   ${_ME} save url <SHA-1 hash>
-  ${_ME} save urls [--grep=<expression>] [<local file path>]
+  ${_ME} save urls [--grep=<expression>] [<local/ipfs/ipns file path>]
 
 Description:
   Save web page snapshot(s)
@@ -1555,7 +1555,7 @@ save() {
 	#TODO: --archives={default|none|last|set}
 	if [[ "$1" == "urls" ]]; then
 		_reprovidingWarning
-		for I in $("$0" "$@" 2>/dev/null)
+		for I in $("$0" "$@")
 		do
 			if _check_url "$I"; then
 				local VERSIONS_COUNT=$(_versions "$I" | grep -e "^.*-wget$" -e "^.*-ip.s$" | wc -l)
@@ -1771,7 +1771,7 @@ url() {
 
 describe "urls" <<HEREDOC
 Usage:
-  ${_ME} save urls [--grep=<expression>] [<local file path>]
+  ${_ME} save urls [--grep=<expression>] [<local/ipfs/ipns file path>]
 
 Description:
   List URLs from file (text or json or html) or from the MiceWeb Library
@@ -1799,7 +1799,7 @@ urls() {
 		fi
 	done
 	if [[ "$FIL" == "" ]]; then
-		>&2 echo "This subcommand requires file as a parameter:"
+		>&2 echo "This subcommand requires file path as a parameter:"
 		>&2 echo " txt - contain URLs in separate lines"
 		>&2 echo " json - contain URLs in the 'url' field"
 		>&2 echo " html - contain URLs in the 'href' attribute"
@@ -1827,6 +1827,9 @@ urls() {
 			>&2 echo ""
 		fi
 		return
+	fi
+	if [[ "$FIL" == /ipfs/* || "$FIL" == /ipns/* ]]; then
+		>&2 echo "Warning: to use ipfs file paths in this subcommand, run 'ipfs mount'"
 	fi
 	if [[ $FIL == *.json ]]; then
 		type -P jq &>/dev/null && ISINST=1 || ISINST=0
