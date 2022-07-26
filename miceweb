@@ -1291,21 +1291,28 @@ history() {
 
 describe "import" <<HEREDOC
 Usage:
-  ${_ME} import <URL> <local/ipfs/ipns path>
+  ${_ME} import <URL> <local/ipfs/ipns path> [<comment>]
+  ${_ME} import <SHA-1> <local/ipfs/ipns path> [<comment>]
 
 Description:
   Import web page snapshot from file or directory
 HEREDOC
 import() {
 	_upgrade
-	URL="$1"
-	IMPPATH="$2"
-	COMMENT="$3"
+	local URL="$1"
+	local IMPPATH="$2"
+	local COMMENT="$3"
 	if [[ "$URL" == "" || "$IMPPATH" == "" ]]; then
-		>&2 echo "This command requires URL as a first parameter"
+		>&2 echo "This command requires URL or SHA-1 as a first parameter"
 		>&2 echo " and local/ipfs/ipns path as a second parameter,"
 		>&2 echo " some comment can be specified as a third parameter"
 		return 1
+	fi
+	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
+		URL=$(url "$1")
+		if [[ "$URL" == "" ]]; then
+			return 1
+		fi
 	fi
 	if ! _check_url "$URL"; then
 		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
@@ -1313,9 +1320,9 @@ import() {
 	fi
 	_addToHistory "$URL"
 	_reprovidingWarning
-	HASH=$(_hash "$URL")
+	local HASH=$(_hash "$URL")
 	if [[ "$HASH" != "" ]]; then
-		MFS_ADDR="/MiceWeb/pages/$HASH"
+		local MFS_ADDR="/MiceWeb/pages/$HASH"
 		ipfs files ls /$MFS_ADDR/URL.txt >/dev/null 2>/dev/null
 		if [ $? -ne 0 ]; then
 			ipfs files mkdir //MiceWeb 2>/dev/null
