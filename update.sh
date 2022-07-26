@@ -5,7 +5,7 @@
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 miceweb backup >/dev/null
-OLDVER="$(miceweb version)"
+OLDVER="$(miceweb version 2>/dev/null)"
 cd "$INSTALL_DIR"
 git pull
 RET=$?
