@@ -472,6 +472,7 @@ _main() {
   else
     _exit_1 printf "Unknown subcommand: %s\\n" "${_SUBCOMMAND}"
   fi
+  >&2 printf "\n"
 }
 
 # --------------------------------------------------------------------- functions
@@ -594,6 +595,29 @@ _random_value() {
 		echo -n "${chars:RANDOM%${#chars}:1}"
 	done
 	echo
+}
+
+_remove_dir() {
+	local DIRPATH="$1"
+	local CID="$(ipfs files stat --hash /$DIRPATH)"
+	if [[ "$CID" != "" ]]; then
+		if ipfs files rm -r /$DIRPATH &>/dev/null; then
+			echo "Removed $DIRPATH, you can try to undo that right now by running 'ipfs files cp /ipfs/$CID $DIRPATH'"
+			return 0
+		fi
+	fi
+	return 1
+}
+_remove_file() {
+	local FILEPATH="$1"
+	local CID="$(ipfs files stat --hash /$FILEPATH)"
+	if [[ "$CID" != "" ]]; then
+		if ipfs files rm /$FILEPATH &>/dev/null; then
+			echo "Removed $FILEPATH, you can try to undo that right now by running 'ipfs files cp /ipfs/$CID $FILEPATH'"
+			return 0
+		fi
+	fi
+	return 1
 }
 
 _reprovidingWarning() {
@@ -975,10 +999,10 @@ _vercomp () {
 _versions() {
 	local URL="$1"
 	if [[ "$URL" == "" ]]; then
-		>&2 echo "This sub command requires URL as a parameter"
+		#>&2 echo "This sub command requires URL as a parameter"
 		return 1
 	fi
-	local HASH=$(_hash "$URL")
+	local HASH=$(_hash_string "$URL")
 	if [[ "$HASH" != "" ]]; then
 		for I in $(ipfs files ls //MiceWeb/pages/$HASH 2>/dev/null | sed 's/^/'"$HASH"'\//')
 		do
@@ -1331,20 +1355,46 @@ import() {
 	return 1
 }
 
+# log #########################################################################
+
+describe "log" <<HEREDOC
+Usage:
+  ${_ME} log <snapshot>
+
+Description:
+  Print log of specified snapshot
+HEREDOC
+log() {
+	_upgrade
+	local SNAP="$1"
+	if [[ "$SNAP"  =~ ^[0-9a-f]{40}/[0-9] ]]; then
+		if [[ "$SNAP" != *.* ]]; then
+			ipfs files read /MiceWeb/pages/$SNAP.log
+			return $?
+		fi
+	fi
+	>&2 echo "This subcommand requires snapshot as a parameter"
+	return 1
+}
+
 # present #####################################################################
 
 describe "present" <<HEREDOC
 Usage:
   ${_ME} present <URL>
-  ${_ME} present <SHA-1 hash>
+  ${_ME} present <SHA-1>
   ${_ME} present urls [--grep=<expression>] [<local/ipfs/ipns file path>]
   ${_ME} present
 
 Description:
-  Present saved versions of web page(s) by URL(s)
+  Present saved versions of web page (including similar) by URL
+  Present saved versions of web pages by URLs from file
+  Present saved versions of web pages in the MiceWeb Library
 HEREDOC
 present() {
 	_upgrade
+	local REPROVIDING=$(ipfs config Reprovider.Strategy)
+	local GATEWAY=$(ipfs config Addresses.Gateway)
 	if [[ "$1" == "urls" ]]; then
 		if [[ "$2" != "" ]]; then
 			ipfs files mkdir //MiceWeb 2>/dev/null
@@ -1354,7 +1404,7 @@ present() {
 			ipfs files mkdir /$MFS_PRESENT_ADDR 2>/dev/null
 			local COUNT=0
 			local HASH=""
-			for I in $("$0" "$@")
+			for I in $("$0" "$@" 2>/dev/null)
 			do
 				HASH=$(_hash "$I")
 				ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH 2>/dev/null
@@ -1380,23 +1430,22 @@ present() {
 			done
 			local CID="$(ipfs files stat --hash /$MFS_PRESENT_ADDR)"
 			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
-				local GATEWAY=$(ipfs config Addresses.Gateway)
-				if [ $? -eq 0 ]; then
-					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine"
+				echo "/ipfs/$CID"
+				if [ "$GATEWAY" != "" ]; then
 					>&2 echo ""
+					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine"
 				fi
 				if [[ "$REPROVIDING" != "all" ]]; then
+					>&2 echo ""
 					>&2 echo "If you need to publish or view from an other machine,"
 					>&2 echo " run 'ipfs pin add $CID'"
 					if [[ "$REPROVIDING" == "roots" ]]; then
 						>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
 					fi
-					>&2 echo ""
 				fi
-				echo "/ipfs/$CID"
 				local STAT=$", NumURLs: $COUNT"
+				>&2 echo ""
 				ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
-				#TODO: rename *-importing to *-import
 				return 0
 			fi
 		else
@@ -1406,11 +1455,30 @@ present() {
 		#TODO: fix and implement something like >&2 echo "Run 'miceweb save ${@@Q}'"
 		return 1
 	fi
-	if [[ "$1"  =~ ^[0-9a-f]{40}$ ]]; then
-		URL=$(url "$1")
-		if [[ "$URL" != "" ]]; then
-			present "$URL"
-			return $?
+	
+	if [[ "$1"  =~ ^[0-9a-f]{40}/[0-9] ]]; then
+		local SNAP="$1"
+		if [[ "$SNAP" != *.* ]]; then
+			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
+			local CID="$(ipfs files stat --hash /$MFS_SNAP_ADDR)"
+			if [ "$CID" != "" ]; then
+				echo "/ipfs/$CID"
+				if [ "$GATEWAY" != "" ]; then
+					>&2 echo ""
+					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine"
+				fi
+				if [[ "$REPROVIDING" != "all" ]]; then
+					>&2 echo ""
+					>&2 echo "If you need to publish or view from an other machine,"
+					>&2 echo " run 'ipfs pin add $CID'"
+					if [[ "$REPROVIDING" == "roots" ]]; then
+						>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+					fi
+				fi
+				>&2 echo ""
+				ipfs dag stat $CID
+				return 0
+			fi
 		fi
 		return 1
 	fi
@@ -1420,13 +1488,22 @@ present() {
 	local CID0=""
 	local CID=""
 	local CNT=0
+	
+	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
+		URL=$(url "$1")
+		if [[ "$URL" == "" ]]; then
+			return 1
+		fi
+	fi
+	
 	local URL0="$(_url_but_fragment "$URL")"
 	local SIMURL="$URL0"
+	local SIMURLs=()
 	
 	if [[ "$URL" != "" ]]; then
 		HASH=$(_hash "$URL" 2>/dev/null)
 	fi
-
+	
 	if [[ "$HASH" != "" ]]; then
 		local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
 		ipfs files ls /$MFS_PAGE_ADDR/URL.txt >/dev/null 2>/dev/null
@@ -1453,13 +1530,16 @@ present() {
 			if ipfs files cp //MiceWeb/pages/$SIMHASH /$MFS_PRESENT_ADDR/$SIMHASH 2>/dev/null; then
 				if [[ "$I" != "$URL0" ]]; then
 					SIMURL="$I"
+					SIMURLs+=("$I")
+					((CNT++))
 				fi
-				((CNT++))
+				
 			fi
 		done
 		if _has_url_fragment "$URL"; then
 			local SIMHASH=$(_hash_string "$URL")
 			if ipfs files cp //MiceWeb/pages/$SIMHASH /$MFS_PRESENT_ADDR/$SIMHASH 2>/dev/null; then
+				SIMURLs+=("$URL")
 				((CNT++))
 			fi
 		fi
@@ -1472,42 +1552,33 @@ present() {
 	fi
 	
 	if [[ "$CID" != "" ]]; then
-		local GATEWAY=$(ipfs config Addresses.Gateway)
-		if [ $? -eq 0 ]; then
-			local PAYATT=""
-			# "might be"... yeah, AI wants to rest too
-			if [ $CNT -gt 2 ]; then
-				PAYATT=" (also, there might be snapshots for similar URLs)"
-			elif [ $CNT -gt 1 ]; then
-				if [[ "$SIMURL" != "$URL0" ]]; then
-					PAYATT=" (also, there might be snapshots for $SIMURL)"
-				else
-					PAYATT=" (also, there might be snapshots for a similar URL)"
-				fi
+		echo "/ipfs/$CID"
+		if [ "$1" != "" ]; then
+			if [ "$GATEWAY" != "" ]; then
+				>&2 echo ""
+				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine to view $URL0 snapshots"
 			fi
-			>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine$PAYATT"
-			>&2 echo ""
-		fi
-		local REPROVIDING=$(ipfs config Reprovider.Strategy)
-		if [[ "$1" != "" ]]; then
 			if [[ "$REPROVIDING" != "all" ]]; then
+				>&2 echo ""
 				>&2 echo "If you need to publish or view from an other machine,"
 				>&2 echo " run 'ipfs pin add $CID0'"
 				if [[ "$REPROVIDING" == "roots" ]]; then
 					>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
 				fi
-				>&2 echo ""
 			fi
 		else
+			>&2 echo ""
 			>&2 echo "There is a content identifier of current pages of all the MiceWeb Library"
 			>&2 echo "It's not recommended to share it because security and other reasons,"
 			>&2 echo " however, if you need it, pin $CID0"
 			if [[ "$REPROVIDING" == "roots" ]]; then
 				>&2 echo " and run 'ipfs config Reprovider.Strategy pinned'"
 			fi
-			>&2 echo ""
+			if [ "$GATEWAY" != "" ]; then
+				>&2 echo ""
+				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine to view snapshots"
+			fi
 		fi
-		echo "/ipfs/$CID"
 		local STAT=""
 		local COUNT=0
 		if [[ $HASH != */* ]]; then
@@ -1523,8 +1594,23 @@ present() {
 				STAT=$", NumVersions: $COUNT"
 			fi
 		fi
-		#TODO: rename *-importing to *-import
+		>&2 echo ""
 		ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
+		if [ "$HASH" != "" ]; then
+			local PAYATT=""
+			if [ $CNT -gt 2 ]; then
+				PAYATT="There are similar URLs found in the MiceWeb Library:"
+			elif [ $CNT -gt 1 ]; then
+				PAYATT="There is a similar URL found in the MiceWeb Library:"
+			fi
+			if [ "$PAYATT" != "" ]; then
+				>&2 echo ""
+				>&2 echo $PAYATT
+				for I in "${SIMURLs[@]}"; do
+					>&2 echo "$I"
+				done
+			fi
+		fi
 	else
 		>&2 echo "Run 'miceweb save ${@@Q}'"
 		exit 1
@@ -1547,10 +1633,10 @@ save() {
 	#TODO: --archives={default|none|last|set}
 	if [[ "$1" == "urls" ]]; then
 		_reprovidingWarning
-		for I in $("$0" "$@")
+		for I in $("$0" "$@" 2>/dev/null)
 		do
 			if _check_url "$I"; then
-				local VERSIONS_COUNT=$(_versions "$I" | grep -e "^.*-wget$" -e "^.*-ip.s$" | wc -l)
+				local VERSIONS_COUNT=$(_versions "$(_url_but_fragment $I)" | grep -e "^.*-wget$" -e "^.*-ip.s$" | wc -l)
 				if [ "$VERSIONS_COUNT" -eq 0 ]; then
 					if ! _check_free_space_for_temp
 					then
@@ -1572,14 +1658,6 @@ save() {
 		return 0
 	fi
 	local URL=""
-	if [[ "$1"  =~ ^[0-9a-f]{40}$ ]]; then
-		URL=$(url "$1")
-		if [[ "$URL" != "" ]]; then
-			save "$URL"
-			return $?
-		fi
-		return 1
-	fi
 	local _arguments=()
 	local _warnings=1
 	local _val=
@@ -1604,8 +1682,14 @@ save() {
 	esac
 	done
 	if [[ "$URL" == "" ]]; then
-		>&2 echo "This subcommand requires URL as a parameter"
+		>&2 echo "This subcommand requires URL or SHA-1 as a parameter"
 		return 1
+	fi
+	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
+		URL=$(url "$URL")
+		if [[ "$URL" == "" ]]; then
+			return 1
+		fi
 	fi
 	if ! _check_url "$URL"; then
 		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
@@ -1664,6 +1748,37 @@ save() {
 	fi
 }
 
+# snapshots ###################################################################
+
+describe "snapshots" <<HEREDOC
+Usage:
+  ${_ME} snapshots <URL>
+  ${_ME} snapshots <SHA-1>
+
+Description:
+  List saved versions of web pages (including similar) by URL
+HEREDOC
+snapshots() {
+	if [[ "$1" == "" ]]; then
+		>&2 echo "This subcommand requires URL or SHA-1 as a parameter"
+		return 1
+	fi
+	local URL="$1"
+	if [[ "$1"  =~ ^[0-9a-f]{40}$ ]]; then
+		URL=$(url "$1")
+		if [[ "$URL" == "" ]]; then
+			return 1
+		fi
+	fi
+	for I in $(_similar "$URL" 2>/dev/null)
+	do
+		_versions "$I"
+	done
+	if _has_url_fragment "$URL"; then
+		_versions "$URL"
+	fi
+}
+
 # subcommands #################################################################
 
 describe "subcommands" <<HEREDOC
@@ -1681,41 +1796,29 @@ subcommands() {
 
 describe "remove" <<HEREDOC
 Usage:
-  ${_ME} remove <URL>
+  ${_ME} remove <snapshot>
 
 Description:
-  Remove all saved snapshots of web page by URL
+  Remove specified snapshot
 HEREDOC
 remove() {
 	_upgrade
-	local URL="$1"
-	if [[ "$URL" == "" ]]; then
-		>&2 echo "This subcommand requires URL as a parameter"
-		return 1
-	fi
-	local HASH=$(_hash "$URL")
-	if [[ "$HASH" != "" ]]; then
-		local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
-		if ipfs files ls /$MFS_PAGE_ADDR >/dev/null; then
-			local CID="$(ipfs files stat --hash /$MFS_PAGE_ADDR)"
-			if [[ "$CID" != "" ]]; then
-				local CACHE_DIR="$HOME/.miceweb/cache/urls/"
-				if [ -e "$CACHE_DIR$HASH" ]; then
-					rm "$CACHE_DIR$HASH"
+	local SNAP="$1"
+	if [[ "$SNAP"  =~ ^[0-9a-f]{40}/[0-9] ]]; then
+		if [[ "$SNAP" != *.* ]]; then
+			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
+			if ipfs files ls /$MFS_SNAP_ADDR >/dev/null; then
+				if ! _remove_file $MFS_SNAP_ADDR; then
+					_remove_dir $MFS_SNAP_ADDR
 				fi
-				ipfs files rm -r /$MFS_PAGE_ADDR
 				if [ $? -eq 0 ]; then
-					>&2 echo "Removed $URL from the MiceWeb Library"
-					>&2 echo ""
-					>&2 echo "You can try to undo that right now by running"
-					>&2 echo " 'ipfs files cp /ipfs/$CID $MFS_PAGE_ADDR'"
-					>&2 echo ""
-					>&2 echo "Also, look into 'miceweb cleanup'"
-					return 0
+					_remove_file "$MFS_SNAP_ADDR.log"
 				fi
 			fi
+			return 0
 		fi
 	fi
+	>&2 echo "This subcommand requires snapshot as a parameter"
 	return 1
 }
 
@@ -1723,7 +1826,7 @@ remove() {
 
 describe "url" <<HEREDOC
 Usage:
-  ${_ME} url <SHA-1 hash>
+  ${_ME} url <SHA-1>
 
 Description:
   Return URL by SHA-1 hash
@@ -1812,7 +1915,6 @@ urls() {
 					fi
 				fi
 			done
-			>&2 echo ""
 		fi
 		return
 	fi
