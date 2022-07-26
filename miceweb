@@ -470,7 +470,7 @@ _main() {
     # Pass all comment arguments to the program except for the first ($0).
     ${_SUBCOMMAND} "${_SUBCOMMAND_ARGUMENTS[@]:-}"
   else
-    _exit_1 printf "Unknown subcommand: %s\\n" "${_SUBCOMMAND}"
+    _exit_1 printf "Unknown command: %s\\n" "${_SUBCOMMAND}"
   fi
   >&2 printf "\n"
 }
@@ -875,7 +875,7 @@ _subcommands() {
   then
     printf "%s\\n" "${_DEFINED_SUBCOMMANDS[@]}"
   else
-    printf "Available subcommands:\\n"
+    printf "Available commands:\\n"
     printf "  %s\\n" "${_DEFINED_SUBCOMMANDS[@]}"
   fi
 }
@@ -1119,7 +1119,7 @@ Description:
 HEREDOC
 cleanup() {
 	if [[ "$1" != "" ]]; then
-		>&2 echo "This subcommand doesn't require parameters"
+		>&2 echo "This command doesn't require parameters"
 		return 1
 	fi
 	local MFS_PRESENTS_ADDR="/MiceWeb/presents"
@@ -1157,7 +1157,7 @@ find() {
 	>&2 echo ""
 	local URL="$(_url_but_fragment "$1")"
 	if [[ "$URL" == "" ]]; then
-		>&2 echo "This subcommand requires URL as a parameter"
+		>&2 echo "This command requires URL as a parameter"
 		return 1
 	fi
 	if ! _check_url "$URL"; then
@@ -1189,7 +1189,7 @@ HEREDOC
 hash() {
 	local URL="$1"
 	if [[ "$URL" == "" ]]; then
-		>&2 echo "This subcommand requires URL as a parameter"
+		>&2 echo "This command requires URL as a parameter"
 		return 1
 	fi
 	if ! _check_url "$URL"; then
@@ -1204,10 +1204,10 @@ hash() {
 
 describe "help" <<HEREDOC
 Usage:
-  ${_ME} help [<subcommand>]
+  ${_ME} help [<command>]
 
 Description:
-  Display help information for ${_ME} or a specified subcommand
+  Display help information for ${_ME} or a specified command
 HEREDOC
 help() {
   if [[ "${1:-}" ]]
@@ -1224,10 +1224,10 @@ help() {
 Version: ${_VERSION}
 
 Usage:
-  ${_ME} <subcommand> [--subcommand-options] [<arguments>]
+  ${_ME} <command> [--command-options] [<arguments>]
 
 Help:
-  ${_ME} help [<subcommand>]
+  ${_ME} help [<command>]
 
 $(_subcommands --)
 HEREDOC
@@ -1271,7 +1271,7 @@ import() {
 	IMPPATH="$2"
 	COMMENT="$3"
 	if [[ "$URL" == "" || "$IMPPATH" == "" ]]; then
-		>&2 echo "This subcommand requires URL as a first parameter"
+		>&2 echo "This command requires URL as a first parameter"
 		>&2 echo " and local/ipfs/ipns path as a second parameter,"
 		>&2 echo " some comment can be specified as a third parameter"
 		return 1
@@ -1373,7 +1373,7 @@ log() {
 			return $?
 		fi
 	fi
-	>&2 echo "This subcommand requires snapshot as a parameter"
+	>&2 echo "This command requires snapshot as a parameter"
 	return 1
 }
 
@@ -1682,7 +1682,7 @@ save() {
 	esac
 	done
 	if [[ "$URL" == "" ]]; then
-		>&2 echo "This subcommand requires URL or SHA-1 as a parameter"
+		>&2 echo "This command requires URL or SHA-1 as a parameter"
 		return 1
 	fi
 	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
@@ -1760,7 +1760,7 @@ Description:
 HEREDOC
 snapshots() {
 	if [[ "$1" == "" ]]; then
-		>&2 echo "This subcommand requires URL or SHA-1 as a parameter"
+		>&2 echo "This command requires URL or SHA-1 as a parameter"
 		return 1
 	fi
 	local URL="$1"
@@ -1779,17 +1779,37 @@ snapshots() {
 	fi
 }
 
-# subcommands #################################################################
+# commands ####################################################################
 
-describe "subcommands" <<HEREDOC
+describe "commands" <<HEREDOC
 Usage:
-  ${_ME} subcommands
+  ${_ME} commands
 
 Description:
-  Display the list of available subcommands
+  Display the list of available commands
 HEREDOC
-subcommands() {
-	_subcommands --raw $1
+commands() {
+	echo "miceweb"
+	#_subcommands --raw $1 | awk -v PREFIX="miceweb " '{print PREFIX $0}'
+	echo "miceweb backup
+miceweb cleanup
+miceweb commands
+miceweb discuss
+miceweb find
+miceweb hash
+miceweb help
+miceweb history
+miceweb import
+miceweb log
+miceweb present
+miceweb present urls
+miceweb remove
+miceweb save
+miceweb save urls
+miceweb snapshots
+miceweb url
+miceweb urls
+miceweb version"
 }
 
 # remove ######################################################################
@@ -1818,7 +1838,7 @@ remove() {
 			return 0
 		fi
 	fi
-	>&2 echo "This subcommand requires snapshot as a parameter"
+	>&2 echo "This command requires snapshot as a parameter"
 	return 1
 }
 
@@ -1834,7 +1854,7 @@ HEREDOC
 url() {
 	_upgrade
 	if [[ "$1" == "" ]]; then
-		>&2 echo "This subcommand requires SHA-1 hash as a parameter"
+		>&2 echo "This command requires SHA-1 hash as a parameter"
 		return 1
 	fi
 	local CACHE_FILE="$HOME/.miceweb/cache/urls/$1"
@@ -1890,7 +1910,7 @@ urls() {
 		fi
 	done
 	if [[ "$FIL" == "" ]]; then
-		>&2 echo "This subcommand requires file path as a parameter:"
+		>&2 echo "This command requires file path as a parameter:"
 		>&2 echo " txt - contain URLs in separate lines"
 		>&2 echo " json - contain URLs in the 'url' field"
 		>&2 echo " html - contain URLs in the 'href' attribute"
@@ -1919,7 +1939,7 @@ urls() {
 		return
 	fi
 	if [[ "$FIL" == /ipfs/* || "$FIL" == /ipns/* ]]; then
-		>&2 echo "Warning: to use ipfs file paths in this subcommand, run 'ipfs mount'"
+		>&2 echo "Warning: to use ipfs file paths in this command, run 'ipfs mount'"
 	fi
 	if [[ $FIL == *.json ]]; then
 		type -P jq &>/dev/null && ISINST=1 || ISINST=0
