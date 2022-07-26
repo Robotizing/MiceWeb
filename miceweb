@@ -1367,7 +1367,7 @@ HEREDOC
 log() {
 	_upgrade
 	local SNAP="$1"
-	if [[ "$SNAP"  =~ ^[0-9a-f]{40}/[0-9] ]]; then
+	if [[ "$SNAP"  =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		if [[ "$SNAP" != *.* ]]; then
 			ipfs files read /MiceWeb/pages/$SNAP.log
 			return $?
@@ -1456,7 +1456,7 @@ present() {
 		return 1
 	fi
 	
-	if [[ "$1"  =~ ^[0-9a-f]{40}/[0-9] ]]; then
+	if [[ "$1"  =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		local SNAP="$1"
 		if [[ "$SNAP" != *.* ]]; then
 			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
@@ -1764,7 +1764,7 @@ snapshots() {
 		return 1
 	fi
 	local URL="$1"
-	if [[ "$1"  =~ ^[0-9a-f]{40}$ ]]; then
+	if [[ "$1" =~ ^[0-9a-f]{40}$ ]]; then
 		URL=$(url "$1")
 		if [[ "$URL" == "" ]]; then
 			return 1
@@ -1824,7 +1824,7 @@ HEREDOC
 remove() {
 	_upgrade
 	local SNAP="$1"
-	if [[ "$SNAP"  =~ ^[0-9a-f]{40}/[0-9] ]]; then
+	if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		if [[ "$SNAP" != *.* ]]; then
 			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
 			if ipfs files ls /$MFS_SNAP_ADDR >/dev/null; then
@@ -1834,8 +1834,9 @@ remove() {
 				if [ $? -eq 0 ]; then
 					_remove_file "$MFS_SNAP_ADDR.log"
 				fi
+				return 0
 			fi
-			return 0
+			return 1
 		fi
 	fi
 	>&2 echo "This command requires snapshot as a parameter"
@@ -1853,7 +1854,7 @@ Description:
 HEREDOC
 url() {
 	_upgrade
-	if [[ "$1" == "" ]]; then
+	if [[ ! "$1" =~ ^[0-9a-f]{40}$ ]]; then
 		>&2 echo "This command requires SHA-1 hash as a parameter"
 		return 1
 	fi
