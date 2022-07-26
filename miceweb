@@ -1166,6 +1166,7 @@ discuss() {
 describe "find" <<HEREDOC
 Usage:
   ${_ME} find <URL>
+  ${_ME} find <SHA-1>
 
 Description:
   Find saved web pages in ~/Downloads (use SingleFile or SingleFileZ browser extension)
@@ -1178,8 +1179,14 @@ find() {
 	>&2 echo ""
 	local URL="$(_url_but_fragment "$1")"
 	if [[ "$URL" == "" ]]; then
-		>&2 echo "This command requires URL as a parameter"
+		>&2 echo "This command requires URL or SHA-1 as a parameter"
 		return 1
+	fi
+	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
+		URL=$(url "$1")
+		if [[ "$URL" == "" ]]; then
+			return 1
+		fi
 	fi
 	if ! _check_url "$URL"; then
 		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
