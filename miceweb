@@ -485,6 +485,21 @@ _addToHistory() {
 	printf "%s\t%s\n" "$DT" "$1" >> "$HOME/.miceweb/history.txt"
 }
 
+_cat_file() {
+	local FIL="$1"
+	local GREP="$2"
+	local ADDR=""
+	if [[ "$FIL" == /ipns/* ]]; then
+		ADDR=$(ipfs name resolve --recursive=true --timeout=60s "${FIL#/ipns/}")
+		ipfs cat "${ADDR#/ipfs/}" | grep "$GREP"
+	elif [[ "$FIL" == /ipfs/* ]]; then
+		ADDR="$FIL"
+		ipfs cat "${ADDR#/ipfs/}" | grep "$GREP"
+	else
+		grep "$GREP" "$FIL"
+	fi
+}
+
 _check_free_space_for_temp() {
 	if [ $(_free_space $(dirname $(mktemp -u 2>/dev/null || mktemp -u -t 'mytmpdir'))) -gt 102400 ]; then
 		return 0
@@ -1012,12 +1027,6 @@ _versions() {
 				echo $I
 			fi
 		done
-	fi
-}
-
-_warn_about_ipfs_paths() {
-	if [[ "$1" == /ipfs/* || "$1" == /ipns/* ]]; then
-		>&2 echo "Warning: to use ipfs file paths in this command, run 'ipfs mount'"
 	fi
 }
 
@@ -1990,7 +1999,6 @@ urls() {
 		fi
 		return
 	fi
-	_warn_about_ipfs_paths $FIL
 	if [[ $FIL == *.json ]]; then
 		type -P jq &>/dev/null && ISINST=1 || ISINST=0
 		if [ $ISINST -eq 0 ]
@@ -2002,7 +2010,7 @@ urls() {
 			>&2 echo "Attribute --base is only supported for html files"
 			exit 1
 		fi
-		cat $FIL | jq --raw-output '.. | .url? | strings' | grep "$GREP" | awk '!a[$0]++; fflush()'
+		_cat_file "$FIL" | jq --raw-output '.. | .url? | strings' | grep "$GREP" | awk '!a[$0]++; fflush()'
 	elif [[ $FIL == *.htm* ]]; then
 		type -P htmlq &>/dev/null && ISINST=1 || ISINST=0
 		if [ $ISINST -eq 0 ]
@@ -2011,16 +2019,16 @@ urls() {
 			exit 127
 		fi
 		if [[ "$BASE" != "" ]]; then
-			cat $FIL | htmlq --base="$BASE" --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
+			_cat_file "$FIL" | htmlq --base="$BASE" --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
 		else
-			cat $FIL | htmlq --detect-base --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
+			_cat_file "$FIL" | htmlq --detect-base --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
 		fi
 	else
 		if [[ "$BASE" != "" ]]; then
 			>&2 echo "Attribute --base is only supported for html files"
 			exit 1
 		fi
-		grep "$GREP" $FIL | awk '!a[$0]++; fflush()'
+		_cat_file "$FIL" "$GREP" | awk '!a[$0]++; fflush()'
 	fi
 }
 
