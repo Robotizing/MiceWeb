@@ -63,6 +63,8 @@ _ME="$(basename "${0}")"
 # semantic versioning specification: http://semver.org
 _VERSION="0.3"
 
+_SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
+
 # $DEFAULT_SUBCOMMAND
 #
 # The subcommand to be run by default, when no subcommand name is specified.
@@ -1140,6 +1142,25 @@ cleanup() {
 	fi
 }
 
+# discuss #####################################################################
+
+describe "discuss" <<HEREDOC
+Usage:
+  ${_ME} discuss
+
+Description:
+  Welcome to the MiceWeb Threads in ZeroNet
+HEREDOC
+discuss() {
+	if ! wget "http://127.0.0.1:43110/1HeLLo4uzjaLetFx6NH3PMwFP3qbRbTf3D/uimedia/all.css?rev=1270494604" --timeout=1 --output-document=- &>/dev/null; then
+		>&2 echo "Run a local ZeroNet node,"
+		>&2 _print_with_hyperlink " seeing " "https://github.com/ZeroNetX/ZeroNet#user-content-how-to-join"
+		>&2 _print_with_hyperlink " or " "https://github.com/zeronet-conservancy/zeronet-conservancy#how-to-join"
+		>&2 echo ""
+	fi
+	_print_with_hyperlink "" "http://127.0.0.1:43110/$_SITE_ADDRESS/?Main"
+}
+
 # find ########################################################################
 
 describe "find" <<HEREDOC
@@ -1230,6 +1251,9 @@ Help:
   ${_ME} help [<command>]
 
 $(_subcommands --)
+
+Invintation:
+  Run 'miceweb discuss' to find answers together
 HEREDOC
   fi
 }
