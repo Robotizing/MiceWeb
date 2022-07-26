@@ -17,10 +17,12 @@ for binpath in $binpaths; do
     if cp "$bin" "$binpath/miceweb" ; then
 	echo "Copied $bin to $binpath"
 	echo "Run 'miceweb' in the terminal"
+	echo ""
 	exit 0
     else
 	if [ -e "$binpath" ]; then
 	    echo "Check '$binpath/miceweb', move it to other place and run '$0' again"
+	    echo ""
 	    exit 1
 	fi
 	if [ -d "$binpath" -a ! -w "$binpath" ]; then
