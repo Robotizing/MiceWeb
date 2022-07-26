@@ -1015,6 +1015,12 @@ _versions() {
 	fi
 }
 
+_warn_about_ipfs_paths() {
+	if [[ "$1" == /ipfs/* || "$1" == /ipns/* ]]; then
+		>&2 echo "Warning: to use ipfs file paths in this command, run 'ipfs mount'"
+	fi
+}
+
 _wget() {
 	local URL="$1"
 	local options="$2"
@@ -1093,6 +1099,10 @@ Description:
   Backup CID of the MiceWeb Library
 HEREDOC
 backup() {
+	if [[ "$1" != "" ]]; then
+		>&2 echo "This command doesn't require parameters"
+		return 1
+	fi
 	mkdir --parents "$HOME/.miceweb"
 	local DT=$(export TZ=GMT ; date '+%Y-%m-%d GMT %H:%M:%S')
 	local CID="$(ipfs files stat --hash //MiceWeb)"
@@ -1232,7 +1242,8 @@ hash() {
 
 describe "help" <<HEREDOC
 Usage:
-  ${_ME} help [<command>]
+  ${_ME} help
+  ${_ME} help <command>
 
 Description:
   Display help information for ${_ME} or a specified command
@@ -1419,12 +1430,14 @@ log() {
 
 describe "present" <<HEREDOC
 Usage:
+  ${_ME} present <snapshot>
   ${_ME} present <URL>
   ${_ME} present <SHA-1>
   ${_ME} present urls [--grep=<expression>] [<local/ipfs/ipns file path>]
   ${_ME} present
 
 Description:
+  Present saved version
   Present saved versions of web page (including similar) by URL
   Present saved versions of web pages by URLs from file
   Present saved versions of web pages in the MiceWeb Library
@@ -1921,7 +1934,7 @@ url() {
 
 describe "urls" <<HEREDOC
 Usage:
-  ${_ME} save urls [--grep=<expression>] [<local/ipfs/ipns file path>]
+  ${_ME} urls [--grep=<expression>] [<local/ipfs/ipns file path>]
 
 Description:
   List URLs from file (text or json or html) or from the MiceWeb Library
@@ -1977,9 +1990,7 @@ urls() {
 		fi
 		return
 	fi
-	if [[ "$FIL" == /ipfs/* || "$FIL" == /ipns/* ]]; then
-		>&2 echo "Warning: to use ipfs file paths in this command, run 'ipfs mount'"
-	fi
+	_warn_about_ipfs_paths $FIL
 	if [[ $FIL == *.json ]]; then
 		type -P jq &>/dev/null && ISINST=1 || ISINST=0
 		if [ $ISINST -eq 0 ]
