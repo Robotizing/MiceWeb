@@ -1649,9 +1649,9 @@ present() {
 		ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
 		if [ "$HASH" != "" ]; then
 			local PAYATT=""
-			if [ $CNT -gt 2 ]; then
+			if [ $CNT -ge 2 ]; then
 				PAYATT="There are similar URLs found in the MiceWeb Library:"
-			elif [ $CNT -gt 1 ]; then
+			elif [ $CNT -eq 1 ]; then
 				PAYATT="There is a similar URL found in the MiceWeb Library:"
 			fi
 			if [ "$PAYATT" != "" ]; then
