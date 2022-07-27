@@ -39,15 +39,12 @@ Open a terminal and run `miceweb` with arguments.
 ### Present saved versions:
 `miceweb present http://www.example.com/page.htm`
 
-`miceweb present url 3b9f590c8de0288d981b09ed06c105098e78e38b`
+`miceweb present 3b9f590c8de0288d981b09ed06c105098e78e38b`
 
 `miceweb present urls links.html`
 
 ### List URLs, stored in the MiceWeb Library:
-`miceweb urls`
-
-### List URLs which were attempted to be saved:
-`miceweb history`
+`miceweb urls --grep=http://`
 
 ---
 
