@@ -20,13 +20,13 @@ if [ $RET -ne 0 ]; then
 fi
 cd - >/dev/null
 if [ $RET -ne 0 ]; then
-	echo "Can't update MiceWeb, try to run 'git pull' manually"
+	echo "Can't update MiceWeb, try to run 'git pull' manually" 1>&2
 	exit 1
 fi
 "$INSTALL_DIR/install.sh"
 NEWVER="$(miceweb version 2>/dev/null)"
 if [ "$OLDVER" != "$NEWVER" ]; then
 	echo "Updated from v.$OLDVER to v.$NEWVER"
-	echo ""
+	echo "" 1>&2
 fi
 
