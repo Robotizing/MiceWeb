@@ -44,7 +44,7 @@ Open a terminal and run `miceweb` with arguments.
 `miceweb present urls links.html`
 
 ### List URLs, stored in the MiceWeb Library:
-`miceweb urls --grep=http://`
+`miceweb urls --grep=^http://`
 
 ---
 
