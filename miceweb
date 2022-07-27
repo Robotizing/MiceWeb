@@ -1536,7 +1536,7 @@ present() {
 					fi
 				fi
 				>&2 echo ""
-				ipfs dag stat $CID
+				ipfs dag stat $CID 1>&2
 				return 0
 			fi
 		fi
