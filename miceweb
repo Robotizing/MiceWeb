@@ -1042,7 +1042,7 @@ _wget() {
 	echo "$comment" >> $MYTMPFILE
 	local USERAGENT="Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0"
 	if [ "$options" != "--torsocks" ]; then
-		wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=5 --user-agent="$USERAGENT" $options --append-output=$MYTMPFILE "$URL"
+		wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=2 --user-agent="$USERAGENT" $options --append-output=$MYTMPFILE "$URL"
 	else
 		if _command_exists torsocks; then
 			torsocks --isolate wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories --timeout=30 --tries=1 --user-agent="$USERAGENT" --append-output=$MYTMPFILE "$URL" 2>/dev/null
