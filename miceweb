@@ -553,6 +553,15 @@ _hash_string() {
 	fi
 }
 
+_news() {
+	if wget "http://127.0.0.1:43110/$_SITE_ADDRESS/news.txt" --timeout=1 --output-document=- 2>/dev/null; then
+		echo ""
+		echo ""
+	fi
+	echo "Invintation:"
+	echo "  Run 'miceweb discuss' to find answers together"
+}
+
 # https://www.rfc-editor.org/rfc/rfc3986#appendix-B
 #
 readonly URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^?#]*))(\?([^#]*))?(#(.*))?'
@@ -1279,8 +1288,7 @@ Help:
 
 $(_subcommands --)
 
-Invintation:
-  Run 'miceweb discuss' to find answers together
+$(_news)
 HEREDOC
   fi
 }
