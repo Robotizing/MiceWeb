@@ -41,10 +41,13 @@ Open a terminal and run `miceweb` with arguments.
 
 `miceweb present 3b9f590c8de0288d981b09ed06c105098e78e38b`
 
-`miceweb present urls links.html`
+`miceweb present urls links.html --grep=^http://`
 
 ### List URLs, stored in the MiceWeb Library:
-`miceweb urls --grep=^http://`
+`miceweb urls`
+
+### Welcome to the MiceWeb Threads:
+`miceweb discuss`
 
 ---
 
