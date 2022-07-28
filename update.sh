@@ -16,6 +16,10 @@ if [ $RET -ne 0 ]; then
 	echo "Stashed local changes, run 'git stash pop' to bring back them"
 	git pull
 	RET=$?
+	if [ $RET -ne 0 ]; then
+	    echo "Can't pull updates from $(git remote get-url origin)" 1>&2
+	    echo "Feel free to run 'miceweb discuss'" 1>&2
+	fi
     fi
 fi
 cd - >/dev/null
