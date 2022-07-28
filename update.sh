@@ -18,13 +18,13 @@ if [ $RET -ne 0 ]; then
 	RET=$?
 	if [ $RET -ne 0 ]; then
 	    echo "Can't pull updates from $(git remote get-url origin)" 1>&2
-	    echo "Feel free to run 'miceweb discuss'" 1>&2
 	fi
     fi
 fi
 cd - >/dev/null
 if [ $RET -ne 0 ]; then
 	echo "Can't update MiceWeb, try to run 'git pull' manually" 1>&2
+	echo "Feel free to run 'miceweb discuss'" 1>&2
 	exit 1
 fi
 "$INSTALL_DIR/install.sh"
