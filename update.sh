@@ -25,6 +25,7 @@ cd - >/dev/null
 if [ $RET -ne 0 ]; then
 	echo "Can't update MiceWeb, try to run 'git pull' manually" 1>&2
 	echo "Feel free to run 'miceweb discuss'" 1>&2
+	echo ""
 	exit 1
 fi
 "$INSTALL_DIR/install.sh"
