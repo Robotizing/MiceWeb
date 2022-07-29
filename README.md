@@ -29,6 +29,9 @@ Follow the above section.
 
 Open a terminal and run `miceweb` with arguments.
 
+### Save, then present:
+`miceweb http://example.com`
+
 ### Save:
 `miceweb save http://www.example.com/page.htm`
 
