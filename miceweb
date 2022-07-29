@@ -479,6 +479,11 @@ _main() {
 			>&2 printf "\n"
 			return 1
 		fi
+	elif [[ "$URL"  =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
+		local SNAP="$URL"
+		present "$SNAP"
+		>&2 printf "\n"
+		return 1
 	fi
 	if _check_url "$URL"; then
 		_save_and_present "$URL"
@@ -1061,7 +1066,7 @@ _versions() {
 		for I in $(ipfs files ls //MiceWeb/pages/$HASH 2>/dev/null | sed 's/^/'"$HASH"'\//')
 		do
 			if [[ $I != *.* ]]; then
-				echo $I
+				echo "${I%ing}"
 			fi
 		done
 	fi
@@ -1196,6 +1201,39 @@ cleanup() {
 		>&2 echo "Failed to cleanup"
 		return 1
 	fi
+}
+
+# commands ####################################################################
+
+describe "commands" <<HEREDOC
+Usage:
+  ${_ME} commands
+
+Description:
+  Display the list of available commands
+HEREDOC
+commands() {
+	echo "miceweb"
+	#_subcommands --raw $1 | awk -v PREFIX="miceweb " '{print PREFIX $0}'
+	echo "miceweb backup
+miceweb cleanup
+miceweb commands
+miceweb discuss
+miceweb find
+miceweb hash
+miceweb help
+miceweb history
+miceweb import
+miceweb log
+miceweb present
+miceweb present urls
+miceweb remove
+miceweb save
+miceweb save urls
+miceweb snapshots
+miceweb url
+miceweb urls
+miceweb version"
 }
 
 # discuss #####################################################################
@@ -1416,9 +1454,9 @@ import() {
 						fi
 						LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | ipfs add --quieter --pin=false)"
 						ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
+						echo "$HASH/$SUBDIR"
 						if ipfs dag stat "${ADDR2#/ipfs/}"; then
 							if ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
-								echo "$HASH/$SUBDIR"
 								>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
 								return 0
 							fi
@@ -1559,6 +1597,13 @@ present() {
 		if [[ "$SNAP" != *.* ]]; then
 			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
 			local CID="$(ipfs files stat --hash /$MFS_SNAP_ADDR)"
+			local ing=0
+			if [ "$CID" == "" ]; then
+				if [[ "$SNAP" == *-import ]]; then
+					ing=1
+					CID="$(ipfs files stat --hash "/$MFS_SNAP_ADDR"ing)"
+				fi
+			fi
 			if [ "$CID" != "" ]; then
 				echo "/ipfs/$CID"
 				if [ "$GATEWAY" != "" ]; then
@@ -1574,7 +1619,11 @@ present() {
 					fi
 				fi
 				>&2 echo ""
-				ipfs dag stat $CID 1>&2
+				if ipfs dag stat $CID 1>&2; then
+					if [ $ing -eq 1 ]; then
+						ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
+					fi
+				fi
 				return 0
 			fi
 		fi
@@ -1713,6 +1762,37 @@ present() {
 		>&2 echo "Run 'miceweb save ${@@Q}'"
 		exit 1
 	fi
+}
+
+# remove ######################################################################
+
+describe "remove" <<HEREDOC
+Usage:
+  ${_ME} remove <snapshot>
+
+Description:
+  Remove specified snapshot
+HEREDOC
+remove() {
+	_upgrade
+	local SNAP="$1"
+	if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
+		if [[ "$SNAP" != *.* ]]; then
+			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
+			if ! _remove_file $MFS_SNAP_ADDR 2>/dev/null; then
+				_remove_dir $MFS_SNAP_ADDR 2>/dev/null
+			fi
+			if [[ "$SNAP" == *-import ]]; then
+				if ! _remove_file "$MFS_SNAP_ADDR"ing 2>/dev/null; then
+					_remove_dir "$MFS_SNAP_ADDR"ing 2>/dev/null
+				fi
+			fi
+			_remove_file "$MFS_SNAP_ADDR.log" 2>/dev/null
+			return 0
+		fi
+	fi
+	>&2 echo "This command requires snapshot as a parameter"
+	return 1
 }
 
 # save ########################################################################
@@ -1875,70 +1955,6 @@ snapshots() {
 	if _has_url_fragment "$URL"; then
 		_versions "$URL"
 	fi
-}
-
-# commands ####################################################################
-
-describe "commands" <<HEREDOC
-Usage:
-  ${_ME} commands
-
-Description:
-  Display the list of available commands
-HEREDOC
-commands() {
-	echo "miceweb"
-	#_subcommands --raw $1 | awk -v PREFIX="miceweb " '{print PREFIX $0}'
-	echo "miceweb backup
-miceweb cleanup
-miceweb commands
-miceweb discuss
-miceweb find
-miceweb hash
-miceweb help
-miceweb history
-miceweb import
-miceweb log
-miceweb present
-miceweb present urls
-miceweb remove
-miceweb save
-miceweb save urls
-miceweb snapshots
-miceweb url
-miceweb urls
-miceweb version"
-}
-
-# remove ######################################################################
-
-describe "remove" <<HEREDOC
-Usage:
-  ${_ME} remove <snapshot>
-
-Description:
-  Remove specified snapshot
-HEREDOC
-remove() {
-	_upgrade
-	local SNAP="$1"
-	if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
-		if [[ "$SNAP" != *.* ]]; then
-			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
-			if ipfs files ls /$MFS_SNAP_ADDR >/dev/null; then
-				if ! _remove_file $MFS_SNAP_ADDR; then
-					_remove_dir $MFS_SNAP_ADDR
-				fi
-				if [ $? -eq 0 ]; then
-					_remove_file "$MFS_SNAP_ADDR.log"
-				fi
-				return 0
-			fi
-			return 1
-		fi
-	fi
-	>&2 echo "This command requires snapshot as a parameter"
-	return 1
 }
 
 # url #########################################################################
