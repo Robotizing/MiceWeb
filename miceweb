@@ -1436,6 +1436,7 @@ import() {
 			local RESOLVED=""
 			if [[ "$IMPPATH" == /ipns/* ]]; then
 				ADDR=$(ipfs name resolve --recursive=true --timeout=60s "${IMPPATH#/ipns/}")
+				>&2 echo "Resolved to $ADDR"
 				RESOLVED=", which resolved to $ADDR"
 			else
 				ADDR="$IMPPATH"
@@ -1446,6 +1447,7 @@ import() {
 					local SUBDIR0="$SUBDIR"ing
 					if ipfs files cp /$ADDR2 /$MFS_ADDR/$SUBDIR0; then
 						if [[ "${ADDR%/}" != "$ADDR2" ]]; then
+							>&2 echo "Resolved to $ADDR2"
 							if [[ "$RESOLVED" == "" ]]; then
 								RESOLVED=", which resolved to $ADDR2"
 							else
