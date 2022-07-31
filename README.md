@@ -56,4 +56,6 @@ Open a terminal and run `miceweb` with arguments.
 
 ## Notes:
 
+Save important pages also with a browser in the usual way or using [some automation](http://ratbrowser.com).
+
 Use [SaveSites](https://github.com/defder-su/SaveSites) to save web sites entirely.
