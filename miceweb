@@ -63,7 +63,11 @@ _ME="$(basename "${0}")"
 # semantic versioning specification: http://semver.org
 _VERSION="0.3"
 
+# The MiceWeb Threads
 _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
+
+#TODO: make it configurable or check multiple possible paths
+_ZERONET_DATA="$HOME/Library/Application Support/ZeroNet/data"
 
 # $DEFAULT_SUBCOMMAND
 #
@@ -571,7 +575,7 @@ _hash_string() {
 }
 
 _news() {
-	if wget "http://127.0.0.1:43110/$_SITE_ADDRESS/news.txt" --timeout=1 --output-document=- 2>/dev/null; then
+	if cat "$_ZERONET_DATA/$_SITE_ADDRESS/news.txt" 2>/dev/null; then
 		echo ""
 		echo ""
 	fi
@@ -729,7 +733,7 @@ _save_curl() {
 				echo "$SAVE_HASH/$SUBDIR"
 				return 0
 			fi
-		else
+		elif [[ $1 != http://127.0.0.1* ]]; then
 			CID=$(torsocks --isolate curl -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter)
 			if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
 				ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
@@ -794,7 +798,9 @@ _save_wget() {
 	if [ $? -ne 0 ]; then
 		_wget $1
 		if [ $? -ne 0 ]; then
-			_wget $1 --torsocks
+			if [[ $1 != http://127.0.0.1* ]]; then
+				_wget $1 --torsocks
+			fi
 		fi
 		return $?
 	else
@@ -1429,6 +1435,7 @@ import() {
 		fi
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		local SUBDIR="$DT-import"
+		local SUBDIR0="$SUBDIR"ing
 		local CID=""
 		local LOGTXTCID=""
 		if [[ "$IMPPATH" == /ipfs/* || "$IMPPATH" == /ipns/* ]]; then
@@ -1444,7 +1451,6 @@ import() {
 			if [[ "$ADDR" != "" ]]; then
 				local ADDR2=$(ipfs resolve --timeout=60s "${ADDR#/ipfs/}")
 				if [[ "$ADDR2" != "" ]]; then
-					local SUBDIR0="$SUBDIR"ing
 					if ipfs files cp /$ADDR2 /$MFS_ADDR/$SUBDIR0; then
 						if [[ "${ADDR%/}" != "$ADDR2" ]]; then
 							>&2 echo "Resolved to $ADDR2"
