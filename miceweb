@@ -810,26 +810,35 @@ _save_wget() {
 }
 _save_zeronet() {
 	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
-	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-	local SUBDIR="$DT-zeronet"
-	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
-	if [ $? -ne 0 ]; then
-		local ZITEDATA="$_ZERONET_DATA/$MAIN"
-		if [[ -d "$ZITEDATA" ]]; then
-			local CID=$(ipfs add -r "$ZITEDATA" --quieter --cid-version=0)
-			if [[ "$CID" != "" && "$CID" != "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn" ]]; then
-				ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
-				if [ $? -eq 0 ]; then
-					echo "$SAVE_HASH/$SUBDIR"
-					return 0
+	if [[ $MAIN == *.* ]]; then
+		local DOMAIN=$MAIN
+		MAIN=$(curl http://127.0.0.1:43110/raw/$MAIN/content.json 2>/dev/null | jq --raw-output '.address' 2>/dev/null)
+		if [[ $MAIN == 1* ]]; then
+			>&2 echo "Resolved /$DOMAIN to /$MAIN"
+		fi
+	fi
+	if [[ $MAIN == 1* ]]; then
+		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local SUBDIR="$DT-zeronet"
+		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+		if [ $? -ne 0 ]; then
+			local ZITEDATA="$_ZERONET_DATA/$MAIN"
+			if [[ -d "$ZITEDATA" ]]; then
+				local CID=$(ipfs add -r "$ZITEDATA" --quieter --cid-version=0)
+				if [[ "$CID" != "" && "$CID" != "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn" ]]; then
+					ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+					if [ $? -eq 0 ]; then
+						echo "$SAVE_HASH/$SUBDIR"
+						return 0
+					fi
 				fi
 			fi
+		else
+			>&2 echo "$SUBDIR exists"
+			return 0
 		fi
-		return 1
-	else
-		>&2 echo "$SUBDIR exists"
-		return 0
 	fi
+	return 1
 }
 
 _similar() {
@@ -1950,8 +1959,7 @@ save() {
 			elif [[ $URL == http*://*.*/ipns/* ]]; then
 				_save_wget_ipns "${PARSEDPATH#/ipns/}"
 			fi
-			if [[ $URL == http://127.0.0.1:43110/1* ]]; then
-				#echo "${PARSEDPATH#/}"
+			if [[ $URL == http://127.0.0.1:43110/* ]]; then
 				_save_zeronet "${PARSEDPATH#/}"
 			fi
 			if [ $_warnings -eq 1 ]; then
