@@ -745,12 +745,12 @@ _save_curl() {
 		return 0
 	fi
 }
-_save_ipfs() {
+_save_wget_ipfs() {
 	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
 	local ADDR=$(ipfs resolve --timeout=60s $MAIN)
 	if [[ "$ADDR" != "" ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		local SUBDIR="$DT-ipfs"
+		local SUBDIR="$DT-wget-ipfs"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local GATEWAY=$(ipfs config Addresses.Gateway)
@@ -766,12 +766,12 @@ _save_ipfs() {
 	fi
 	return 1
 }
-_save_ipns() {
+_save_wget_ipns() {
 	local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
 	local ADDR=$(ipfs name resolve --recursive=true --timeout=60s $DOMAIN)
 	if [[ "$ADDR" != "" ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		local SUBDIR="$DT-ipns"
+		local SUBDIR="$DT-wget-ipns"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local GATEWAY=$(ipfs config Addresses.Gateway)
@@ -1821,7 +1821,7 @@ save() {
 		for I in $("$0" "$@" 2>/dev/null)
 		do
 			if _check_url "$I"; then
-				local VERSIONS_COUNT=$(_versions "$(_url_but_fragment $I)" | grep -e "^.*-wget$" -e "^.*-ip.s$" | wc -l)
+				local VERSIONS_COUNT=$(_versions "$(_url_but_fragment $I)" | grep -e "^.*-wget$" -e "^.*-wget-ip.s$" | wc -l)
 				if [ "$VERSIONS_COUNT" -eq 0 ]; then
 					if ! _check_free_space_for_temp
 					then
@@ -1905,9 +1905,9 @@ save() {
 		if _check_free_space_for_temp
 		then
 			if [[ $URL == ipns://* ]]; then
-				_save_ipns "${URL#ipns://}"
+				_save_wget_ipns "${URL#ipns://}"
 			elif [[ $URL == ipfs://* ]]; then
-				_save_ipfs "${URL#ipfs://}"
+				_save_wget_ipfs "${URL#ipfs://}"
 			else
 				_save_wget $URL
 				if [ $? -ne 0 ]; then
@@ -1917,9 +1917,9 @@ save() {
 			fi
 			PARSEDPATH=$(_parse_path $URL)
 			if [[ $URL == http*://*.*/ipfs/* ]]; then
-				_save_ipfs "${PARSEDPATH#/ipfs/}"
+				_save_wget_ipfs "${PARSEDPATH#/ipfs/}"
 			elif [[ $URL == http*://*.*/ipns/* ]]; then
-				_save_ipns "${PARSEDPATH#/ipns/}"
+				_save_wget_ipns "${PARSEDPATH#/ipns/}"
 			fi
 			if [ $_warnings -eq 1 ]; then
 				>&2 echo "Run 'miceweb present \"$URL0\"' to view saved snapshots"
