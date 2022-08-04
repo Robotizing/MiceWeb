@@ -511,11 +511,11 @@ _cat_file() {
 	local GREP="$2"
 	local ADDR=""
 	if [[ "$FIL" == /ipns/* ]]; then
-		ADDR=$(ipfs name resolve --recursive=true --timeout=60s "${FIL#/ipns/}")
-		ipfs cat "${ADDR#/ipfs/}" | grep "$GREP"
+		ADDR=$(_resolve_ipns "${FIL#/ipns/}")
+		ipfs cat "$ADDR" | grep "$GREP"
 	elif [[ "$FIL" == /ipfs/* ]]; then
-		ADDR="$FIL"
-		ipfs cat "${ADDR#/ipfs/}" | grep "$GREP"
+		ADDR="${FIL#/ipfs/}"
+		ipfs cat "$ADDR" | grep "$GREP"
 	else
 		grep "$GREP" "$FIL"
 	fi
@@ -676,6 +676,44 @@ _reprovidingWarning() {
 	fi
 }
 
+_resolve_ipns() {
+	local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
+	local ADDR=$(ipfs name resolve --recursive=true --timeout=60s $DOMAIN 2>/dev/null)
+	local CID="${ADDR#/ipfs/}"
+	if [[ $CID != "" ]]; then
+		echo "$CID${1#$DOMAIN}"
+		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local LOGTXTADDR=""
+		for I in $(ipfs files ls //MiceWeb/resolves/ipns/$DOMAIN 2>/dev/null | sort --reverse); do
+			local PREVCID=$(ipfs files read //MiceWeb/resolves/ipns/$DOMAIN/$I | sed -n 2p)
+			if [[ $PREVCID == $CID ]]; then
+				LOGTXTADDR="/MiceWeb/resolves/ipns/$DOMAIN/$I"
+				break
+			fi
+		done
+		if [[ $LOGTXTADDR == "" ]]; then
+			LOGTXTADDR="/ipfs/$(printf "%s\n%s\n" "CID $(_random_value)" "$CID" | ipfs add --quieter --pin=false)"
+		fi
+		if [[ $LOGTXTADDR != "" ]]; then
+			ipfs files mkdir //MiceWeb/resolves 2>/dev/null
+			ipfs files mkdir //MiceWeb/resolves/ipns 2>/dev/null
+			ipfs files mkdir //MiceWeb/resolves/ipns/$DOMAIN 2>/dev/null
+			ipfs files cp /$LOGTXTADDR //MiceWeb/resolves/ipns/$DOMAIN/$DT.txt
+		fi
+		return 0
+	else
+		for I in $(ipfs files ls //MiceWeb/resolves/ipns/$DOMAIN 2>/dev/null | sort --reverse); do
+			CID=$(ipfs files read //MiceWeb/resolves/ipns/$DOMAIN/$I | sed -n 2p)
+			if [[ $CID != "" ]]; then
+				>&2 echo "Warning: could not resolve /ipns/$DOMAIN actually"
+				echo "$CID${1#$DOMAIN}"
+				return 0
+			fi
+		done
+	fi
+	>&2 echo "Error: could not resolve /ipns/$DOMAIN"
+	return 1
+}
 _save_and_present() {
 	local URL="$1"
 	_reprovidingWarning
@@ -758,10 +796,11 @@ _save_wget_ipfs() {
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local GATEWAY=$(ipfs config Addresses.Gateway)
-			# TODO: use ipfs.io when gateway is not available (output a warning)
-			if [ $? -eq 0 ]; then
+			if [ "$GATEWAY" != "" ]; then
 				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$1" --cut-dirs=1
 				return $?
+			else
+				>&2 echo "Error: local IPFS gateway is not set"
 			fi
 		else
 			>&2 echo "$SUBDIR exists"
@@ -771,18 +810,18 @@ _save_wget_ipfs() {
 	return 1
 }
 _save_wget_ipns() {
-	local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
-	local ADDR=$(ipfs name resolve --recursive=true --timeout=60s $DOMAIN)
+	local ADDR=$(_resolve_ipns "$1")
 	if [[ "$ADDR" != "" ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		local SUBDIR="$DT-wget-ipns"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local GATEWAY=$(ipfs config Addresses.Gateway)
-			# TODO: use ipfs.io when gateway is not available (output a warning)
-			if [ $? -eq 0 ]; then
-				_wget "http://127.0.0.1:${GATEWAY##*/}/ipns/$1" --cut-dirs=1 "Resolved /ipns/$DOMAIN to $ADDR"
+			if [ "$GATEWAY" != "" ]; then
+				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$ADDR" --cut-dirs=1 "Resolved /ipns/$1 to /ipfs/$ADDR"
 				return $?
+			else
+				>&2 echo "Error: local IPFS gateway is not set"
 			fi
 		else
 			>&2 echo "$SUBDIR exists"
@@ -1474,7 +1513,7 @@ import() {
 			local ADDR=""
 			local RESOLVED=""
 			if [[ "$IMPPATH" == /ipns/* ]]; then
-				ADDR=$(ipfs name resolve --recursive=true --timeout=60s "${IMPPATH#/ipns/}")
+				ADDR=$(_resolve_ipns "${IMPPATH#/ipns/}")
 				>&2 echo "Resolved to $ADDR"
 				RESOLVED=", which resolved to $ADDR"
 			else
