@@ -619,6 +619,19 @@ _parse_fragment () {
     [[ "$@" =~ $URI_REGEX ]] && echo "${BASH_REMATCH[15]}"
 }
 
+_parse_extension() {
+	local rpath=$(_parse_rpath "$@")
+	local LPC="${rpath##*/}"
+	if [[ "$LPC" != "" ]]; then
+		local extension="${LPC##*.}"
+		if [[ "$LPC" != "$extension" ]]; then
+			if [[ "$extension" != "" ]]; then
+				echo "$extension"
+			fi
+		fi
+	fi
+}
+
 _print_hyperlink() {
 	local URL="$1"
 	local URLTEXT="$2"
@@ -1988,7 +2001,16 @@ save() {
 			else
 				_save_wget $URL
 				if [ $? -ne 0 ]; then
-					_save_archived $URL
+					if [[ $URL == http://127.0.0.1:43110/* ]]; then
+						if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
+							local ext=$(_parse_extension "$URL")
+							if [[ "$ext" == "" || $ext == htm || $ext == html ]]; then
+								_save_zeronet "${PARSEDPATH#/}"
+							fi
+						fi
+					else
+						_save_archived $URL
+					fi
 					_save_curl $URL
 				fi
 			fi
@@ -1997,9 +2019,6 @@ save() {
 				_save_wget_ipfs "${PARSEDPATH#/ipfs/}"
 			elif [[ $URL == http*://*.*/ipns/* ]]; then
 				_save_wget_ipns "${PARSEDPATH#/ipns/}"
-			fi
-			if [[ $URL == http://127.0.0.1:43110/* ]]; then
-				_save_zeronet "${PARSEDPATH#/}"
 			fi
 			if [ $_warnings -eq 1 ]; then
 				>&2 echo "Run 'miceweb present \"$URL0\"' to view saved snapshots"
