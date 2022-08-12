@@ -782,6 +782,17 @@ _save_curl() {
 			ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
 				echo "$SAVE_HASH/$SUBDIR"
+				local sz=$(ipfs files stat --size /$SAVE_MFS_ADDR/$SUBDIR)
+				if [ $sz -le 1024 ]; then
+					local content=$(ipfs files read /$SAVE_MFS_ADDR/$SUBDIR)
+					if [[ "$content" == "<meta http-equiv=\"refresh\" content=\"0; url="*"\">" ]]; then
+						content="${content#<meta http-equiv=\"refresh\" content=\"0; url=}"
+						content="${content%\">}"
+						>&2 echo "Found redirect to $content, saving it"
+						#TODO: avoid possible infinite recursions, and use 'save' function (but remember about global variable 'SAVE_MFS_ADDR')
+						"$0" save --no-warnings "$content" 2>/dev/null
+					fi
+				fi
 				return 0
 			fi
 		elif [[ $1 != http://127.0.0.1* ]]; then
