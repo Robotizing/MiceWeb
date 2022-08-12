@@ -1073,6 +1073,7 @@ _upgrade() {
 				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.2" | ipfs add --quieter --pin=false)"
 				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
 				if [ $? -eq 0 ]; then
+					ipfs files flush //MiceWeb &>/dev/null
 					>&2 echo "Upgraded the MiceWeb Library to v.0.2"
 					_upgrade
 					return $?
@@ -1088,6 +1089,7 @@ _upgrade() {
 				ipfs files rm /$VERTXT
 				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
 				if [ $? -eq 0 ]; then
+					ipfs files flush //MiceWeb &>/dev/null
 					>&2 echo "Upgraded the MiceWeb Library to v.0.3"
 					>&2 echo "It's recommended to run 'miceweb save urls --grep=#'"
 					save urls --grep="#"
