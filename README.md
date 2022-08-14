@@ -37,7 +37,7 @@ Open a terminal and run `miceweb` with arguments.
 
 `miceweb save urls collection.txt`
 
-`miceweb save urls opera_bookmarks.json`
+`miceweb save urls "$HOME/Library/Application Support/com.operasoftware.Opera/Bookmarks" --format=json`
 
 ### Present saved versions:
 `miceweb present http://www.example.com/page.htm`
