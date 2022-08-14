@@ -632,6 +632,11 @@ _parse_extension() {
 	fi
 }
 
+_path_extension() {
+	#TODO: check
+	_parse_extension "$@"
+}
+
 _print_hyperlink() {
 	local URL="$1"
 	local URLTEXT="$2"
@@ -2117,6 +2122,7 @@ url() {
 describe "urls" <<HEREDOC
 Usage:
   ${_ME} urls [--grep=<expression>] [<local/ipfs/ipns file path>]
+  ${_ME} urls --format={txt|json|htm|html} <local/ipfs/ipns file path>
 
 Description:
   List URLs from file (text or json or html) or from the MiceWeb Library
@@ -2127,16 +2133,21 @@ urls() {
 	local PARAM=""
 	local GREP=""
 	local BASE=""
+	local FORMAT=""
 	for I in "$@"; do
 		if [[ $I == "--grep" ]]; then
 		  	PARAM="grep"
 		elif [[ $I == "--base" ]]; then
 		  	PARAM="base"
+		elif [[ $I == "--format" ]]; then
+		  	PARAM="format"
 		else
 			if [[ $PARAM == "grep" ]]; then
 				GREP=$I
 			elif [[ $PARAM == "base" ]]; then
 				BASE=$I
+			elif [[ $PARAM == "format" ]]; then
+				FORMAT=$I
 			else
 				FIL=$I
 			fi
@@ -2147,7 +2158,7 @@ urls() {
 		>&2 echo "This command requires file path as a parameter:"
 		>&2 echo " txt - contain URLs in separate lines"
 		>&2 echo " json - contain URLs in the 'url' field"
-		>&2 echo " html - contain URLs in the 'href' attribute"
+		>&2 echo " htm(l) - contain URLs in the 'href' attribute"
 		>&2 echo ""
 		local CID="$(ipfs files stat --hash //MiceWeb/pages/)"
 		if [[ "$CID" != "" ]]; then
@@ -2172,7 +2183,10 @@ urls() {
 		fi
 		return
 	fi
-	if [[ $FIL == *.json ]]; then
+	if [[ "$FORMAT" == "" ]]; then
+		FORMAT=$(_parse_extension "$FIL")
+	fi
+	if [[ $FORMAT == json ]]; then
 		type -P jq &>/dev/null && ISINST=1 || ISINST=0
 		if [ $ISINST -eq 0 ]
 		then
@@ -2184,7 +2198,7 @@ urls() {
 			exit 1
 		fi
 		_cat_file "$FIL" | jq --raw-output '.. | .url? | strings' | grep "$GREP" | awk '!a[$0]++; fflush()'
-	elif [[ $FIL == *.htm* ]]; then
+	elif [[ $FORMAT == htm || $FORMAT == html ]]; then
 		type -P htmlq &>/dev/null && ISINST=1 || ISINST=0
 		if [ $ISINST -eq 0 ]
 		then
