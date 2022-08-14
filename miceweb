@@ -758,7 +758,7 @@ _save_archived() {
 	fi
 	local RET=1
 	for I in $(wayback_machine_downloader -s -e -l "$1" 2>/dev/null | jq --raw-output '.. | .timestamp? | strings' | tail -n1); do
-		local SUBDIR="${I:0:8}GMT${I:8:6}-archive"
+		SUBDIR="${I:0:8}GMT${I:8:6}-archive"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			_wget "https://web.archive.org/web/$I/$1" --cut-dirs=1
@@ -773,7 +773,7 @@ _save_archived() {
 }
 _save_curl() {
 	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-	local SUBDIR="$DT-curl"
+	SUBDIR="$DT-curl"
 	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
@@ -789,7 +789,7 @@ _save_curl() {
 						content="${content#<meta http-equiv=\"refresh\" content=\"0; url=}"
 						content="${content%\">}"
 						>&2 echo "Found redirect to $content, saving it"
-						#TODO: avoid possible infinite recursions, and use 'save' function (but remember about global variable 'SAVE_MFS_ADDR')
+						#TODO: avoid possible infinite recursions, and use 'save' function (but remember about global variables 'SAVE_MFS_ADDR' and 'SUBDIR')
 						"$0" save --no-warnings "$content" 2>/dev/null
 					fi
 				fi
@@ -816,7 +816,7 @@ _save_wget_ipfs() {
 	local ADDR=$(ipfs resolve --timeout=60s $MAIN)
 	if [[ "$ADDR" != "" ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		local SUBDIR="$DT-wget-ipfs"
+		SUBDIR="$DT-wget-ipfs"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local GATEWAY=$(ipfs config Addresses.Gateway)
@@ -837,7 +837,7 @@ _save_wget_ipns() {
 	local ADDR=$(_resolve_ipns "$1")
 	if [[ "$ADDR" != "" ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		local SUBDIR="$DT-wget-ipns"
+		SUBDIR="$DT-wget-ipns"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local GATEWAY=$(ipfs config Addresses.Gateway)
@@ -856,7 +856,7 @@ _save_wget_ipns() {
 }
 _save_wget() {
 	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-	local SUBDIR="$DT-wget"
+	SUBDIR="$DT-wget"
 	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		_wget $1
@@ -882,7 +882,7 @@ _save_zeronet() {
 	fi
 	if [[ $MAIN == 1* ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		local SUBDIR="$DT-zeronet"
+		SUBDIR="$DT-zeronet"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local ZITEDATA="$_ZERONET_DATA/$MAIN"
@@ -1531,7 +1531,7 @@ import() {
 			ipfs files cp //ipfs/$URLTXTCID /$MFS_ADDR/URL.txt
 		fi
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		local SUBDIR="$DT-import"
+		SUBDIR="$DT-import"
 		local SUBDIR0="$SUBDIR"ing
 		local CID=""
 		local LOGTXTCID=""
