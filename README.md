@@ -62,8 +62,8 @@ MiceWeb supports following URL schemes: `http`, `https`, `ftp`, `ftps`, `ipfs`, 
 
 ## Notes:
 
-MiceWeb tries to do best to save web pages. However, it doesn't garantee good results for any case. We recommend to save important pages additionally with a browser (in the usual way, or using [some automation](http://ratbrowser.com)), and to check saved snapshots.
+MiceWeb tries to do best to save web pages. However, it doesn't garantee perfect results for any case. We recommend to save important pages additionally with a browser (in the usual way, or using [some automation](http://ratbrowser.com)), and to check saved snapshots.
 
-MiceWeb provides a level of anonymity at about the level of IPFS and BitTorrent. Use it for working with content which you are ready to publish. Meanwhile, you can tune privacy level by setting [IPFS Reprovider.Strategy](https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy).
+MiceWeb provides a level of anonymity like in IPFS or BitTorrent. Use it for working with content which you are ready to publish. Meanwhile, you can tune privacy level by setting [IPFS Reprovider.Strategy](https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy).
 
 Use [SaveSites](https://github.com/defder-su/SaveSites) to save web sites entirely.
