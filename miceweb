@@ -484,7 +484,7 @@ _main() {
 			>&2 printf "\n"
 			return 1
 		fi
-	elif [[ "$URL"  =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
+	elif [[ "$URL" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		local SNAP="$URL"
 		present "$SNAP"
 		>&2 printf "\n"
@@ -1636,7 +1636,7 @@ HEREDOC
 log() {
 	_upgrade
 	local SNAP="$1"
-	if [[ "$SNAP"  =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
+	if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		if [[ "$SNAP" != *.* ]]; then
 			ipfs files read /MiceWeb/pages/$SNAP.log
 			return $?
@@ -1727,7 +1727,7 @@ present() {
 		return 1
 	fi
 	
-	if [[ "$1"  =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
+	if [[ "$1" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		local SNAP="$1"
 		if [[ "$SNAP" != *.* ]]; then
 			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
