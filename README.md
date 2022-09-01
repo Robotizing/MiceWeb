@@ -11,7 +11,7 @@
 
 ## Installation (Linux, macOS):
 
-Install [go-ipfs](https://docs.ipfs.io/install/command-line/), [wget](https://www.gnu.org/software/wget/), [curl](https://curl.se/), [jq](https://stedolan.github.io/jq/download/), [htmlq](https://github.com/mgdm/htmlq/) and [Wayback Machine Downloader](https://github.com/ImportTaste/wayback-machine-downloader).
+Install [IPFS CLI](https://docs.ipfs.io/install/command-line/), [wget](https://www.gnu.org/software/wget/), [curl](https://curl.se/), [jq](https://stedolan.github.io/jq/download/), [htmlq](https://github.com/mgdm/htmlq/), [torsocks](https://gitlab.torproject.org/tpo/core/torsocks) and [Wayback Machine Downloader](https://github.com/ImportTaste/wayback-machine-downloader).
 
 Clone the repository, open a terminal in the folder and run `./install.sh` (also, there is `./update.sh` available).
 
