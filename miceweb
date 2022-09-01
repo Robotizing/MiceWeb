@@ -691,7 +691,7 @@ _reprovidingWarning() {
 	if [[ "$REPROVIDING" == "all" ]]; then
 		>&2 echo "Warning: the reprovider announces all IPFS data including the MiceWeb Library,"
 		>&2 echo " consider to run 'ipfs config Reprovider.Strategy pinned', seeing"
-		>&2 echo " https://github.com/ipfs/go-ipfs/blob/master/docs/config.md#reproviderstrategy"
+		>&2 echo " https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy"
 	fi
 }
 
@@ -1073,7 +1073,7 @@ _upgrade() {
 	if [[ $VER == "" ]]; then
 		local TESTHASH2="$(echo -n "test" | ipfs add --only-hash --quieter --cid-version=0)"
 		if [[ "$TESTHASH2" != "QmRf22bZar3WKmojipms22PkXH1MZGmvsqzQtuSvQE3uhm" ]]; then
-			_exit_1 _print_with_hyperlink "Installed " "https://github.com/ipfs/go-ipfs" " is required for MiceWeb"
+			_exit_1 _print_with_hyperlink "Installed IPFS CLI such as " "https://github.com/ipfs/kubo" " is required for MiceWeb"
 		fi
 	fi
 	local APPVER="v.${_VERSION}"
