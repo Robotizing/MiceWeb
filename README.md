@@ -54,6 +54,12 @@ Open a terminal and run `miceweb` with arguments.
 
 ---
 
+## Supported URLs
+
+MiceWeb supports following URL schemes: `http`, `https`, `ftp`, `ftps`, `ipfs`, `ipns`.
+
+---
+
 ## Notes:
 
 Save important pages also with a browser in the usual way or using [some automation](http://ratbrowser.com).
