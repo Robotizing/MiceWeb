@@ -4,7 +4,7 @@
 
 ## Features:
 
-- Save web page by URL to the MiceWeb Library, stored in IPFS MFS.
+- Save web page by URL to the MiceWeb Library, stored in IPFS [MFS](https://docs.ipfs.tech/concepts/file-systems/#mutable-file-system-mfs).
 - Share saved versions.
 
 ---
