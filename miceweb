@@ -1073,7 +1073,7 @@ _upgrade() {
 	if [[ $VER == "" ]]; then
 		local TESTHASH2="$(echo -n "test" | ipfs add --only-hash --quieter --cid-version=0)"
 		if [[ "$TESTHASH2" != "QmRf22bZar3WKmojipms22PkXH1MZGmvsqzQtuSvQE3uhm" ]]; then
-			_exit_1 _print_with_hyperlink "Installed IPFS CLI such as " "https://github.com/ipfs/kubo" " is required for MiceWeb"
+			_exit_1 _print_with_hyperlink "Installed IPFS CLI like " "https://github.com/ipfs/kubo" " is required for MiceWeb"
 		fi
 	fi
 	local APPVER="v.${_VERSION}"
@@ -1706,7 +1706,10 @@ present() {
 					>&2 echo ""
 					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine"
 				fi
-				if [[ "$REPROVIDING" != "all" ]]; then
+				if [[ "$REPROVIDING" == "all" ]]; then
+					local converted="$(ipfs cid format -v 1 -b base32 $CID)"
+					>&2 _print_with_hyperlink " or " "ipfs://$converted" " in any IPFS friendly browser"
+				else
 					>&2 echo ""
 					>&2 echo "If you need to publish or view from an other machine,"
 					>&2 echo " run 'ipfs pin add $CID'"
@@ -1745,7 +1748,10 @@ present() {
 					>&2 echo ""
 					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine"
 				fi
-				if [[ "$REPROVIDING" != "all" ]]; then
+				if [[ "$REPROVIDING" == "all" ]]; then
+					local converted="$(ipfs cid format -v 1 -b base32 $CID)"
+					>&2 _print_with_hyperlink " or " "ipfs://$converted" " in any IPFS friendly browser"
+				else
 					>&2 echo ""
 					>&2 echo "If you need to publish or view from an other machine,"
 					>&2 echo " run 'ipfs pin add $CID'"
@@ -1858,9 +1864,14 @@ present() {
 			fi
 			if [ "$GATEWAY" != "" ]; then
 				>&2 echo ""
-				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine to view $URL0 snapshots"
+				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine"
 			fi
-			if [[ "$REPROVIDING" != "all" ]]; then
+			if [[ "$REPROVIDING" == "all" ]]; then
+				local converted="$(ipfs cid format -v 1 -b base32 $CID0)"
+				>&2 _print_with_hyperlink " or " "ipfs://$converted/$HASH" " in any IPFS friendly browser"
+				>&2 _print_with_hyperlink " to view " "$URL0" " snapshots"
+			else
+				>&2 _print_with_hyperlink " to view " "$URL0" " snapshots"
 				>&2 echo ""
 				>&2 echo "If you need to publish or view from an other machine,"
 				>&2 echo " run 'ipfs pin add $CID0'"
@@ -2204,8 +2215,6 @@ urls() {
 					if [[ "$URL" != "" ]]; then
 						echo "$URL" > "$CACHE_FILE"
 						echo "$URL" | grep "$GREP"
-					else
-						>&2 echo "Error: $I not resolved"
 					fi
 				fi
 			done
