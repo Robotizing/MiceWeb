@@ -1704,11 +1704,13 @@ present() {
 				echo "/ipfs/$CID"
 				if [ "$GATEWAY" != "" ]; then
 					>&2 echo ""
-					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine"
+					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" ""
+					>&2 echo " in a browser on the local machine"
 				fi
 				if [[ "$REPROVIDING" == "all" ]]; then
 					local converted="$(ipfs cid format -v 1 -b base32 $CID)"
-					>&2 _print_with_hyperlink " or " "ipfs://$converted" " in any IPFS friendly browser"
+					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
+					>&2 echo " in an IPFS friendly browser, out of box (Brave, Opera) or with IPFS Companion"
 				else
 					>&2 echo ""
 					>&2 echo "If you need to publish or view from an other machine,"
@@ -1746,11 +1748,13 @@ present() {
 				echo "/ipfs/$CID"
 				if [ "$GATEWAY" != "" ]; then
 					>&2 echo ""
-					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine"
+					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" ""
+					>&2 echo " in a browser on the local machine"
 				fi
 				if [[ "$REPROVIDING" == "all" ]]; then
 					local converted="$(ipfs cid format -v 1 -b base32 $CID)"
-					>&2 _print_with_hyperlink " or " "ipfs://$converted" " in any IPFS friendly browser"
+					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
+					>&2 echo " in an IPFS friendly browser, out of box (Brave, Opera) or with IPFS Companion"
 				else
 					>&2 echo ""
 					>&2 echo "If you need to publish or view from an other machine,"
@@ -1868,7 +1872,7 @@ present() {
 			fi
 			if [[ "$REPROVIDING" == "all" ]]; then
 				local converted="$(ipfs cid format -v 1 -b base32 $CID0)"
-				>&2 _print_with_hyperlink " or " "ipfs://$converted/$HASH" " in any IPFS friendly browser"
+				>&2 _print_with_hyperlink " or " "ipfs://$converted/$HASH" " in an IPFS friendly browser"
 				>&2 _print_with_hyperlink " to view " "$URL0" " snapshots"
 			else
 				>&2 _print_with_hyperlink " to view " "$URL0" " snapshots"
@@ -1889,7 +1893,8 @@ present() {
 			fi
 			if [ "$GATEWAY" != "" ]; then
 				>&2 echo ""
-				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine to view snapshots"
+				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" ""
+				>&2 echo " in a browser on the local machine to view snapshots"
 			fi
 		fi
 		>&2 echo ""
