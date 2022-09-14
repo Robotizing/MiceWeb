@@ -1227,10 +1227,10 @@ _wget() {
 	fi
 	local robotsoff="--execute=robots=off"
 	if [ "$options" != "--torsocks" ]; then
-		wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories $span $robotsoff --timeout=30 --tries=1 --user-agent="$USERAGENT" $options --append-output=$MYTMPFILE "$URL"
+		wget --adjust-extension --no-cache --page-requisites --follow-ftp --no-remove-listing --retr-symlinks --restrict-file-names=windows --convert-links --backup-converted --no-host-directories $span $robotsoff --timeout=30 --tries=1 --user-agent="$USERAGENT" $options --append-output=$MYTMPFILE "$URL"
 	else
 		if _command_exists torsocks; then
-			torsocks --isolate wget --adjust-extension --no-cache --page-requisites --follow-ftp --restrict-file-names=windows --convert-links --backup-converted --no-host-directories $span $robotsoff --timeout=30 --tries=1 --user-agent="$USERAGENT" --append-output=$MYTMPFILE "$URL" 2>/dev/null
+			torsocks --isolate wget --adjust-extension --no-cache --page-requisites --follow-ftp --no-remove-listing --retr-symlinks --restrict-file-names=windows --convert-links --backup-converted --no-host-directories $span $robotsoff --timeout=30 --tries=1 --user-agent="$USERAGENT" --append-output=$MYTMPFILE "$URL" 2>/dev/null
 		fi
 	fi
 	local WGETERR=$?
