@@ -877,6 +877,8 @@ _save_wget_span() {
 		if [ $? -ne 0 ]; then
 			if [[ $1 != http://127.0.0.1* ]]; then
 				_wget $1 --torsocks
+			else
+				return 1
 			fi
 		fi
 		return $?
@@ -894,6 +896,8 @@ _save_wget() {
 		if [ $? -ne 0 ]; then
 			if [[ $1 != http://127.0.0.1* ]]; then
 				_wget $1 --torsocks
+			else
+				return 1
 			fi
 		fi
 		return $?
@@ -2062,6 +2066,7 @@ save() {
 		fi
 		if _check_free_space_for_temp
 		then
+			PARSEDPATH=$(_parse_path $URL)
 			if [[ $URL == ipns://* ]]; then
 				_save_wget_ipns "${URL#ipns://}"
 			elif [[ $URL == ipfs://* ]]; then
@@ -2088,7 +2093,6 @@ save() {
 					fi
 				fi
 			fi
-			PARSEDPATH=$(_parse_path $URL)
 			if [[ $URL == http*://*.*/ipfs/* ]]; then
 				_save_wget_ipfs "${PARSEDPATH#/ipfs/}"
 			elif [[ $URL == http*://*.*/ipns/* ]]; then
