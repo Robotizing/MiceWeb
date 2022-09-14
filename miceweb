@@ -762,12 +762,20 @@ _save_archived() {
 		>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
 		return 127
 	fi
+	local ADDR=""
+	if [[ $1 == http://* ]]; then
+		ADDR="${1#http://}"
+	elif [[ $1 == https://* ]]; then
+		ADDR="${1#https://}"
+	else
+		return 1
+	fi
 	local RET=1
 	for I in $(wayback_machine_downloader -s -e -l "$1" 2>/dev/null | jq --raw-output '.. | .timestamp? | strings' | tail -n1); do
 		SUBDIR="${I:0:8}GMT${I:8:6}-archive"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
-			_wget "https://web.archive.org/web/$I/$1" --cut-dirs=1
+			_wget "https://web.archive.org/web/$I/$ADDR" --cut-dirs=1
 			if [ $? -eq 0 ]; then
 				RET=0
 			fi
@@ -2061,8 +2069,10 @@ save() {
 			else
 				_save_wget_span $URL
 				if [ $? -ne 0 ]; then
-					if [[ $URL != http://127.0.0.1* ]]; then
-						_save_archived $URL
+					if [[ $URL == http*://* ]]; then
+						if [[ $URL != http://127.0.0.1* ]]; then
+							_save_archived $URL
+						fi
 					fi
 					_save_wget $URL
 					if [ $? -ne 0 ]; then
