@@ -1205,7 +1205,10 @@ _wget() {
 	echo "Log $RAND" > $MYTMPFILE
 	echo "$comment" >> $MYTMPFILE
 	local USERAGENT="Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0"
-	local span="--span-hosts"
+	local span=""
+	if [[ $SUBDIR != *-archive ]]; then
+		span="--span-hosts"
+	fi
 	local robotsoff="--execute=robots=off"
 	if [ "$options" != "--torsocks" ]; then
 		wget --adjust-extension --no-cache --page-requisites --follow-ftp --no-remove-listing --retr-symlinks --restrict-file-names=windows --convert-links --backup-converted --no-host-directories $span $robotsoff --timeout=30 --tries=1 --user-agent="$USERAGENT" $options --append-output=$MYTMPFILE "$URL"
