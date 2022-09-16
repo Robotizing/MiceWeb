@@ -809,13 +809,16 @@ _save_curl() {
 				fi
 				return 0
 			fi
-		elif [[ $1 != http://127.0.0.1* ]]; then
-			CID=$(torsocks --isolate curl -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter)
-			if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
-				ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
-				if [ $? -eq 0 ]; then
-					echo "$SAVE_HASH/$SUBDIR"
-					return 0
+		else
+			>&2 echo "Error: could not download ${SUBDIR:17}"
+			if [[ $1 != http://127.0.0.1* ]]; then
+				CID=$(torsocks --isolate curl -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter)
+				if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
+					ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+					if [ $? -eq 0 ]; then
+						echo "$SAVE_HASH/$SUBDIR"
+						return 0
+					fi
 				fi
 			fi
 		fi
@@ -1246,10 +1249,7 @@ _wget() {
 		fi
 	else
 		if [ "$options" != "--torsocks" ]; then
-			if [ "$span" != "" ]; then
-				span=" (span)"
-			fi
-			>&2 echo "Error: wget$span can't download $URL (err. $WGETERR)"
+			>&2 echo "Error: could not download ${SUBDIR:17}, err. $WGETERR"
 		fi
 	fi
 	cd ..
@@ -1723,7 +1723,7 @@ present() {
 				if [[ "$REPROVIDING" == "all" ]]; then
 					local converted="$(ipfs cid format -v 1 -b base32 $CID)"
 					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
-					>&2 echo " in an IPFS friendly browser, out of box (Brave, Opera) or with IPFS Companion"
+					>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
 				else
 					>&2 echo ""
 					>&2 echo "If you need to publish or view from an other machine,"
@@ -1767,7 +1767,7 @@ present() {
 				if [[ "$REPROVIDING" == "all" ]]; then
 					local converted="$(ipfs cid format -v 1 -b base32 $CID)"
 					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
-					>&2 echo " in an IPFS friendly browser, out of box (Brave, Opera) or with IPFS Companion"
+					>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
 				else
 					>&2 echo ""
 					>&2 echo "If you need to publish or view from an other machine,"
