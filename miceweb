@@ -2074,11 +2074,6 @@ save() {
 			else
 				_save_wget_span $URL
 				if [ $? -ne 0 ]; then
-					if [[ $URL == http*://* ]]; then
-						if [[ $URL != http://127.0.0.1* ]]; then
-							_save_archived $URL
-						fi
-					fi
 					_save_wget $URL
 					if [ $? -ne 0 ]; then
 						if [[ $URL == http://127.0.0.1:43110/* ]]; then
@@ -2090,6 +2085,11 @@ save() {
 							fi
 						fi
 						_save_curl $URL
+					fi
+					if [[ $URL == http*://* ]]; then
+						if [[ $URL != http://127.0.0.1* ]]; then
+							_save_archived $URL
+						fi
 					fi
 				fi
 			fi
