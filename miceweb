@@ -1949,6 +1949,31 @@ remove() {
 	return 1
 }
 
+# resolve #####################################################################
+
+describe "resolve" <<HEREDOC
+Usage:
+  ${_ME} resolve <IPNS path>
+
+Description:
+  Resolve IPNS path to static IPFS path
+HEREDOC
+resolve() {
+	if [[ $1 == /ipns/* ]]; then
+		_resolve_ipns "${1#/ipns/}" | awk -v PREFIX="/ipfs/" '{print PREFIX $0}'
+		return 0
+		#TODO: show history?
+		#local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
+		#for I in $(ipfs files ls //MiceWeb/resolves/ipns/$DOMAIN)
+		#do
+		#	echo ${I%.txt} $(ipfs files read //MiceWeb/resolves/ipns/$DOMAIN/$I | sed -n 2p)
+		#done
+	else
+		>&2 echo "This command requires IPNS path (e.g., /ipns/ratbrowser.com) as a parameter"
+	fi
+	return 1
+}
+
 # save ########################################################################
 
 describe "save" <<HEREDOC
