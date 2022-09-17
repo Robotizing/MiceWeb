@@ -1222,7 +1222,7 @@ _wget() {
 	#TODO: what about err. 6 (username/password authentication failure)?
 	if [[ $WGETERR -eq 0 || $WGETERR -eq 4 || $WGETERR -eq 5 || $WGETERR -eq 7 || $WGETERR -eq 8 ]] && [ $(ls -A "$MYTMPDIR" | wc -l) -ne 0 ]; then
 		if [ $WGETERR -ne 0 ]; then
-			>&2 echo "Warning: detected issues when downloading, wget err. $WGETERR"
+			>&2 echo "Warning: detected issues when downloading ${SUBDIR:17}, wget err. $WGETERR"
 		fi
 		local CID="$(ipfs add --quieter --pin=false -r $MYTMPDIR)"
 		ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR

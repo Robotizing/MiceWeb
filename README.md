@@ -54,7 +54,7 @@ Open a terminal and run `miceweb` with arguments.
 
 ---
 
-## Supported URLs
+## Supported URLs:
 
 MiceWeb supports following URL schemes: `http`, `https`, `ftp`, `ftps`, `ipfs`, `ipns`.
 
