@@ -2068,10 +2068,10 @@ save() {
 						fi
 					fi
 					_save_curl $URL
-				fi
-				if [[ $URL == http*://* ]]; then
-					if [[ $URL != http://127.0.0.1* ]]; then
-						_save_archived $URL
+					if [[ $URL == http*://* ]]; then
+						if [[ $URL != http://127.0.0.1* ]]; then
+							_save_archived $URL
+						fi
 					fi
 				fi
 			fi
