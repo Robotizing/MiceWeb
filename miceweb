@@ -733,6 +733,7 @@ _resolve_ipns() {
 	>&2 echo "Error: could not resolve /ipns/$DOMAIN"
 	return 1
 }
+
 _save_and_present() {
 	local URL="$1"
 	_reprovidingWarning
@@ -1344,27 +1345,28 @@ Description:
   Display the list of available commands
 HEREDOC
 commands() {
-	echo "miceweb"
+	echo "miceweb				Introduce ${_ME}"
 	#_subcommands --raw $1 | awk -v PREFIX="miceweb " '{print PREFIX $0}'
-	echo "miceweb backup
-miceweb cleanup
-miceweb commands
-miceweb discuss
-miceweb find
-miceweb hash
-miceweb help
-miceweb history
-miceweb import
-miceweb log
-miceweb present
+	echo "miceweb backup			Backup CID of the MiceWeb Library
+miceweb cleanup			Cleanup service data
+miceweb commands		Display the list of available commands
+miceweb discuss			Welcome to the MiceWeb Threads
+miceweb find			Find saved web pages on the local machine
+miceweb hash			Calculate SHA-1 hash for URL (but fragment)
+miceweb help			Display help information
+miceweb history			List URLs which were attempted to be saved
+miceweb import			Import web page snapshot from file or directory
+miceweb log			Print log of snapshot
+miceweb present			Present saved versions
 miceweb present urls
-miceweb remove
-miceweb save
+miceweb remove			Remove snapshot
+miceweb resolve			Resolve path
+miceweb save			Save web page snapshot(s)
 miceweb save urls
-miceweb snapshots
-miceweb url
-miceweb urls
-miceweb version"
+miceweb snapshots		List saved snapshots
+miceweb url			Return URL by SHA-1 hash
+miceweb urls			List URLs from file, or from the MiceWeb Library
+miceweb version			Display the current program version"
 }
 
 # discuss #####################################################################
@@ -1629,7 +1631,7 @@ Usage:
   ${_ME} log <snapshot>
 
 Description:
-  Print log of specified snapshot
+  Print log of snapshot
 HEREDOC
 log() {
 	_upgrade
@@ -1925,7 +1927,7 @@ Usage:
   ${_ME} remove <snapshot>
 
 Description:
-  Remove specified snapshot
+  Remove snapshot
 HEREDOC
 remove() {
 	_upgrade
