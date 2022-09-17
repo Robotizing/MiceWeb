@@ -1320,8 +1320,8 @@ cleanup() {
 	local MFS_PRESENTS_ADDR="/MiceWeb/presents"
 	local CID="$(ipfs files stat --hash /$MFS_PRESENTS_ADDR)"
 	if [[ "$CID" == "" ]]; then
-		>&2 echo "Failed to cleanup"
-		return 1
+		>&2 echo "Nothing to cleanup"
+		return 0
 	fi
 	if ipfs files rm -r /$MFS_PRESENTS_ADDR; then
 		>&2 echo "Removed the history of presents"
@@ -1345,28 +1345,28 @@ Description:
   Display the list of available commands
 HEREDOC
 commands() {
-	echo "miceweb				Introduce ${_ME}"
+	echo "miceweb			Introduce MiceWeb"
 	#_subcommands --raw $1 | awk -v PREFIX="miceweb " '{print PREFIX $0}'
-	echo "miceweb backup			Backup CID of the MiceWeb Library
-miceweb cleanup			Cleanup service data
-miceweb commands		Display the list of available commands
-miceweb discuss			Welcome to the MiceWeb Threads
-miceweb find			Find saved web pages on the local machine
-miceweb hash			Calculate SHA-1 hash for URL (but fragment)
-miceweb help			Display help information
-miceweb history			List URLs which were attempted to be saved
-miceweb import			Import web page snapshot from file or directory
-miceweb log			Print log of snapshot
-miceweb present			Present saved versions
+	echo "miceweb backup		Backup CID of the MiceWeb Library
+miceweb cleanup		Cleanup service data
+miceweb commands	Display the list of available commands
+miceweb discuss		Welcome to the MiceWeb Threads
+miceweb find		Find saved web pages on the local machine
+miceweb hash		Calculate SHA-1 hash for URL (but fragment)
+miceweb help		Display help information
+miceweb history		List URLs which were attempted to be saved or imported
+miceweb import		Import web page snapshot from file or directory
+miceweb log		Print log of snapshot
+miceweb present		Present saved snapshots
 miceweb present urls
-miceweb remove			Remove snapshot
-miceweb resolve			Resolve path
-miceweb save			Save web page snapshot(s)
+miceweb remove		Remove snapshot
+miceweb resolve		Resolve path
+miceweb save		Save web page snapshots
 miceweb save urls
-miceweb snapshots		List saved snapshots
-miceweb url			Return URL by SHA-1 hash
-miceweb urls			List URLs from file, or from the MiceWeb Library
-miceweb version			Display the current program version"
+miceweb snapshots	List saved snapshots
+miceweb url		Return URL by SHA-1 hash
+miceweb urls		List URLs from file, or from the MiceWeb Library
+miceweb version		Display the current program version"
 }
 
 # discuss #####################################################################
@@ -1657,10 +1657,11 @@ Usage:
   ${_ME} present
 
 Description:
-  Present saved version
-  Present saved versions of web page (including similar) by URL
-  Present saved versions of web pages by URLs from file
-  Present saved versions of web pages in the MiceWeb Library
+  Present saved snapshot
+  Present saved snapshots of web page (including similar) by URL
+  Present saved snapshots of web page (including similar) by URL's SHA-1
+  Present saved snapshots of web pages by URLs from file
+  Present saved snapshots of web pages in the MiceWeb Library
 HEREDOC
 present() {
 	_upgrade
