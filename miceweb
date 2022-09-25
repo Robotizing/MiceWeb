@@ -777,11 +777,10 @@ _save_archived() {
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			_wget "https://web.archive.org/web/$I/$ADDR" --cut-dirs=1
-			if [ $? -eq 0 ]; then
-				RET=0
-			fi
+			RET=$?
 		else
 			>&2 echo "$SUBDIR is already downloaded"
+			RET=0
 		fi
 	done
 	return $RET
@@ -797,6 +796,7 @@ _save_curl() {
 			ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
 				echo "$SAVE_HASH/$SUBDIR"
+				#TODO: make it better
 				local sz=$(ipfs files stat --size /$SAVE_MFS_ADDR/$SUBDIR)
 				if [ $sz -le 1024 ]; then
 					local content=$(ipfs files read /$SAVE_MFS_ADDR/$SUBDIR)
@@ -812,16 +812,29 @@ _save_curl() {
 			fi
 		else
 			>&2 echo "Error: could not download ${SUBDIR:17}"
-			if [[ $1 != http://127.0.0.1* ]]; then
-				CID=$(torsocks --isolate curl -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter)
-				if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
-					ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
-					if [ $? -eq 0 ]; then
-						echo "$SAVE_HASH/$SUBDIR"
-						return 0
-					fi
-				fi
+		fi
+		return 1
+	else
+		>&2 echo "$SUBDIR exists"
+		return 0
+	fi
+}
+_save_curl_tor() {
+	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	SUBDIR="$DT-curl-tor"
+	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	if [ $? -ne 0 ]; then
+		local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
+		local CID=$(torsocks --isolate curl -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter)
+		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
+			ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+			if [ $? -eq 0 ]; then
+				echo "$SAVE_HASH/$SUBDIR"
+				#TODO: handle redirections like in _save_curl
+				return 0
 			fi
+		else
+			>&2 echo "Error: could not download ${SUBDIR:17}"
 		fi
 		return 1
 	else
@@ -878,13 +891,18 @@ _save_wget() {
 	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		_wget $1
-		if [ $? -ne 0 ]; then
-			if [[ $1 != http://127.0.0.1* ]]; then
-				_wget $1 --torsocks
-			else
-				return 1
-			fi
-		fi
+		return $?
+	else
+		>&2 echo "$SUBDIR exists"
+		return 0
+	fi
+}
+_save_wget_tor() {
+	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	SUBDIR="$DT-wget-tor"
+	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	if [ $? -ne 0 ]; then
+		_wget $1 --torsocks
 		return $?
 	else
 		>&2 echo "$SUBDIR exists"
@@ -1214,9 +1232,7 @@ _wget() {
 	if [ "$options" != "--torsocks" ]; then
 		wget --adjust-extension --no-cache --page-requisites --follow-ftp --no-remove-listing --retr-symlinks --restrict-file-names=windows --convert-links --backup-converted --no-host-directories $span $robotsoff --timeout=30 --tries=1 --user-agent="$USERAGENT" $options --append-output=$MYTMPFILE "$URL"
 	else
-		if _command_exists torsocks; then
-			torsocks --isolate wget --adjust-extension --no-cache --page-requisites --follow-ftp --no-remove-listing --retr-symlinks --restrict-file-names=windows --convert-links --backup-converted --no-host-directories $span $robotsoff --timeout=30 --tries=1 --user-agent="$USERAGENT" --append-output=$MYTMPFILE "$URL" 2>/dev/null
-		fi
+		torsocks --isolate wget --adjust-extension --no-cache --page-requisites --follow-ftp --no-remove-listing --retr-symlinks --restrict-file-names=windows --convert-links --backup-converted --no-host-directories $span $robotsoff --timeout=30 --tries=1 --user-agent="$USERAGENT" --append-output=$MYTMPFILE "$URL" 2>/dev/null
 	fi
 	local WGETERR=$?
 	local RET=1
@@ -1231,12 +1247,10 @@ _wget() {
 			local LOGCID="$(ipfs add --quieter --pin=false $MYTMPFILE)"
 			ipfs files cp //ipfs/$LOGCID /$SAVE_MFS_ADDR/$SUBDIR.log
 			echo "$SAVE_HASH/$SUBDIR"
-			RET=0
+			RET=$WGETERR
 		fi
 	else
-		if [ "$options" != "--torsocks" ]; then
-			>&2 echo "Error: could not download ${SUBDIR:17}, wget err. $WGETERR"
-		fi
+		>&2 echo "Error: could not download ${SUBDIR:17}, wget err. $WGETERR"
 	fi
 	cd ..
 	rm -r $MYTMPDIR
@@ -1996,7 +2010,7 @@ save() {
 		for I in $("$0" "$@" 2>/dev/null)
 		do
 			if _check_url "$I"; then
-				local VERSIONS_COUNT=$(_versions "$(_url_but_fragment $I)" | grep -e "^.*-wget$" -e "^.*-wget-span$" -e "^.*-wget-ip.s$" | wc -l)
+				local VERSIONS_COUNT=$(_versions "$(_url_but_fragment $I)" | grep -e "^.*-wget$" -e "^.*-wget-tor$" -e "^.*-wget-ip.s$" | wc -l)
 				if [ "$VERSIONS_COUNT" -eq 0 ]; then
 					if ! _check_free_space_for_temp
 					then
@@ -2087,6 +2101,14 @@ save() {
 			else
 				_save_wget $URL
 				if [ $? -ne 0 ]; then
+					local ININET= ; [[ $URL != http://127.0.0.1* ]] ; ININET=$?
+					if [ $ININET ]; then
+						if _command_exists torsocks; then
+							_save_wget_tor $URL
+						else
+							>&2 echo "Error: torsocks is not installed"
+						fi
+					fi
 					if [[ $URL == http://127.0.0.1:43110/* ]]; then
 						if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
 							local ext=$(_parse_extension "$URL")
@@ -2095,9 +2117,15 @@ save() {
 							fi
 						fi
 					fi
-					_save_curl $URL
-					if [[ $URL == http*://* ]]; then
-						if [[ $URL != http://127.0.0.1* ]]; then
+					if ! _save_curl $URL; then
+						if [ $ININET ]; then
+							if _command_exists torsocks; then
+								_save_curl_tor $URL
+							fi
+						fi
+					fi
+					if [ $ININET ]; then
+						if [[ $URL == http*://* ]]; then
 							_save_archived $URL
 						fi
 					fi
