@@ -1356,11 +1356,11 @@ miceweb hash		Calculate SHA-1 hash for URL (but fragment)
 miceweb help		Display help information
 miceweb history		List URLs which were attempted to be saved or imported
 miceweb import		Import web page snapshot from file or directory
-miceweb log		Print log of snapshot
+miceweb log		Print log created when saved snapshot
 miceweb present		Present saved snapshots
 miceweb present urls
-miceweb remove		Remove snapshot
-miceweb resolve		Resolve path
+miceweb remove		Remove saved snapshot
+miceweb resolve		Resolve IPNS path to static IPFS path
 miceweb save		Save web page snapshots
 miceweb save urls
 miceweb snapshots	List saved snapshots
@@ -1631,7 +1631,7 @@ Usage:
   ${_ME} log <snapshot>
 
 Description:
-  Print log of snapshot
+  Print log created when saved snapshot
 HEREDOC
 log() {
 	_upgrade
@@ -1928,7 +1928,7 @@ Usage:
   ${_ME} remove <snapshot>
 
 Description:
-  Remove snapshot
+  Remove saved snapshot
 HEREDOC
 remove() {
 	_upgrade
