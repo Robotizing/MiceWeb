@@ -1652,7 +1652,7 @@ log() {
 	local SNAP="$1"
 	if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		if [[ "$SNAP" != *.* ]]; then
-			ipfs files read /MiceWeb/pages/$SNAP.log
+			ipfs files read //MiceWeb/pages/$SNAP.log
 			return $?
 		fi
 	fi
