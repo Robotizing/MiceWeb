@@ -513,12 +513,12 @@ _cat_file() {
 	local ADDR=""
 	if [[ "$FIL" == /ipns/* ]]; then
 		ADDR=$(_resolve_ipns "${FIL#/ipns/}")
-		ipfs cat "$ADDR" | grep "$GREP"
+		ipfs cat "$ADDR" | grep -a "$GREP"
 	elif [[ "$FIL" == /ipfs/* ]]; then
 		ADDR="${FIL#/ipfs/}"
-		ipfs cat "$ADDR" | grep "$GREP"
+		ipfs cat "$ADDR" | grep -a "$GREP"
 	else
-		grep "$GREP" "$FIL"
+		grep -a "$GREP" "$FIL"
 	fi
 }
 
@@ -1350,7 +1350,7 @@ commands() {
 	echo "miceweb backup		Backup CID of the MiceWeb Library
 miceweb cleanup		Cleanup service data
 miceweb commands	Display the list of available commands
-miceweb discuss		Welcome to the MiceWeb Threads
+miceweb discuss		Welcome to the MiceWeb Threads in ZeroNet
 miceweb find		Find saved web pages on the local machine
 miceweb hash		Calculate SHA-1 hash for URL (but fragment)
 miceweb help		Display help information
