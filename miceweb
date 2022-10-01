@@ -779,7 +779,8 @@ _save_archived() {
 			_wget "https://web.archive.org/web/$I/$ADDR" --cut-dirs=1
 			RET=$?
 		else
-			>&2 echo "$SUBDIR is already downloaded"
+			>&2 echo "Warning: $SUBDIR is already downloaded, doing nothing"
+			echo "$SAVE_HASH/$SUBDIR"
 			RET=0
 		fi
 	done
@@ -2234,11 +2235,11 @@ urls() {
 	local FORMAT=""
 	for I in "$@"; do
 		if [[ $I == "--grep" ]]; then
-		  	PARAM="grep"
+			PARAM="grep"
 		elif [[ $I == "--base" ]]; then
-		  	PARAM="base"
+			PARAM="base"
 		elif [[ $I == "--format" ]]; then
-		  	PARAM="format"
+			PARAM="format"
 		else
 			if [[ $PARAM == "grep" ]]; then
 				GREP=$I
