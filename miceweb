@@ -1237,8 +1237,7 @@ _wget() {
 	fi
 	local WGETERR=$?
 	local RET=1
-	#TODO: what about err. 6 (username/password authentication failure)?
-	if [[ $WGETERR -eq 0 || $WGETERR -eq 4 || $WGETERR -eq 5 || $WGETERR -eq 7 || $WGETERR -eq 8 ]] && [ $(ls -A "$MYTMPDIR" | wc -l) -ne 0 ]; then
+	if [[ $WGETERR -eq 0 || $WGETERR -ge 4 ]] && [ $(ls -A "$MYTMPDIR" | wc -l) -ne 0 ]; then
 		if [ $WGETERR -ne 0 ]; then
 			>&2 echo "Warning: detected issues when downloading ${SUBDIR:17}, wget err. $WGETERR"
 		fi
@@ -2101,13 +2100,16 @@ save() {
 				_save_wget_ipfs "${URL#ipfs://}"
 			else
 				_save_wget $URL
-				if [ $? -ne 0 ]; then
+				local WGETERR=$?
+				if [ $WGETERR -ne 0 ]; then
 					local ININET= ; [[ $URL != http://127.0.0.1* ]] ; ININET=$?
-					if [ $ININET ]; then
-						if _command_exists torsocks; then
-							_save_wget_tor $URL
-						else
-							>&2 echo "Error: torsocks is not installed"
+					if [ $WGETERR -le 4 ]; then
+						if [ $ININET ]; then
+							if _command_exists torsocks; then
+								_save_wget_tor $URL
+							else
+								>&2 echo "Error: torsocks is not installed"
+							fi
 						fi
 					fi
 					if [[ $URL == http://127.0.0.1:43110/* ]]; then
@@ -2118,10 +2120,12 @@ save() {
 							fi
 						fi
 					fi
-					if ! _save_curl $URL; then
-						if [ $ININET ]; then
-							if _command_exists torsocks; then
-								_save_curl_tor $URL
+					if [ $WGETERR -lt 4 ]; then
+						if ! _save_curl $URL; then
+							if [ $ININET ]; then
+								if _command_exists torsocks; then
+									_save_curl_tor $URL
+								fi
 							fi
 						fi
 					fi
