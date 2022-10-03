@@ -2270,15 +2270,19 @@ urls() {
 			mkdir --parents "$CACHE_DIR"
 			declare -A URLs
 			local HT="$HOME/.miceweb/cache/urls.hashtable"
-			while read line
-			do
-				local LINE_ARR=($line)
-				local LINE_HASH=${LINE_ARR[0]}
-				local LINE_URL=${LINE_ARR[1]}
-				if [[ $LINE_HASH != "" && $LINE_URL != "" ]]; then
-					URLs["$LINE_HASH"]="$LINE_URL"
-				fi
-			done < "$HT"
+			if [ -e "$HT" ]; then
+				while read line
+				do
+					local LINE_ARR=($line)
+					local LINE_HASH=${LINE_ARR[0]}
+					local LINE_URL=${LINE_ARR[1]}
+					if [[ $LINE_HASH != "" && $LINE_URL != "" ]]; then
+						URLs["$LINE_HASH"]="$LINE_URL"
+					fi
+				done < "$HT"
+			else
+				>&2 echo "Warning: it could be slowly, at first"
+			fi
 			for I in $(ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f]); do
 				local URL="${URLs[$I]}"
 				if [[ "$URL" != "" ]]; then
