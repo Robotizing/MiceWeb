@@ -502,7 +502,7 @@ _main() {
 # --------------------------------------------------------------------- functions
 
 _addToHistory() {
-	mkdir --parents "$HOME/.miceweb"
+	mkdir -p "$HOME/.miceweb"
 	local DT=$(export TZ=GMT ; date '+%Y-%m-%d GMT %H:%M:%S')
 	printf "%s\t%s\n" "$DT" "$1" >> "$HOME/.miceweb/history.txt"
 }
@@ -1300,7 +1300,7 @@ backup() {
 		>&2 echo "This command doesn't require parameters"
 		return 1
 	fi
-	mkdir --parents "$HOME/.miceweb"
+	mkdir -p "$HOME/.miceweb"
 	local DT=$(export TZ=GMT ; date '+%Y-%m-%d GMT %H:%M:%S')
 	local CID="$(ipfs files stat --hash //MiceWeb)"
 	if [[ "$CID" != "" ]]; then
@@ -2267,7 +2267,7 @@ urls() {
 		if [[ "$CID" != "" ]]; then
 			>&2 echo "There are URLs already in the MiceWeb Library (see also 'miceweb history'):"
 			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
-			mkdir --parents "$CACHE_DIR"
+			mkdir -p "$CACHE_DIR"
 			declare -A URLs
 			local HT="$HOME/.miceweb/cache/urls.hashtable"
 			if [ -e "$HT" ]; then
