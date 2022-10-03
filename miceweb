@@ -2258,7 +2258,7 @@ urls() {
 		fi
 	done
 	if [[ "$FIL" == "" ]]; then
-		>&2 echo "This command requires file path as a parameter:"
+		>&2 echo "This command takes file path as a parameter:"
 		>&2 echo " txt - contain URLs in separate lines"
 		>&2 echo " json - contain URLs in the 'url' field"
 		>&2 echo " htm(l) - contain URLs in the 'href' attribute"
@@ -2268,19 +2268,32 @@ urls() {
 			>&2 echo "There are URLs already in the MiceWeb Library (see also 'miceweb history'):"
 			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
 			mkdir --parents "$CACHE_DIR"
+			declare -A URLs
+			local HT="$HOME/.miceweb/cache/urls.hashtable"
+			while read line
+			do
+				local LINE_ARR=($line)
+				local LINE_HASH=${LINE_ARR[0]}
+				local LINE_URL=${LINE_ARR[1]}
+				if [[ $LINE_HASH != "" && $LINE_URL != "" ]]; then
+					URLs["$LINE_HASH"]="$LINE_URL"
+				fi
+			done < "$HT"
 			for I in $(ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f]); do
-				local CACHE_FILE="$CACHE_DIR$I"
-				local URL=$(grep "" "$CACHE_FILE" 2>/dev/null)
+				local URL="${URLs[$I]}"
 				if [[ "$URL" != "" ]]; then
-					echo "$URL" | grep "$GREP"
+					echo "$URL"
 				else
-					URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
+					URL=$(grep "" "$CACHE_DIR$I" 2>/dev/null)
+					if [[ "$URL" == "" ]]; then
+						URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
+					fi
 					if [[ "$URL" != "" ]]; then
-						echo "$URL" > "$CACHE_FILE"
-						echo "$URL" | grep "$GREP"
+						echo "$URL"
+						printf "%s\t%s\n" "$I" "$URL" >> "$HT"
 					fi
 				fi
-			done
+			done | grep "$GREP"
 		fi
 		return
 	fi
