@@ -1609,11 +1609,14 @@ import() {
 						LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | ipfs add --quieter --pin=false)"
 						ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
 						echo "$HASH/$SUBDIR"
-						if ipfs dag stat "${ADDR2#/ipfs/}"; then
+						if ipfs dag stat "${ADDR2#/ipfs/}" 2>/dev/null; then
 							if ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
 								>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
 								return 0
 							fi
+						else
+							>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
+							return 0
 						fi
 					fi
 				fi
@@ -1743,7 +1746,7 @@ present() {
 				fi
 				local STAT=$", NumURLs: $COUNT"
 				>&2 echo ""
-				ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
+				ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2 2>/dev/null
 				return 0
 			fi
 		else
@@ -1788,7 +1791,7 @@ present() {
 					fi
 				fi
 				>&2 echo ""
-				if ipfs dag stat $CID 1>&2; then
+				if ipfs dag stat $CID 1>&2 2>/dev/null; then
 					if [ $ing -eq 1 ]; then
 						ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
 					fi
@@ -1924,7 +1927,7 @@ present() {
 			fi
 		fi
 		>&2 echo ""
-		ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
+		ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2 2>/dev/null
 		if [ "$HASH" != "" ]; then
 			local PAYATT=""
 			if [ $CNT -ge 2 ]; then
