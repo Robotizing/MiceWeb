@@ -2108,7 +2108,7 @@ save() {
 				if [ $WGETERR -ne 0 ]; then
 					local ININET= ; [[ $URL != http://127.0.0.1* ]] ; ININET=$?
 					if [ $WGETERR -le 4 ]; then
-						if [ $ININET ]; then
+						if [ $ININET -eq 0 ]; then
 							if _command_exists torsocks; then
 								_save_wget_tor $URL
 							else
@@ -2126,14 +2126,14 @@ save() {
 					fi
 					if [ $WGETERR -lt 4 ]; then
 						if ! _save_curl $URL; then
-							if [ $ININET ]; then
+							if [ $ININET -eq 0 ]; then
 								if _command_exists torsocks; then
 									_save_curl_tor $URL
 								fi
 							fi
 						fi
 					fi
-					if [ $ININET ]; then
+					if [ $ININET -eq 0 ]; then
 						if [[ $URL == http*://* ]]; then
 							_save_archived $URL
 						fi
