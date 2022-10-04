@@ -2119,7 +2119,7 @@ save() {
 					if [[ $URL == http://127.0.0.1:43110/* ]]; then
 						if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
 							local ext=$(_parse_extension "$URL")
-							if [[ "$ext" == "" || $ext == htm || $ext == html ]]; then
+							if [[ "$ext" == "" || $ext == htm || $ext == html || $ext == bit || $ext == yo || $ext == zn || $ext == inf || $ext == yu || $ext == of || $ext == list ]]; then
 								_save_zeronet "${PARSEDPATH#/}"
 							fi
 						fi
