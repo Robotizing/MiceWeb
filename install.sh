@@ -20,7 +20,7 @@ for binpath in $binpaths; do
 	echo "" 1>&2
 	exit 0
     else
-	if [ -e "$binpath" ]; then
+	if [ -e "$binpath/miceweb" ]; then
 	    echo "Check '$binpath/miceweb', move it to other place and run '$0' again" 1>&2
 	    echo "" 1>&2
 	    exit 1
