@@ -67,13 +67,6 @@ _VERSION="0.3"
 # The MiceWeb Threads
 _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
 
-# ZeroNet data path
-if [ "$ZERONET_PATH" != "" ]; then
-	_ZERONET_DATA="$ZERONET_PATH/data"
-else
-	_ZERONET_DATA="$HOME/Library/Application Support/ZeroNet/data"
-fi
-
 # $DEFAULT_SUBCOMMAND
 #
 # The subcommand to be run by default, when no subcommand name is specified.
@@ -580,7 +573,7 @@ _hash_string() {
 }
 
 _news() {
-	if cat "$_ZERONET_DATA/$_SITE_ADDRESS/news.txt" 2>/dev/null; then
+	if cat "$(_zeronet_data)/$_SITE_ADDRESS/news.txt" 2>/dev/null; then
 		echo ""
 		echo ""
 	fi
@@ -928,7 +921,7 @@ _save_zeronet() {
 		SUBDIR="$DT-zeronet"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
-			local ZITEDATA="$_ZERONET_DATA/$MAIN"
+			local ZITEDATA="$(_zeronet_data)/$MAIN"
 			if [[ -d "$ZITEDATA" ]]; then
 				local CID=$(ipfs add -r "$ZITEDATA" --quieter --cid-version=0)
 				if [[ "$CID" != "" && "$CID" != "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn" ]]; then
@@ -1260,6 +1253,14 @@ _wget() {
 	rm -r $MYTMPDIR
 	rm $MYTMPFILE
 	return $RET
+}
+
+_zeronet_data() {
+	if [ "$ZERONET_PATH" != "" ]; then
+		echo "$ZERONET_PATH/data"
+	else
+		echo "$HOME/Library/Application Support/ZeroNet/data"
+	fi
 }
 
 ###############################################################################
