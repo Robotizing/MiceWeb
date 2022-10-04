@@ -1027,12 +1027,12 @@ _similar_concrete() {
 	# IPFS
 	if [[ $URL == ipfs://$host/* ]]; then
 		if [[ $URL == ipfs://Qm* ]]; then
-			local converted="$(ipfs cid format -v 1 -b base32 $host)"
+			local converted="$(ipfs cid format -v 1 -b base32 $host 2>/dev/null)"
 			if [[ "$converted" != "" ]]; then
 				echo "ipfs://$converted/${URL#ipfs://$host/}"
 			fi
 		elif [[ $URL == ipfs://bafy* ]]; then
-			local converted="$(ipfs cid format -v 0 -b base58btc $host)"
+			local converted="$(ipfs cid format -v 0 -b base58btc $host 2>/dev/null)"
 			if [[ "$converted" != "" ]]; then
 				echo "ipfs://$converted/${URL#ipfs://$host/}"
 			fi
@@ -1727,9 +1727,11 @@ present() {
 					>&2 echo " in a browser on the local machine"
 				fi
 				if [[ "$REPROVIDING" == "all" ]]; then
-					local converted="$(ipfs cid format -v 1 -b base32 $CID)"
-					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
-					>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+					local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+					if [[ "$converted" != "" ]]; then
+						>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
+						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+					fi
 				else
 					>&2 echo ""
 					>&2 echo "If you need to publish or view from an other machine,"
@@ -1771,9 +1773,11 @@ present() {
 					>&2 echo " in a browser on the local machine"
 				fi
 				if [[ "$REPROVIDING" == "all" ]]; then
-					local converted="$(ipfs cid format -v 1 -b base32 $CID)"
-					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
-					>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+					local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+					if [[ "$converted" != "" ]]; then
+						>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
+						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+					fi
 				else
 					>&2 echo ""
 					>&2 echo "If you need to publish or view from an other machine,"
@@ -1890,8 +1894,10 @@ present() {
 				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine"
 			fi
 			if [[ "$REPROVIDING" == "all" ]]; then
-				local converted="$(ipfs cid format -v 1 -b base32 $CID0)"
-				>&2 _print_with_hyperlink " or " "ipfs://$converted/$HASH" " in an IPFS friendly browser"
+				local converted="$(ipfs cid format -v 1 -b base32 $CID0 2>/dev/null)"
+				if [[ "$converted" != "" ]]; then
+					>&2 _print_with_hyperlink " or " "ipfs://$converted/$HASH" " in an IPFS friendly browser"
+				fi
 				>&2 _print_with_hyperlink " to view " "$URL0" " snapshots"
 			else
 				>&2 _print_with_hyperlink " to view " "$URL0" " snapshots"
