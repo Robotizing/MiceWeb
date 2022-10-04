@@ -67,8 +67,12 @@ _VERSION="0.3"
 # The MiceWeb Threads
 _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
 
-#TODO: make it configurable or check multiple possible paths
-_ZERONET_DATA="$HOME/Library/Application Support/ZeroNet/data"
+# ZeroNet data path
+if [ "$ZERONET_PATH" != "" ]; then
+	_ZERONET_DATA="$ZERONET_PATH/data"
+else
+	_ZERONET_DATA="$HOME/Library/Application Support/ZeroNet/data"
+fi
 
 # $DEFAULT_SUBCOMMAND
 #
