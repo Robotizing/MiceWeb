@@ -1744,10 +1744,12 @@ present() {
 						>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
 					fi
 				fi
-				local STAT=$", NumURLs: $COUNT"
+				local STAT="NumURLs: $COUNT"
+				>&2 echo ""
 				if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
-					>&2 echo ""
-					ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
+					ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+				else
+					>&2 echo "$STAT"
 				fi
 				return 0
 			fi
@@ -1876,18 +1878,16 @@ present() {
 		echo "/ipfs/$CID"
 		local STAT=""
 		local COUNT=0
-		if [[ $HASH != */* ]]; then
-			if [[ "$HASH" == "" ]]; then
-				COUNT=$(ipfs files ls //MiceWeb/pages | grep ^[0-9a-f] | wc -l)
-				STAT=$", NumURLs: $COUNT"
-			else
-				for I in $(ipfs files ls //MiceWeb/pages/$HASH); do
-					if [[ $I != *.* ]]; then
-						((COUNT++))
-					fi
-				done
-				STAT=$", NumVersions: $COUNT"
-			fi
+		if [[ "$HASH" == "" ]]; then
+			COUNT=$(ipfs files ls //MiceWeb/pages | grep ^[0-9a-f] | wc -l)
+			STAT=$"NumURLs: $COUNT"
+		else
+			for I in $(ipfs files ls //MiceWeb/pages/$HASH); do
+				if [[ $I != *.* ]]; then
+					((COUNT++))
+				fi
+			done
+			STAT=$"NumVersions: $COUNT"
 		fi
 		if [ "$1" != "" ]; then
 			if [[ $CNT -eq 0 && $COUNT -eq 0 ]]; then
@@ -1928,9 +1928,11 @@ present() {
 				>&2 echo " in a browser on the local machine to view snapshots"
 			fi
 		fi
+		>&2 echo ""
 		if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
-			>&2 echo ""
-			ipfs dag stat $CID | awk -v SUFFIX="$STAT" '{print $0 SUFFIX}' 1>&2
+			ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+		else
+			>&2 echo "$STAT"
 		fi
 		if [ "$HASH" != "" ]; then
 			local PAYATT=""
@@ -1997,7 +1999,7 @@ resolve() {
 	if [[ $1 == /ipns/* ]]; then
 		_resolve_ipns "${1#/ipns/}" | awk -v PREFIX="/ipfs/" '{print PREFIX $0}'
 		return 0
-		#TODO: show history?
+		#TODO: show history in stderr?
 		#local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
 		#for I in $(ipfs files ls //MiceWeb/resolves/ipns/$DOMAIN)
 		#do
