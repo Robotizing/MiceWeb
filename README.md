@@ -42,15 +42,18 @@ Open a terminal and run `miceweb` with arguments.
 ### Present saved versions:
 `miceweb present http://www.example.com/page.htm`
 
-`miceweb present 3b9f590c8de0288d981b09ed06c105098e78e38b`
-
 `miceweb present urls links.html --grep=^http://`
 
 ### List URLs, stored in the MiceWeb Library:
 `miceweb urls`
 
-### Welcome to the MiceWeb Threads:
-`miceweb discuss`
+---
+
+## Configuration:
+
+MiceWeb uses `ZERONET_PATH` environment variable to work with [ZeroNet](https://en.wikipedia.org/wiki/ZeroNet).
+
+[IPFS Reprovider.Strategy](https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy) determines privacy level.
 
 ---
 
@@ -60,10 +63,18 @@ MiceWeb supports following URL schemes: `http`, `https`, `ftp`, `ftps`, `ipfs`, 
 
 ---
 
+## Help:
+
+Run `miceweb commands` to see list of commands.
+
+Run `miceweb discuss`, and welcome to the MiceWeb Threads.
+
+---
+
 ## Notes:
 
-MiceWeb tries to do best to save web pages. However, it doesn't garantee perfect results for any case. We recommend to save important pages additionally with a browser (in the usual way, or using [some automation](http://ratbrowser.com)), and to check saved snapshots.
+MiceWeb tries to do best to save web pages. However, you still have to check saved snapshots of important pages.
 
-MiceWeb provides a level of anonymity like in IPFS or BitTorrent. Use it for working with content which you are ready to publish. Meanwhile, you can tune privacy level by setting [IPFS Reprovider.Strategy](https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy).
+Construct [RatBrowser](http://ratbrowser.com) to save browser-generated pages.
 
 Use [SaveSites](https://github.com/defder-su/SaveSites) to save web sites entirely.
