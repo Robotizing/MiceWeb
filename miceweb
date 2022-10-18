@@ -2030,22 +2030,23 @@ save() {
 		for I in $("$0" "$@" 2>/dev/null)
 		do
 			if _check_url "$I"; then
-				local VERSIONS_COUNT=$(_versions "$(_url_but_fragment $I)" | grep -e "^.*-wget$" -e "^.*-wget-tor$" -e "^.*-wget-ip.s$" | wc -l)
-				if [ "$VERSIONS_COUNT" -eq 0 ]; then
-					if ! _check_free_space_for_temp
-					then
-						>&2 echo "Free disk space for temporary files and run the command again"
-						return 1
-					fi
-					>&2 echo -n "Saving $I"
-					local rnumber=$((RANDOM%11+5))
-					for (( i = 1; i <= $rnumber; i++ )) ; do
-						sleep 1
-						>&2 echo -n "."
-					done
-					>&2 echo ""
-					save --no-warnings "$I"
+				#TODO: at first, save pages which have no snapshots
+				#local VERSIONS_COUNT=$(_versions "$(_url_but_fragment $I)" | grep -e "^.*-wget$" -e "^.*-wget-tor$" -e "^.*-wget-ip.s$" | wc -l)
+				#if [ "$VERSIONS_COUNT" -eq 0 ]; then
+				if ! _check_free_space_for_temp
+				then
+					>&2 echo "Free disk space for temporary files and run the command again"
+					return 1
 				fi
+				#TODO: indicate like "Saving $I (50 of 100)"
+				>&2 echo -n "Saving $I"
+				local rnumber=$((RANDOM%11+5))
+				for (( i = 1; i <= $rnumber; i++ )) ; do
+					sleep 1
+					>&2 echo -n "."
+				done
+				>&2 echo ""
+				save --no-warnings "$I"
 			fi
 		done
 		#TODO: fix and implement something like >&2 echo "Run 'miceweb present $@' to view saved snapshots"
