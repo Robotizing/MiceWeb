@@ -2149,12 +2149,12 @@ save() {
 							fi
 						fi
 					fi
-				fi
-				if [[ $URL == http*://* ]]; then
-					if [ $ININET -eq 0 ]; then
-						_save_archived $URL
+					if [[ $URL == http*://* ]]; then
+						if [ $ININET -eq 0 ]; then
+							_save_archived $URL
+						fi
 					fi
-				fi
+				fi				
 			fi
 			if [[ $URL == http*://*.*/ipfs/* ]]; then
 				_save_wget_ipfs "${PARSEDPATH#/ipfs/}"
