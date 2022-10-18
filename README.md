@@ -42,7 +42,7 @@ Open a terminal and run `miceweb` with arguments.
 ### Present saved versions:
 `miceweb present http://www.example.com/page.htm`
 
-`miceweb present urls links.html --grep=^http://`
+`miceweb present urls collection.txt --grep=stackoverflow.com`
 
 ### List URLs, stored in the MiceWeb Library:
 `miceweb urls`
