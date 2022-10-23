@@ -1307,7 +1307,7 @@ backup() {
 	fi
 	mkdir -p "$HOME/.miceweb"
 	local DT=$(export TZ=GMT ; date '+%Y-%m-%d GMT %H:%M:%S')
-	local CID="$(ipfs files stat --hash //MiceWeb)"
+	local CID="$(ipfs files stat --hash //MiceWeb 2>/dev/null)"
 	if [[ "$CID" != "" ]]; then
 		printf "%s\t%s\n" "$DT" "$CID" >> "$HOME/.miceweb/backup.txt"
 		if [ $? -eq 0 ]; then
@@ -1315,10 +1315,10 @@ backup() {
 			echo $CID
 		else
 			echo $CID
-			_exit_1 printf "Can't backup CID to ~/.miceweb/backup.txt"
+			_exit_1 printf "Can't backup CID to ~/.miceweb/backup.txt\n"
 		fi
 	else
-		_exit_1 printf "Can't obtain CID of the MiceWeb Library"
+		_exit_1 printf "Can't obtain CID of the MiceWeb Library\n"
 	fi
 }
 
