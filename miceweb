@@ -1996,6 +1996,7 @@ Description:
   Resolve IPNS path to static IPFS path
 HEREDOC
 resolve() {
+	_upgrade
 	if [[ $1 == /ipns/* ]]; then
 		_resolve_ipns "${1#/ipns/}" | awk -v PREFIX="/ipfs/" '{print PREFIX $0}'
 		return 0
