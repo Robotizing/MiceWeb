@@ -1951,7 +1951,7 @@ present() {
 		fi
 	else
 		#TODO: fix and implement something like >&2 echo "Run 'miceweb save ${@@Q}'"
-		exit 1
+		return 1
 	fi
 }
 
@@ -2341,7 +2341,7 @@ urls() {
 				done | grep "$GREP"
 			fi
 		else
-			>&2 echo "The MiceWeb Library is empty"
+			>&2 echo "The MiceWeb Library has no pages"
 		fi
 		return
 	fi
