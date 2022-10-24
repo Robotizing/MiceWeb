@@ -1870,7 +1870,7 @@ present() {
 		CID="$CID0/$HASH"
 	else
 		local MFS_PRESENT_ADDR="/MiceWeb/pages/"
-		CID0="$(ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+		CID0="$(ipfs files stat --hash /$MFS_PRESENT_ADDR 2>/dev/null)"
 		CID="$CID0"
 	fi
 	
@@ -1950,7 +1950,7 @@ present() {
 			fi
 		fi
 	else
-		>&2 echo "Run 'miceweb save ${@@Q}'"
+		#TODO: fix and implement something like >&2 echo "Run 'miceweb save ${@@Q}'"
 		exit 1
 	fi
 }
@@ -2285,7 +2285,7 @@ urls() {
 		>&2 echo " json - contain URLs in the 'url' field"
 		>&2 echo " htm(l) - contain URLs in the 'href' attribute"
 		>&2 echo ""
-		local CID="$(ipfs files stat --hash //MiceWeb/pages/)"
+		local CID="$(ipfs files stat --hash //MiceWeb/pages/ 2>/dev/null)"
 		if [[ "$CID" != "" ]]; then
 			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
 			mkdir -p "$CACHE_DIR"
@@ -2340,6 +2340,8 @@ urls() {
 					fi
 				done | grep "$GREP"
 			fi
+		else
+			>&2 echo "The MiceWeb Library is empty"
 		fi
 		return
 	fi
