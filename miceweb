@@ -1234,7 +1234,7 @@ _wget() {
 	fi
 	local WGETERR=$?
 	local RET=1
-	if [[ $WGETERR -eq 0 || $WGETERR -ge 4 ]] && [ $(ls -A "$MYTMPDIR" | wc -l) -ne 0 ]; then
+	if [[ $WGETERR -eq 0 || $WGETERR -ge 3 ]] && [ $(ls -A "$MYTMPDIR" | wc -l) -ne 0 ]; then
 		if [ $WGETERR -ne 0 ]; then
 			>&2 echo "Warning: detected issues when downloading ${SUBDIR:17}, wget err. $WGETERR"
 		fi
