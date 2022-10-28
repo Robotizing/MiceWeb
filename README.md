@@ -55,6 +55,8 @@ MiceWeb uses `ZERONET_PATH` environment variable to work with [ZeroNet](https://
 
 [IPFS Reprovider.Strategy](https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy) determines privacy level.
 
+It's possible to have several libraries on a single machine by running [several ipfs nodes](https://stackoverflow.com/questions/40180171/how-to-run-several-ipfs-nodes-on-a-single-machine).
+
 ---
 
 ## Supported URLs:
