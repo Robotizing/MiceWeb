@@ -1,0 +1,12 @@
+[submodule "submodules/wayback-machine-downloader"]
+	path = submodules/wayback-machine-downloader
+	url = https://github.com/ImportTaste/wayback-machine-downloader
+[submodule "submodules/htmlq"]
+	path = submodules/htmlq
+	url = https://github.com/mgdm/htmlq/
+[submodule "submodules/jq"]
+	path = submodules/jq
+	url = https://github.com/stedolan/jq
+[submodule "submodules/gemget"]
+	path = submodules/gemget
+	url = https://github.com/makeworld-the-better-one/gemget
