@@ -1609,15 +1609,25 @@ import() {
 						LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | ipfs add --quieter --pin=false)"
 						ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
 						echo "$HASH/$SUBDIR"
-						if ipfs dag stat "${ADDR2#/ipfs/}" 1>&2 2>/dev/null; then
-							if ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
-								>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
+						if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+							>&2 echo "Getting content from IPFS Network..."
+							if ipfs dag stat "${ADDR2#/ipfs/}"; then
+								if ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
+									>&2 echo "Done"
+								else
+									>&2 echo "Done, but could not confirm it"
+								fi
 								return 0
+							else
+								>&2 echo "Incompleted"
 							fi
-						else
-							>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
-							return 0
 						fi
+						if [[ "$(ipfs files stat --format="<type>" /$MFS_ADDR/$SUBDIR0)" == "file" ]]; then
+							>&2 echo "Run 'ipfs get ${ADDR2#/ipfs/} --output=/dev/null' to ensure availability"
+						else
+							>&2 echo "Run 'ipfs get ${ADDR2#/ipfs/}' to ensure availability"
+						fi
+						return 0
 					fi
 				fi
 			fi
@@ -1636,7 +1646,8 @@ import() {
 				LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" "$COMMENT" | ipfs add --quieter --pin=false)"
 				ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
 				echo "$HASH/$SUBDIR"
-				>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
+				#>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
+				#>&2 echo "Run 'miceweb $HASH/$SUBDIR' to present"
 				return 0
 			fi
 		else
@@ -1794,10 +1805,12 @@ present() {
 						>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
 					fi
 				fi
-				>&2 echo ""
-				if ipfs dag stat $CID 1>&2 2>/dev/null; then
-					if [ $ing -eq 1 ]; then
-						ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
+				if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+					>&2 echo ""
+					if ipfs dag stat $CID; then
+						if [ $ing -eq 1 ]; then
+							ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
+						fi
 					fi
 				fi
 				return 0
