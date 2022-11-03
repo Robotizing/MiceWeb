@@ -11,7 +11,7 @@
 
 ## Installation (Linux, macOS):
 
-Install [IPFS CLI](https://docs.ipfs.io/install/command-line/), [wget](https://www.gnu.org/software/wget/), [curl](https://curl.se/), [jq](https://stedolan.github.io/jq/download/), [htmlq](https://github.com/mgdm/htmlq/), [torsocks](https://gitlab.torproject.org/tpo/core/torsocks) and [Wayback Machine Downloader](https://github.com/ImportTaste/wayback-machine-downloader).
+Install [IPFS CLI](https://docs.ipfs.io/install/command-line/), [wget](https://www.gnu.org/software/wget/), [curl](https://curl.se/), [gemget](https://github.com/makeworld-the-better-one/gemget/), [jq](https://stedolan.github.io/jq/download/), [htmlq](https://github.com/mgdm/htmlq/), [torsocks](https://gitlab.torproject.org/tpo/core/torsocks) and [Wayback Machine Downloader](https://github.com/ImportTaste/wayback-machine-downloader).
 
 Clone the repository, open a terminal in the folder and run `./install.sh` (also, there is `./update.sh` available).
 
@@ -61,7 +61,7 @@ It's possible to have several libraries on a single machine by running [several 
 
 ## Supported URLs:
 
-MiceWeb supports following URL schemes: `http`, `https`, `ftp`, `ftps`, `ipfs`, `ipns`.
+MiceWeb supports following URL schemes: `http`, `https`, `gopher`, `gemini`, `ftp`, `ftps`, `ipfs`, `ipns`.
 
 ---
 
