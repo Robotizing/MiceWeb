@@ -29,6 +29,7 @@
 #  https://curl.se/
 #  https://stedolan.github.io/jq/download/
 #  https://github.com/mgdm/htmlq/
+#  https://github.com/makeworld-the-better-one/gemget
 #  https://gitlab.torproject.org/tpo/core/torsocks
 #  https://github.com/ImportTaste/wayback-machine-downloader
 #  https://git-scm.com/downloads
@@ -529,11 +530,21 @@ _check_free_space_for_temp() {
 
 _check_url() {
 	local URL="$1"
-	if [[ "$URL" != http://* && "$URL" != https://* && "$URL" != ipns://* && "$URL" != ipfs://* && "$URL" != ftp://* && "$URL" != ftps://* ]]; then
+	if [[ "$URL" != http://* && "$URL" != https://* && "$URL" != gopher://* && "$URL" != gemini://* && "$URL" != ipns://* && "$URL" != ipfs://* && "$URL" != ftp://* && "$URL" != ftps://* ]]; then
 		return 1
 	else
 		return 0
 	fi
+}
+
+_echo_supported_url_prefixes() {
+	#>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
+	>&2 echo "Supported URL prefixes:"
+	>&2 echo " http://, https://,"
+	>&2 echo " gopher://,"
+	>&2 echo " gemini://,"
+	>&2 echo " ftp://, ftps://,"
+	>&2 echo " ipns://, ipfs://"
 }
 
 _free_space() {
@@ -829,6 +840,28 @@ _save_curl_tor() {
 			if [ $? -eq 0 ]; then
 				echo "$SAVE_HASH/$SUBDIR"
 				#TODO: handle redirections like in _save_curl
+				return 0
+			fi
+		else
+			>&2 echo "Error: could not download ${SUBDIR:17}"
+		fi
+		return 1
+	else
+		>&2 echo "$SUBDIR exists"
+		return 0
+	fi
+}
+_save_gemget() {
+	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	SUBDIR="$DT-gemget"
+	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	if [ $? -ne 0 ]; then
+		local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
+		local CID=$(gemget --output=- "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter)
+		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
+			ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+			if [ $? -eq 0 ]; then
+				echo "$SAVE_HASH/$SUBDIR"
 				return 0
 			fi
 		else
@@ -1467,7 +1500,7 @@ hash() {
 		return 1
 	fi
 	if ! _check_url "$URL"; then
-		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
+		_echo_supported_url_prefixes
 		return 1
 	fi
 	_hash "$URL"
@@ -1563,7 +1596,7 @@ import() {
 		fi
 	fi
 	if ! _check_url "$URL"; then
-		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
+		_echo_supported_url_prefixes
 		return 1
 	fi
 	_addToHistory "$URL"
@@ -1851,7 +1884,7 @@ present() {
 				local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | ipfs add --quieter --pin=false)"
 				ipfs files cp //ipfs/$URLTXTCID /$MFS_PAGE_ADDR/URL.txt
 			else
-				>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
+				_echo_supported_url_prefixes
 				return 1
 			fi
 		fi
@@ -2101,7 +2134,7 @@ save() {
 		fi
 	fi
 	if ! _check_url "$URL"; then
-		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
+		_echo_supported_url_prefixes
 		return 1
 	fi
 	_addToHistory "$URL"
@@ -2133,6 +2166,18 @@ save() {
 				_save_wget_ipns "${URL#ipns://}"
 			elif [[ $URL == ipfs://* ]]; then
 				_save_wget_ipfs "${URL#ipfs://}"
+			elif [[ $URL == gemini://* ]]; then
+				if _command_exists gemget; then
+					_save_gemget $URL
+				else
+					>&2 _print_with_hyperlink "Error: " "https://github.com/makeworld-the-better-one/gemget" " is not installed"
+				fi
+			elif [[ $URL == gopher://* ]]; then
+				if ! _save_curl $URL; then
+					if _command_exists torsocks; then
+						_save_curl_tor $URL
+					fi
+				fi
 			else
 				_save_wget $URL
 				local WGETERR=$?
