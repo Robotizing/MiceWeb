@@ -1510,8 +1510,23 @@ hash() {
 		_echo_supported_url_prefixes
 		return 1
 	fi
-	_hash "$URL"
-	return $?
+	local HASH=$(_hash "$URL")
+	if [[ "$HASH" != "" ]]; then
+		echo $HASH
+		local MFS_ADDR="/MiceWeb/pages/$HASH"
+		ipfs files ls /$MFS_ADDR/URL.txt >/dev/null 2>/dev/null
+		if [ $? -ne 0 ]; then
+			ipfs files mkdir //MiceWeb 2>/dev/null
+			ipfs files mkdir //MiceWeb/pages 2>/dev/null
+			ipfs files mkdir /$MFS_ADDR 2>/dev/null
+			local URL0=$(_url_but_fragment "$URL")
+			local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | ipfs add --quieter --pin=false)"
+			ipfs files cp //ipfs/$URLTXTCID /$MFS_ADDR/URL.txt
+		fi
+		return 0
+	else
+		return 1
+	fi
 }
 
 # help ########################################################################
