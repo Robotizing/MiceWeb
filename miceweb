@@ -1451,6 +1451,7 @@ Description:
   Find saved web pages in ~/Downloads (use SingleFile or SingleFileZ browser extension)
 HEREDOC
 find() {
+	_upgrade
 	>&2 _print_with_hyperlink "Install " "https://github.com/gildas-lormeau/SingleFile"
 	>&2 _print_with_hyperlink " or " "https://github.com/gildas-lormeau/SingleFileZ" " browser extension,"
 	>&2 echo " then set filename template to some value contains {url-href-digest-sha-1}"
@@ -1461,27 +1462,33 @@ find() {
 		>&2 echo "This command requires URL or SHA-1 as a parameter"
 		return 1
 	fi
-	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
+	if [[ "$1" =~ ^[0-9a-f]{40}$ ]]; then
+		local HASH="$1"
 		URL=$(url "$1")
 		if [[ "$URL" == "" ]]; then
+			command find -L ~/Downloads -name "*$HASH*" -not -path '*/.*' | awk -v PREFIX="miceweb import $HASH \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
+			return 0
+		fi
+		if [[ "$URL" == http*://* ]]; then
+			command find -L ~/Downloads -name "*$HASH*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$URL\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
+		fi
+	else
+		if ! _check_url "$URL"; then
+			_echo_supported_url_prefixes
 			return 1
 		fi
-	fi
-	if ! _check_url "$URL"; then
-		>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
-		return 1
+		for J in $(_similar "$URL" 2>/dev/null); do
+			if [[ "$J" == http*://* ]]; then
+				local HASH=$(_hash "$J")
+				if [[ "$HASH" != "" ]]; then
+					command find -L ~/Downloads -name "*$HASH*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$J\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
+				fi
+			fi
+		done
 	fi
 	local filename=$(basename "$URL")
 	command find -L ~/Downloads -name "$filename" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$URL\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
 	command find -L ~/Downloads -name "$filename.*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$URL\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
-	for J in $(_similar "$URL" 2>/dev/null); do
-		if [[ "$J" == http*://* ]]; then
-			local HASH=$(_hash "$J")
-			if [[ "$HASH" != "" ]]; then
-				command find -L ~/Downloads -name "*$HASH*" -not -path '*/.*' | awk -v PREFIX="miceweb import \"$J\" \"" -v SUFFIX="\"" '{print PREFIX $0 SUFFIX}'
-			fi
-		fi
-	done
 }
 
 # hash ########################################################################
@@ -1716,9 +1723,9 @@ log() {
 
 describe "present" <<HEREDOC
 Usage:
-  ${_ME} present <snapshot>
   ${_ME} present <URL>
   ${_ME} present <SHA-1>
+  ${_ME} present <snapshot>
   ${_ME} present urls [--grep=<expression>] [<local/ipfs/ipns file path>]
   ${_ME} present
 
@@ -1859,13 +1866,55 @@ present() {
 	local CNT=0
 	
 	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
+		HASH="$1"
 		URL=$(url "$1")
 		if [[ "$URL" == "" ]]; then
+			return 1
+		fi
+		local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
+		local CID="$(ipfs files stat --hash /$MFS_PAGE_ADDR)"
+		if [ "$CID" != "" ]; then
+			echo "/ipfs/$CID"
+			local COUNT=0
+			for I in $(ipfs files ls /$MFS_PAGE_ADDR); do
+				if [[ $I != *.* ]]; then
+					((COUNT++))
+				fi
+			done
+			local STAT="NumVersions: $COUNT"
+			if [ "$GATEWAY" != "" ]; then
+				>&2 echo ""
+				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" ""
+				>&2 echo " in a browser on the local machine"
+			fi
+			if [[ "$REPROVIDING" == "all" ]]; then
+				local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+				if [[ "$converted" != "" ]]; then
+					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
+					>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+				fi
+			else
+				>&2 echo ""
+				>&2 echo "If you need to publish or view from an other machine,"
+				>&2 echo " run 'ipfs pin add $CID'"
+				if [[ "$REPROVIDING" == "roots" ]]; then
+					>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+				fi
+			fi
+			>&2 echo ""
+			if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+				ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+			else
+				>&2 echo "$STAT"
+			fi
+			return 0
+		else
 			return 1
 		fi
 	fi
 	
 	local URL0="$(_url_but_fragment "$URL")"
+	
 	local SIMURL="$URL0"
 	local SIMURLs=()
 	
