@@ -1035,8 +1035,10 @@ _similar() {
 	local URL="$(_url_but_fragment "$1")"
 	for I in $(_similar_but_scheme "$URL"); do
 		for J in $(_similar_but_slash "$I"); do
-			for K in $(_similar_concrete "$J"); do
-				echo "$K"
+			for K in $(_similar_but_something "$J"); do
+				for L in $(_similar_concrete "$K"); do
+					echo "$L"
+				done
 			done
 		done
 	done
@@ -1077,7 +1079,7 @@ _similar_but_slash() {
 	echo $URL1
 	echo $URL2
 }
-_similar_concrete() {
+_similar_but_something() {
 	local URL="$1"
 	local host=$(_parse_host "$URL/")
 	echo $URL
@@ -1122,35 +1124,43 @@ _similar_concrete() {
 			fi
 		fi
 	fi
-	# Habr
-	if [[ $URL == https://habrahabr.ru/* ]]; then
-		echo "https://habr.com/ru/${URL#https://habrahabr.ru/}"
-		echo "https://habr.com/en/${URL#https://habrahabr.ru/}"
-		echo "https://habr.com/${URL#https://habrahabr.ru/}"
-	elif [[ $URL == https://habr.com/ru/* ]]; then
-		echo "https://habrahabr.ru/${URL#https://habr.com/ru/}"
-		echo "https://habr.com/en/${URL#https://habr.com/ru/}"
-		echo "https://habr.com/${URL#https://habr.com/ru/}"
-	elif [[ $URL == https://habr.com/en/* ]]; then
-		echo "https://habrahabr.ru/${URL#https://habr.com/en/}"
-		echo "https://habr.com/ru/${URL#https://habr.com/en/}"
-		echo "https://habr.com/${URL#https://habr.com/en/}"
-	elif [[ $URL == https://habr.com/* ]]; then
-		echo "https://habrahabr.ru/${URL#https://habr.com/}"
-		echo "https://habr.com/en/${URL#https://habr.com/}"
-		echo "https://habr.com/ru/${URL#https://habr.com/}"
-	fi
-	# VK
-	if [[ $URL == https://vk.com/* ]]; then
-		echo "https://vkontakte.ru/${URL#https://vk.com/}"
-	elif [[ $URL == https://vkontakte.ru/* ]]; then
-		echo "https://vk.com/${URL#https://vkontakte.ru/}"
-	fi
-	# YouTube
-	if [[ $URL == https://youtu.be/* ]]; then
-		echo "https://www.youtube.com/watch?v=${URL#https://youtu.be/}"
-	elif [[ $URL == https://www.youtube.com/watch?v=* ]]; then
-		echo "https://youtu.be/${URL#https://www.youtube.com/watch?v=}"
+	#TODO: the same for IPNS
+	
+}
+_similar_concrete() {
+	local URL="$1"
+	echo $URL
+	if [[ $URL == https://* ]]; then
+		# Habr
+		if [[ $URL == https://habrahabr.ru/* ]]; then
+			echo "https://habr.com/ru/${URL#https://habrahabr.ru/}"
+			echo "https://habr.com/en/${URL#https://habrahabr.ru/}"
+			echo "https://habr.com/${URL#https://habrahabr.ru/}"
+		elif [[ $URL == https://habr.com/ru/* ]]; then
+			echo "https://habrahabr.ru/${URL#https://habr.com/ru/}"
+			echo "https://habr.com/en/${URL#https://habr.com/ru/}"
+			echo "https://habr.com/${URL#https://habr.com/ru/}"
+		elif [[ $URL == https://habr.com/en/* ]]; then
+			echo "https://habrahabr.ru/${URL#https://habr.com/en/}"
+			echo "https://habr.com/ru/${URL#https://habr.com/en/}"
+			echo "https://habr.com/${URL#https://habr.com/en/}"
+		elif [[ $URL == https://habr.com/* ]]; then
+			echo "https://habrahabr.ru/${URL#https://habr.com/}"
+			echo "https://habr.com/en/${URL#https://habr.com/}"
+			echo "https://habr.com/ru/${URL#https://habr.com/}"
+		fi
+		# VK
+		if [[ $URL == https://vk.com/* ]]; then
+			echo "https://vkontakte.ru/${URL#https://vk.com/}"
+		elif [[ $URL == https://vkontakte.ru/* ]]; then
+			echo "https://vk.com/${URL#https://vkontakte.ru/}"
+		fi
+		# YouTube
+		if [[ $URL == https://youtu.be/* ]]; then
+			echo "https://www.youtube.com/watch?v=${URL#https://youtu.be/}"
+		elif [[ $URL == https://www.youtube.com/watch?v=* ]]; then
+			echo "https://youtu.be/${URL#https://www.youtube.com/watch?v=}"
+		fi
 	fi
 }
 #similar() {
