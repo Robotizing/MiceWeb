@@ -475,19 +475,43 @@ _main() {
     # Pass all comment arguments to the program except for the first ($0).
     ${_SUBCOMMAND} "${_SUBCOMMAND_ARGUMENTS[@]:-}"
   else
-	local URL="${_SUBCOMMAND}"
-	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
-		URL=$(url "$URL")
+	local SOMETHING="${_SUBCOMMAND}"
+	local URL=""
+	if [[ "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
+		URL=$(url "$SOMETHING")
 		if [ "$URL" == "" ]; then
 			>&2 printf "\n"
 			return 1
 		fi
-	elif [[ "$URL" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
-		local SNAP="$URL"
+		_reprovidingWarning
+		local SNAPS=$(save --no-warnings $SOMETHING | tee -a >(cat>&2))
+		>&2 printf "\n"
+		local SNAP=$(echo "$SNAPS" | sed -n '1p')
+		if [[ "$SNAP" != "" ]]; then
+			present "$SNAP"
+			>&2 printf "\n"
+			>&2 echo "Run 'miceweb present $SOMETHING' to view all saved snapshots"
+		else
+			>&2 echo "Try to run 'miceweb present $SOMETHING' to view snapshots, saved before"
+		fi
+		>&2 printf "\n"
+		return 0
+	elif [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
+		local SNAP="$SOMETHING"
+		if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-archive ]]; then
+			local HASH=${SNAP:0:40}
+			URL=$(url "$HASH")
+			if [[ "$URL" != "" ]]; then
+				if _initiate_saving_url $URL; then
+					_save_archived_snapshot $URL ${SNAP:41} 1>/dev/null
+				fi
+			fi
+		fi
 		present "$SNAP"
 		>&2 printf "\n"
 		return 1
 	fi
+	URL="$SOMETHING"
 	if _check_url "$URL"; then
 		_save_and_present "$URL"
 	else
@@ -580,6 +604,17 @@ _hash_string() {
 				_exit_1 printf "Installed sha1sum, shasum or openssl is required for MiceWeb\n"
 			fi
 		fi
+	fi
+}
+
+_initiate_saving_url() {
+	local URL="$1"
+	SAVE_HASH=$(hash "$URL")
+	if [[ "$SAVE_HASH" != "" ]]; then
+		SAVE_MFS_ADDR="/MiceWeb/pages/$SAVE_HASH"
+		return 0
+	else
+		return 1
 	fi
 }
 
@@ -794,6 +829,29 @@ _save_archived() {
 	done
 	return $RET
 }
+_save_archived_snapshot() {
+	local URL="$1"
+	local ADDR=""
+	if [[ $URL == http://* ]]; then
+		ADDR="${URL#http://}"
+	elif [[ $URL == https://* ]]; then
+		ADDR="${URL#https://}"
+	else
+		return 1
+	fi
+	local RET=1
+	SUBDIR="$2"
+	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	if [ $? -ne 0 ]; then
+		_wget "https://web.archive.org/web/${SUBDIR:0:8}${SUBDIR:11:6}/$ADDR" --cut-dirs=1
+		RET=$?
+	else
+		>&2 echo "Warning: $SUBDIR is already downloaded, doing nothing"
+		echo "$SAVE_HASH/$SUBDIR"
+		RET=0
+	fi
+	return $RET
+}
 _save_curl() {
 	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 	SUBDIR="$DT-curl"
@@ -814,13 +872,13 @@ _save_curl() {
 						content="${content%\">}"
 						>&2 echo "Found redirect to $content, saving it"
 						#TODO: avoid possible infinite recursions, and use 'save' function (but remember about global variables 'SAVE_MFS_ADDR' and 'SUBDIR')
-						"$0" save --no-warnings "$content" 2>/dev/null
+						"$0" save --no-warnings "$content" 2> >(grep .)
 					fi
 				fi
 				return 0
 			fi
 		else
-			>&2 echo "Error: could not download ${SUBDIR:17}"
+			>&2 echo "Error: could not download '${SUBDIR:18}'"
 		fi
 		return 1
 	else
@@ -843,7 +901,7 @@ _save_curl_tor() {
 				return 0
 			fi
 		else
-			>&2 echo "Error: could not download ${SUBDIR:17}"
+			>&2 echo "Error: could not download '${SUBDIR:18}'"
 		fi
 		return 1
 	else
@@ -865,7 +923,7 @@ _save_gemget() {
 				return 0
 			fi
 		else
-			>&2 echo "Error: could not download ${SUBDIR:17}"
+			>&2 echo "Error: could not download '${SUBDIR:18}'"
 		fi
 		return 1
 	else
@@ -1269,7 +1327,7 @@ _wget() {
 	local RET=1
 	if [[ $WGETERR -eq 0 || $WGETERR -ge 3 ]] && [ $(ls -A "$MYTMPDIR" | wc -l) -ne 0 ]; then
 		if [ $WGETERR -ne 0 ]; then
-			>&2 echo "Warning: detected issues when downloading ${SUBDIR:17}, wget err. $WGETERR"
+			>&2 echo "Warning: detected issues when downloading '${SUBDIR:18}', wget err. $WGETERR"
 		fi
 		local CID="$(ipfs add --quieter --pin=false -r $MYTMPDIR)"
 		ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
@@ -1280,7 +1338,7 @@ _wget() {
 			RET=$WGETERR
 		fi
 	else
-		>&2 echo "Error: could not download ${SUBDIR:17}, wget err. $WGETERR"
+		>&2 echo "Error: could not download '${SUBDIR:18}', wget err. $WGETERR"
 	fi
 	cd ..
 	rm -r $MYTMPDIR
@@ -2128,6 +2186,7 @@ describe "save" <<HEREDOC
 Usage:
   ${_ME} save <URL>
   ${_ME} save <SHA-1>
+  ${_ME} save <snapshot>
   ${_ME} save urls [--grep=<expression>] [<local/ipfs/ipns file path>]
 
 Description:
@@ -2150,20 +2209,23 @@ save() {
 					return 1
 				fi
 				#TODO: indicate like "Saving $I (50 of 100)"
-				>&2 echo -n "Saving $I"
-				local rnumber=$((RANDOM%11+5))
-				for (( i = 1; i <= $rnumber; i++ )) ; do
-					sleep 1
-					>&2 echo -n "."
-				done
-				>&2 echo ""
-				save --no-warnings "$I"
+				local PAGE_HASH=$(hash "$I")
+				if [[ "$PAGE_HASH" != "" ]]; then
+					>&2 echo -n "Saving $I"
+					local rnumber=$((RANDOM%11+5))
+					for (( i = 1; i <= $rnumber; i++ )) ; do
+						sleep 1
+						>&2 echo -n "."
+					done
+					>&2 echo ""
+					save --no-warnings "$PAGEHASH"
+				fi
 			fi
 		done
 		#TODO: fix and implement something like >&2 echo "Run 'miceweb present $@' to view saved snapshots"
 		return 0
 	fi
-	local URL=""
+	local SOMETHING=""
 	local _arguments=()
 	local _warnings=1
 	local _val=
@@ -2177,22 +2239,40 @@ save() {
 		_exit_1 printf "Unexpected option: %s\\n" "${__arg}"
 		;;
 	  *)
-		if _blank "${_URL}"
+		if _blank "${SOMETHING}"
 		then
 		  _val="${__arg}"
-		  URL="$_val"
+		  SOMETHING="$_val"
 		else
 		  _arguments+=("${__arg}")
 		fi
 		;;
 	esac
 	done
-	if [[ "$URL" == "" ]]; then
-		>&2 echo "This command requires URL or SHA-1 as a parameter"
+	if [[ "$SOMETHING" == "" ]]; then
+		>&2 echo "This command requires URL or SHA-1 or snapshot as a parameter"
 		return 1
 	fi
-	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
-		URL=$(url "$URL")
+	local URL="$SOMETHING"
+	if [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
+		if [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-archive ]]; then
+			local SNAP="$SOMETHING"
+			local HASH=${SNAP:0:40}
+			URL=$(url "$HASH")
+			if [[ "$URL" == "" ]]; then
+				return 1
+			fi
+			if _initiate_saving_url $URL; then
+				_save_archived_snapshot $URL ${SNAP:41}
+			fi
+			return $?
+		else
+			>&2 echo "Only 'archive' snapshot can be specifically saved"
+			return 1
+		fi
+	fi
+	if [[ "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
+		URL=$(url "$SOMETHING")
 		if [[ "$URL" == "" ]]; then
 			return 1
 		fi
@@ -2212,22 +2292,19 @@ save() {
 		_reprovidingWarning
 	fi
 	local URL0=$(_url_but_fragment "$URL")
-	SAVE_HASH=$(_hash "$URL")
-	if [[ "$SAVE_HASH" != "" ]]; then
-		SAVE_MFS_ADDR="/MiceWeb/pages/$SAVE_HASH"
-		ipfs files ls /$SAVE_MFS_ADDR/URL.txt >/dev/null 2>/dev/null
-		if [ $? -ne 0 ]; then
-			ipfs files mkdir //MiceWeb 2>/dev/null
-			ipfs files mkdir //MiceWeb/pages 2>/dev/null
-			ipfs files mkdir /$SAVE_MFS_ADDR 2>/dev/null
-			local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | ipfs add --quieter --pin=false)"
-			ipfs files cp //ipfs/$URLTXTCID /$SAVE_MFS_ADDR/URL.txt
-		fi
+	if _initiate_saving_url $URL; then
 		if _check_free_space_for_temp
 		then
 			PARSEDPATH=$(_parse_path $URL)
 			if [[ $URL == ipns://* ]]; then
-				_save_wget_ipns "${URL#ipns://}"
+				if ! _save_wget_ipns "${URL#ipns://}"; then
+					if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
+						local SIMILAR_HASH=$(hash "http://${URL#ipns://}")
+						if [[ "$SIMILAR_HASH" != "" ]]; then
+							"$0" save --no-warnings $SIMILAR_HASH 2> >(grep .)
+						fi
+					fi
+				fi
 			elif [[ $URL == ipfs://* ]]; then
 				_save_wget_ipfs "${URL#ipfs://}"
 			elif [[ $URL == gemini://* ]]; then
@@ -2272,13 +2349,33 @@ save() {
 								fi
 							fi
 						fi
-					fi
-					if [[ $URL == http*://* ]]; then
-						if [ $ININET -eq 0 ]; then
-							_save_archived $URL
+						if [[ $URL == http*://* ]]; then
+							if [ $ININET -eq 0 ]; then
+								_save_archived $URL
+							fi
+							if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
+								local wos=""
+								local SIMILAR_HASH=""
+								if [[ $URL == https://* ]]; then
+									wos=${URL#https://}
+									SIMILAR_HASH=$(hash "http://$wos")
+									if [[ "$SIMILAR_HASH" != "" ]]; then
+										"$0" save --no-warnings $SIMILAR_HASH 2> >(grep .)
+									fi
+								elif [[ $URL == http://* ]]; then
+									wos=${URL#http://}
+								fi
+								local DOMAIN=$(echo "$wos" | awk -F/ '{print $1}')
+								if ipfs name resolve --recursive=false --timeout=5s $DOMAIN &>/dev/null; then
+									SIMILAR_HASH=$(hash "ipns://$wos")
+									if [[ "$SIMILAR_HASH" != "" ]]; then
+										"$0" save --no-warnings $SIMILAR_HASH 2> >(grep .)
+									fi
+								fi
+							fi
 						fi
 					fi
-				fi				
+				fi
 			fi
 			if [[ $URL == http*://*.*/ipfs/* ]]; then
 				_save_wget_ipfs "${PARSEDPATH#/ipfs/}"
