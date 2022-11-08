@@ -1682,6 +1682,7 @@ import() {
 	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
 		URL=$(url "$1")
 		if [[ "$URL" == "" ]]; then
+			#TODO: handle it
 			return 1
 		fi
 	fi
@@ -1691,17 +1692,9 @@ import() {
 	fi
 	_addToHistory "$URL"
 	_reprovidingWarning
-	local HASH=$(_hash "$URL")
+	local HASH=$(hash "$URL")
 	if [[ "$HASH" != "" ]]; then
 		local MFS_ADDR="/MiceWeb/pages/$HASH"
-		ipfs files ls /$MFS_ADDR/URL.txt >/dev/null 2>/dev/null
-		if [ $? -ne 0 ]; then
-			ipfs files mkdir //MiceWeb 2>/dev/null
-			ipfs files mkdir //MiceWeb/pages 2>/dev/null
-			ipfs files mkdir /$MFS_ADDR 2>/dev/null
-			URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | ipfs add --quieter --pin=false)"
-			ipfs files cp //ipfs/$URLTXTCID /$MFS_ADDR/URL.txt
-		fi
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-import"
 		local SUBDIR0="$SUBDIR"ing
