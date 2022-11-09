@@ -518,7 +518,9 @@ _main() {
 		_exit_1 printf "Unknown command: %s\\n" "${_SUBCOMMAND}"
 	fi
   fi
-  >&2 printf "\n"
+  if [[ "${_SUBCOMMAND_ARGUMENTS[0]}" != "--no-warnings" ]]; then
+  	>&2 printf "\n"
+  fi
 }
 
 # --------------------------------------------------------------------- functions
@@ -858,7 +860,7 @@ _save_curl() {
 	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
-		local CID=$(curl -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter)
+		local CID=$(curl --connect-timeout 60 -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter)
 		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
 			ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
@@ -872,7 +874,7 @@ _save_curl() {
 						content="${content%\">}"
 						>&2 echo "Found redirect to $content, saving it"
 						#TODO: avoid possible infinite recursions, and use 'save' function (but remember about global variables 'SAVE_MFS_ADDR' and 'SUBDIR')
-						"$0" save --no-warnings "$content" 2> >(grep .)
+						"$0" save --no-warnings "$content" #2> >(grep .)
 					fi
 				fi
 				return 0
@@ -892,7 +894,7 @@ _save_curl_tor() {
 	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
-		local CID=$(torsocks --isolate curl -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter)
+		local CID=$(torsocks --isolate curl --connect-timeout 60 -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter)
 		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
 			ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
@@ -2221,7 +2223,7 @@ save() {
 						>&2 echo -n "."
 					done
 					>&2 echo ""
-					save --no-warnings "$PAGEHASH"
+					save --no-warnings $PAGE_HASH
 				fi
 			fi
 		done
@@ -2304,7 +2306,7 @@ save() {
 					if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
 						local SIMILAR_HASH=$(hash "http://${URL#ipns://}")
 						if [[ "$SIMILAR_HASH" != "" ]]; then
-							"$0" save --no-warnings $SIMILAR_HASH 2> >(grep .)
+							"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) # | awk '!a[$0]++; fflush()'
 						fi
 					fi
 				fi
@@ -2353,9 +2355,6 @@ save() {
 							fi
 						fi
 						if [[ $URL == http*://* ]]; then
-							if [ $ININET -eq 0 ]; then
-								_save_archived $URL
-							fi
 							if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
 								local wos=""
 								local SIMILAR_HASH=""
@@ -2363,7 +2362,7 @@ save() {
 									wos=${URL#https://}
 									SIMILAR_HASH=$(hash "http://$wos")
 									if [[ "$SIMILAR_HASH" != "" ]]; then
-										"$0" save --no-warnings $SIMILAR_HASH 2> >(grep .)
+										"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) | awk '!a[$0]++; fflush()'
 									fi
 								elif [[ $URL == http://* ]]; then
 									wos=${URL#http://}
@@ -2372,8 +2371,17 @@ save() {
 								if ipfs name resolve --recursive=false --timeout=5s $DOMAIN &>/dev/null; then
 									SIMILAR_HASH=$(hash "ipns://$wos")
 									if [[ "$SIMILAR_HASH" != "" ]]; then
-										"$0" save --no-warnings $SIMILAR_HASH 2> >(grep .)
+										"$0" save --no-warnings $SIMILAR_HASH #2> >(grep .)
 									fi
+								fi
+								if [[ $URL == http://* ]]; then
+									if [ $ININET -eq 0 ]; then
+										_save_archived $URL
+									fi
+								fi
+							else
+								if [ $ININET -eq 0 ]; then
+									_save_archived $URL
 								fi
 							fi
 						fi
@@ -2385,9 +2393,10 @@ save() {
 			elif [[ $URL == http*://*.*/ipns/* ]]; then
 				_save_wget_ipns "${PARSEDPATH#/ipns/}"
 			fi
-			if [ $_warnings -eq 1 ]; then
-				>&2 echo "Run 'miceweb present \"$URL0\"' to view saved snapshots"
-			fi
+			#if [ $_warnings -eq 1 ]; then
+			#	>&2 echo ""
+			#	>&2 echo "Run 'miceweb present \"$URL0\"' to view saved snapshots"
+			#fi
 		else
 			>&2 echo "Error: insufficient disk space for temporary files"
 			return 1
