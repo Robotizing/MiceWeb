@@ -1488,6 +1488,7 @@ miceweb log		Print log created when saved snapshot
 miceweb present		Present saved snapshots
 miceweb present urls
 miceweb remove		Remove saved snapshot
+miceweb request		Request web page snapshots from remote sources
 miceweb resolve		Resolve IPNS path to static IPFS path
 miceweb save		Save web page snapshots
 miceweb save urls
@@ -2163,6 +2164,76 @@ remove() {
 	fi
 	>&2 echo "This command requires snapshot as a parameter"
 	return 1
+}
+
+# request #####################################################################
+
+describe "request" <<HEREDOC
+Usage:
+  ${_ME} request <URL>
+  ${_ME} request <SHA-1>
+
+Description:
+  Request web page snapshots from remote sources
+HEREDOC
+request() {
+	_upgrade
+	>&2 echo "Run following commands 'miceweb <parameters>' to get snapshots"
+	local URL="$(_url_but_fragment "$1")"
+	if [[ "$URL" == "" ]]; then
+		>&2 echo "This command requires URL or SHA-1 as a parameter"
+		return 1
+	fi
+	if [[ "$1" =~ ^[0-9a-f]{40}$ ]]; then
+		URL=$(url "$1")
+		if [[ "$URL" == "" ]]; then
+			return 1
+		fi
+	fi
+	if ! _check_url "$URL"; then
+		_echo_supported_url_prefixes
+		return 1
+	fi
+	if _command_exists wayback_machine_downloader; then
+		if _command_exists jq; then
+			if [[ $URL == http://* || $URL == https://* || $URL == ipns://* ]]; then
+				>&2 echo ""
+				>&2 echo "Requesting snapshots from the Wayback Machine..."
+				if [[ "$1" =~ ^[0-9a-f]{40}$ ]]; then
+					if [[ $URL == http*://* ]]; then
+						local HASH=$1
+						for I in $(wayback_machine_downloader -s -e -l "$URL" 2>/dev/null | jq --raw-output '.. | .timestamp? | strings'); do
+							echo "miceweb save $HASH/${I:0:8}GMT${I:8:6}-archive"
+						done
+					fi
+				else
+					local URL_arc=$URL
+					if [[ $URL == http://* ]]; then
+						URL_arc="https://${URL#http://}"
+					elif [[ $URL == ipns://* ]]; then
+						URL_arc="https://${URL#ipns://}"
+					fi
+					for URL_concrete in $(_similar_concrete $URL_arc)
+					do
+						if [[ "$URL_concrete" == "$URL_arc" ]]; then
+							if [[ $URL == http://* ]]; then
+								URL_concrete=$URL
+							fi
+						fi
+						local HASH=$(hash "$URL_concrete")
+						for I in $(wayback_machine_downloader -s -e -l "$URL_concrete" 2>/dev/null | jq --raw-output '.. | .timestamp? | strings'); do
+							echo "miceweb save $HASH/${I:0:8}GMT${I:8:6}-archive"
+						done
+					done
+				fi
+				>&2 echo "Done"
+			fi
+		else
+			>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
+		fi
+	else
+		>&2 echo "Error: wayback_machine_downloader is not installed"
+	fi
 }
 
 # resolve #####################################################################
