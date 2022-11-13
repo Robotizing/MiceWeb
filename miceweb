@@ -2213,6 +2213,9 @@ save() {
 					>&2 echo "Free disk space for temporary files and run the command again"
 					return 1
 				fi
+				if ! _command_exists torsocks; then
+					>&2 echo "Error: torsocks is not installed"
+				fi
 				#TODO: indicate like "Saving $I (50 of 100)"
 				local PAGE_HASH=$(hash "$I")
 				if [[ "$PAGE_HASH" != "" ]]; then
@@ -2334,7 +2337,9 @@ save() {
 							if _command_exists torsocks; then
 								_save_wget_tor $URL
 							else
-								>&2 echo "Error: torsocks is not installed"
+								if [ $_warnings -eq 1 ]; then
+									>&2 echo "Error: torsocks is not installed"
+								fi
 							fi
 						fi
 					fi
