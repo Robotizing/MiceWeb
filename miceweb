@@ -75,6 +75,8 @@ _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
 # is used.
 DEFAULT_SUBCOMMAND="${DEFAULT_SUBCOMMAND:-help}"
 
+_IPFS_FEATURES=""
+
 SAVE_MFS_ADDR=""
 SUBDIR=""
 
@@ -1191,6 +1193,7 @@ _upgrade() {
 	local VER=$(ipfs files read /$VERTXT 2>/dev/null | sed -n 2p)
 	if [[ $VER == "" ]]; then
 		local TESTHASH2="$(echo -n "test" | ipfs add --only-hash --quieter --cid-version=0)"
+		#TODO: _IPFS_FEATURES="--to-files" when accessible
 		if [[ "$TESTHASH2" != "QmRf22bZar3WKmojipms22PkXH1MZGmvsqzQtuSvQE3uhm" ]]; then
 			_exit_1 _print_with_hyperlink "Installed IPFS CLI like " "https://github.com/ipfs/kubo" " is required for MiceWeb"
 		fi
