@@ -75,6 +75,9 @@ _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
 # is used.
 DEFAULT_SUBCOMMAND="${DEFAULT_SUBCOMMAND:-help}"
 
+SAVE_MFS_ADDR=""
+SUBDIR=""
+
 ###############################################################################
 # Debug
 ###############################################################################
