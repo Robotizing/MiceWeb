@@ -2279,6 +2279,9 @@ save() {
 	#TODO: --archives={default|none|last|set}
 	if [[ "$1" == "urls" ]]; then
 		_reprovidingWarning
+		if ! _command_exists torsocks; then
+			>&2 echo "Error: torsocks is not installed, some web pages might be inaccessible"
+		fi
 		for I in $("$0" "$@" 2>/dev/null)
 		do
 			if _check_url "$I"; then
@@ -2289,9 +2292,6 @@ save() {
 				then
 					>&2 echo "Free disk space for temporary files and run the command again"
 					return 1
-				fi
-				if ! _command_exists torsocks; then
-					>&2 echo "Error: torsocks is not installed, some web pages might be inaccessible"
 				fi
 				#TODO: indicate like "Saving $I (50 of 100)"
 				local PAGE_HASH=$(hash "$I")
