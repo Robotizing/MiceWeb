@@ -2291,7 +2291,7 @@ save() {
 					return 1
 				fi
 				if ! _command_exists torsocks; then
-					>&2 echo "Error: torsocks is not installed"
+					>&2 echo "Error: torsocks is not installed, some web pages might be inaccessible"
 				fi
 				#TODO: indicate like "Saving $I (50 of 100)"
 				local PAGE_HASH=$(hash "$I")
