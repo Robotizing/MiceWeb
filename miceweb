@@ -826,7 +826,7 @@ _save_archived() {
 		SUBDIR="${I:0:8}GMT${I:8:6}-archive"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
-			_wget "https://web.archive.org/web/$I/$ADDR" --cut-dirs=1
+			_wget "https://web.archive.org/web/$I/$ADDR" --cut-dirs=3
 			RET=$?
 		else
 			>&2 echo "Warning: $SUBDIR is already downloaded, doing nothing"
@@ -850,7 +850,7 @@ _save_archived_snapshot() {
 	SUBDIR="$2"
 	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
-		_wget "https://web.archive.org/web/${SUBDIR:0:8}${SUBDIR:11:6}/$ADDR" --cut-dirs=1
+		_wget "https://web.archive.org/web/${SUBDIR:0:8}${SUBDIR:11:6}/$ADDR" --cut-dirs=3
 		RET=$?
 	else
 		>&2 echo "Warning: $SUBDIR is already downloaded, doing nothing"
@@ -948,7 +948,7 @@ _save_wget_ipfs() {
 		if [ $? -ne 0 ]; then
 			local GATEWAY=$(ipfs config Addresses.Gateway)
 			if [ "$GATEWAY" != "" ]; then
-				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$1" --cut-dirs=1
+				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$1" --cut-dirs=2
 				return $?
 			else
 				>&2 echo "Error: local IPFS gateway is not set"
@@ -969,7 +969,7 @@ _save_wget_ipns() {
 		if [ $? -ne 0 ]; then
 			local GATEWAY=$(ipfs config Addresses.Gateway)
 			if [ "$GATEWAY" != "" ]; then
-				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$ADDR" --cut-dirs=1 "Resolved /ipns/$1 to /ipfs/$ADDR"
+				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$ADDR" --cut-dirs=2 "Resolved /ipns/$1 to /ipfs/$ADDR"
 				return $?
 			else
 				>&2 echo "Error: local IPFS gateway is not set"
@@ -2407,7 +2407,7 @@ save() {
 			else
 				_save_wget $URL
 				local WGETERR=$?
-				local ININET= ; [[ $URL != http://127.0.0.1* ]] ; ININET=$?
+				local ININET= ; [[ $URL != http://127.0.0.1:* && $URL != http://localhost:* ]] ; ININET=$?
 				if [ $WGETERR -ne 0 ]; then
 					if [ $WGETERR -le 4 ]; then
 						if [ $ININET -eq 0 ]; then
