@@ -1910,16 +1910,36 @@ present() {
 				fi
 			fi
 			if [ "$CID" != "" ]; then
-				echo "/ipfs/$CID"
+				echo -n "/ipfs/$CID"
+				local suffix=""
+				local HASH=$(echo "$1" | awk -F/ '{print $1}')
+				if [[ "$HASH" != "" ]]; then
+					local URL=$(url "$HASH")
+					if [[ "$URL" != "" ]]; then
+						suffix="$URL"
+						local part=
+						part=$(echo $suffix | awk -F/ '{print $1}'); suffix="${suffix#$part/}"
+						part=$(echo $suffix | awk -F/ '{print $1}'); suffix="${suffix#$part/}"
+						part=$(echo $suffix | awk -F/ '{print $1}'); suffix="${suffix#$part/}"
+						suffix="/$suffix"
+						if ! ipfs resolve --timeout=1s $CID$suffix &>/dev/null; then
+							suffix="$suffix.html"
+							if ! ipfs resolve --timeout=1s $CID$suffix &>/dev/null; then
+								suffix=""
+							fi
+						fi
+					fi
+				fi
+				echo $suffix
 				if [ "$GATEWAY" != "" ]; then
 					>&2 echo ""
-					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" ""
+					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID$suffix" ""
 					>&2 echo " in a browser on the local machine"
 				fi
 				if [[ "$REPROVIDING" == "all" ]]; then
 					local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
 					if [[ "$converted" != "" ]]; then
-						>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
+						>&2 _print_with_hyperlink " or " "ipfs://$converted$suffix" ""
 						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
 					fi
 				else
