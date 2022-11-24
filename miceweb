@@ -1923,9 +1923,13 @@ present() {
 						part=$(echo $suffix | awk -F/ '{print $1}'); suffix="${suffix#$part/}"
 						suffix="/$suffix"
 						if ! ipfs resolve --timeout=1s $CID$suffix &>/dev/null; then
+							local suff="$suffix"
 							suffix="$suffix.html"
 							if ! ipfs resolve --timeout=1s $CID$suffix &>/dev/null; then
-								suffix=""
+								part=$(echo $suff | awk -F/ '{print $1}'); suffix="${suff#$part/}"
+								if ! ipfs resolve --timeout=1s $CID$suffix &>/dev/null; then
+									suffix=""
+								fi
 							fi
 						fi
 					fi
