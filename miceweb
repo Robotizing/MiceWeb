@@ -2437,6 +2437,12 @@ save() {
 						if [ $ININET -eq 0 ]; then
 							if _command_exists torsocks; then
 								_save_wget_tor $URL
+								local WGETERR_TOR=$?
+								if [ $WGETERR_TOR -eq 0 ]; then
+									WGETERR=9
+								elif [ $WGETERR_TOR -ge 4 ]; then
+									WGETERR=$WGETERR_TOR
+								fi
 							else
 								if [ $_warnings -eq 1 ]; then
 									>&2 echo "Error: torsocks is not installed"
