@@ -546,6 +546,9 @@ _cat_file() {
 	elif [[ "$FIL" == /ipfs/* ]]; then
 		ADDR="${FIL#/ipfs/}"
 		ipfs cat "$ADDR" | grep -a "$GREP"
+	elif [[ "$FIL" == /zeronet/* ]]; then
+		ADDR=$(_resolve_zeronet "${FIL#/zeronet/}")
+		grep -a "$GREP" "$(_zeronet_data)/$ADDR"
 	else
 		grep -a "$GREP" "$FIL"
 	fi
@@ -782,6 +785,24 @@ _resolve_ipns() {
 		done
 	fi
 	>&2 echo "Error: could not resolve /ipns/$DOMAIN"
+	return 1
+}
+
+_resolve_zeronet() {
+	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
+	if [[ $MAIN == *.* ]]; then
+		local DOMAIN=$MAIN
+		MAIN=$(curl http://127.0.0.1:43110/raw/$MAIN/content.json 2>/dev/null | jq --raw-output '.address' 2>/dev/null)
+		if [[ $MAIN == 1* ]]; then
+			>&2 echo "Resolved /zeronet/$DOMAIN to /zeronet/$MAIN"
+			echo $MAIN"${1#$DOMAIN}"
+			return 0
+		fi
+	fi
+	if [[ $MAIN == 1* ]]; then
+		echo $1
+		return 0
+	fi
 	return 1
 }
 
@@ -1421,7 +1442,7 @@ backup() {
 	if [[ "$CID" != "" ]]; then
 		printf "%s\t%s\n" "$DT" "$CID" >> "$HOME/.miceweb/backup.txt"
 		if [ $? -eq 0 ]; then
-			>&2 echo "Added CID of /MiceWeb in MFS to ~/.miceweb/backup.txt"
+			>&2 echo "Added CID of /MiceWeb (MFS) to ~/.miceweb/backup.txt"
 			echo $CID
 		else
 			echo $CID
@@ -2281,6 +2302,9 @@ resolve() {
 		#do
 		#	echo ${I%.txt} $(ipfs files read //MiceWeb/resolves/ipns/$DOMAIN/$I | sed -n 2p)
 		#done
+	elif [[ $1 == /zeronet/* ]]; then
+		_resolve_zeronet "${1#/zeronet/}" | awk -v PREFIX="/zeronet/" '{print PREFIX $0}'
+		return 0
 	else
 		>&2 echo "This command requires IPNS path (e.g., /ipns/ratbrowser.com) as a parameter"
 	fi
