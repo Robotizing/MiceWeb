@@ -684,8 +684,9 @@ _parse_extension() {
 }
 
 _path_extension() {
-	#TODO: check
-	_parse_extension "$@"
+	local filename="$@"
+	extension="${filename##*.}"
+	echo "$extension"
 }
 
 _print_hyperlink() {
@@ -2689,7 +2690,7 @@ urls() {
 		return
 	fi
 	if [[ "$FORMAT" == "" ]]; then
-		FORMAT=$(_parse_extension "$FIL")
+		FORMAT=$(_path_extension "$FIL")
 	fi
 	if [[ $FORMAT == json ]]; then
 		type -P jq &>/dev/null && ISINST=1 || ISINST=0
