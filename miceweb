@@ -1045,7 +1045,7 @@ _save_zite() {
 			if [[ -d "$ZITEDATA" ]]; then
 				local CID=$(ipfs add -r "$ZITEDATA" --quieter --cid-version=0)
 				if [[ "$CID" != "" && "$CID" != "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn" ]]; then
-					if ipfs mkdir /$SAVE_MFS_ADDR/$SUBDIR; then
+					if ipfs files mkdir /$SAVE_MFS_ADDR/$SUBDIR; then
 						ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR/$DOMAIN
 						if [ $? -eq 0 ]; then
 							echo "$SAVE_HASH/$SUBDIR"
