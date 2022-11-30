@@ -794,7 +794,6 @@ _resolve_zeronet() {
 		local DOMAIN=$MAIN
 		MAIN=$(curl http://127.0.0.1:43110/raw/$MAIN/content.json 2>/dev/null | jq --raw-output '.address' 2>/dev/null)
 		if [[ $MAIN == 1* ]]; then
-			>&2 echo "Resolved /zeronet/$DOMAIN to /zeronet/$MAIN"
 			echo $MAIN"${1#$DOMAIN}"
 			return 0
 		fi
@@ -1027,28 +1026,31 @@ _save_wget_tor() {
 		return 0
 	fi
 }
-_save_zeronet() {
-	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
-	if [[ $MAIN == *.* ]]; then
-		local DOMAIN=$MAIN
-		MAIN=$(curl http://127.0.0.1:43110/raw/$MAIN/content.json 2>/dev/null | jq --raw-output '.address' 2>/dev/null)
-		if [[ $MAIN == 1* ]]; then
-			>&2 echo "Resolved /$DOMAIN to /$MAIN"
+_save_zite() {
+	local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
+	if [[ $DOMAIN == *.* ]]; then
+		MAIN=$(_resolve_zeronet $DOMAIN)
+		if [[ $MAIN != $DOMAIN ]]; then
+			>&2 echo "Resolved /zeronet/$DOMAIN to /zeronet/$MAIN"
 		fi
+	else
+		MAIN=$DOMAIN
 	fi
 	if [[ $MAIN == 1* ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		SUBDIR="$DT-zeronet"
+		SUBDIR="$DT-zite"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local ZITEDATA="$(_zeronet_data)/$MAIN"
 			if [[ -d "$ZITEDATA" ]]; then
 				local CID=$(ipfs add -r "$ZITEDATA" --quieter --cid-version=0)
 				if [[ "$CID" != "" && "$CID" != "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn" ]]; then
-					ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
-					if [ $? -eq 0 ]; then
-						echo "$SAVE_HASH/$SUBDIR"
-						return 0
+					if ipfs mkdir /$SAVE_MFS_ADDR/$SUBDIR; then
+						ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR/$DOMAIN
+						if [ $? -eq 0 ]; then
+							echo "$SAVE_HASH/$SUBDIR"
+							return 0
+						fi
 					fi
 				fi
 			fi
@@ -2479,7 +2481,7 @@ save() {
 						if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
 							local ext=$(_parse_extension "$URL")
 							if [[ "$ext" == "" || $ext == htm || $ext == html || $ext == bit || $ext == yo || $ext == zn || $ext == inf || $ext == yu || $ext == of || $ext == list ]]; then
-								_save_zeronet "${PARSEDPATH#/}"
+								_save_zite "${PARSEDPATH#/}"
 							fi
 						fi
 					fi
