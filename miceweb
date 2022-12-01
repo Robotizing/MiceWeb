@@ -548,10 +548,28 @@ _cat_file() {
 		ipfs cat "$ADDR" | grep -a "$GREP"
 	elif [[ "$FIL" == /zeronet/* ]]; then
 		ADDR=$(_resolve_zeronet "${FIL#/zeronet/}")
-		grep -a "$GREP" "$(_zeronet_data)/$ADDR"
+		if [[ $ADDR != "" ]]; then
+			local datadir="$(_zeronet_data)"
+			if [ -d "$datadir" ]; then
+				local filename="$datadir/$ADDR"
+				if [ -e "$filename" ]; then
+					grep -a "$GREP" "$filename"
+				else
+					>&2 echo "Error: file not found, visit http://127.0.0.1:43110/$ADDR in browser and try again"
+					return 1
+				fi
+			else
+				>&2 echo "Error: '$datadir' not found,"
+				>&2 echo " check ZERONET_PATH environment variable"
+				return 1
+			fi
+		else
+			return 1
+		fi
 	else
 		grep -a "$GREP" "$FIL"
 	fi
+	return $?
 }
 
 _check_free_space_for_temp() {
@@ -796,6 +814,9 @@ _resolve_zeronet() {
 		if [[ $MAIN == 1* ]]; then
 			echo $MAIN"${1#$DOMAIN}"
 			return 0
+		elif [[ $MAIN == "" ]]; then
+			>&2 echo "Error: running ZeroNet node is required to resolve such domains"
+			return 1
 		fi
 	fi
 	if [[ $MAIN == 1* ]]; then
