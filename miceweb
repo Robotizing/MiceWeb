@@ -555,7 +555,7 @@ _cat_file() {
 				if [ -e "$filename" ]; then
 					grep -a "$GREP" "$filename"
 				else
-					>&2 echo "Error: file not found, visit http://127.0.0.1:43110/$ADDR in browser and try again"
+					>&2 echo "Error: file not found, visit http://127.0.0.1:43110/$ADDR in a browser and try again"
 					return 1
 				fi
 			else
@@ -570,6 +570,15 @@ _cat_file() {
 		grep -a "$GREP" "$FIL"
 	fi
 	return $?
+}
+
+_cat_json_file() {
+	if _command_exists jq; then
+		_cat_file "$1" | jq --raw-output '.. | strings'
+	else
+		>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
+		return 1
+	fi
 }
 
 _check_free_space_for_temp() {
@@ -2739,19 +2748,7 @@ urls() {
 	if [[ "$FORMAT" == "" ]]; then
 		FORMAT=$(_path_extension "$FIL")
 	fi
-	if [[ $FORMAT == json ]]; then
-		type -P jq &>/dev/null && ISINST=1 || ISINST=0
-		if [ $ISINST -eq 0 ]
-		then
-			>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
-			exit 127
-		fi
-		if [[ "$BASE" != "" ]]; then
-			>&2 echo "Attribute --base is only supported for html files"
-			exit 1
-		fi
-		_cat_file "$FIL" | jq --raw-output '.. | .url? | strings' | grep "$GREP" | awk '!a[$0]++; fflush()'
-	elif [[ $FORMAT == htm || $FORMAT == html ]]; then
+	if [[ $FORMAT == htm || $FORMAT == html ]]; then
 		type -P htmlq &>/dev/null && ISINST=1 || ISINST=0
 		if [ $ISINST -eq 0 ]
 		then
@@ -2761,8 +2758,22 @@ urls() {
 		if [[ "$BASE" != "" ]]; then
 			_cat_file "$FIL" | htmlq --base="$BASE" --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
 		else
+			>&2 echo "Warning: use '--base' attribute to handle relative links"
 			_cat_file "$FIL" | htmlq --detect-base --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
 		fi
+	elif [[ $FORMAT == json ]]; then
+		if [[ "$BASE" != "" ]]; then
+			>&2 echo "Attribute --base is only supported for html files"
+			exit 1
+		fi
+		for I in $(_cat_json_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
+			IFS=' ' read -ra IARR <<< "$I"
+			for J in "${IARR[@]}"; do
+				if _check_url "$J"; then
+					echo "${J%.}"
+				fi
+			done
+		done | grep "$GREP" | awk '!a[$0]++; fflush()'
 	else
 		if [[ "$BASE" != "" ]]; then
 			>&2 echo "Attribute --base is only supported for html files"
