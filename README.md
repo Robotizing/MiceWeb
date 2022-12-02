@@ -11,7 +11,7 @@
 
 ## Installation (Linux, macOS):
 
-1. Install [IPFS CLI](https://docs.ipfs.io/install/command-line/), [wget](https://www.gnu.org/software/wget/), [curl](https://curl.se/), [gemget](https://github.com/makeworld-the-better-one/gemget/), [jq](https://stedolan.github.io/jq/download/), [htmlq](https://github.com/mgdm/htmlq/), [torsocks](https://gitlab.torproject.org/tpo/core/torsocks) and [Wayback Machine Downloader](https://github.com/ImportTaste/wayback-machine-downloader).
+1. Install [IPFS CLI](https://docs.ipfs.io/install/command-line/), [wget](https://www.gnu.org/software/wget/), [curl](https://curl.se/), [gemget](https://github.com/makeworld-the-better-one/gemget/), [jq](https://stedolan.github.io/jq/download/), [htmlq](https://github.com/mgdm/htmlq/), [yt-dlp](https://github.com/yt-dlp/yt-dlp/), [ffmpeg](https://www.ffmpeg.org), [torsocks](https://gitlab.torproject.org/tpo/core/torsocks) and [Wayback Machine Downloader](https://github.com/ImportTaste/wayback-machine-downloader).
 
 2. Open a terminal and run `git clone https://github.com/Robotizing/MiceWeb && MiceWeb/install.sh` (also, there is `update.sh` available).
 

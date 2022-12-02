@@ -30,6 +30,8 @@
 #  https://stedolan.github.io/jq/download/
 #  https://github.com/mgdm/htmlq/
 #  https://github.com/makeworld-the-better-one/gemget
+#  https://github.com/yt-dlp/yt-dlp/
+#. https://www.ffmpeg.org
 #  https://gitlab.torproject.org/tpo/core/torsocks
 #  https://github.com/ImportTaste/wayback-machine-downloader
 #  https://git-scm.com/downloads
@@ -1056,6 +1058,29 @@ _save_wget_tor() {
 		return 0
 	fi
 }
+_save_media() {
+	if [[ $1 == https://www.youtube.com/watch?v=* || $1 == https://youtu.be/* ]]; then
+		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		SUBDIR="$DT-media"
+		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+		if [ $? -ne 0 ]; then
+			if _command_exists yt-dlp; then
+				if _command_exists ffmpeg; then
+					_ytdlp $1
+					return $?
+				else
+					>&2 echo "Error: ffmpeg is required to save media"
+				fi
+			else
+				>&2 echo "Error: yt-dlp is required to save media"
+			fi
+		else
+			>&2 echo "$SUBDIR exists"
+			return 0
+		fi
+	fi
+	return 1
+}
 _save_zite() {
 	local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
 	if [[ $DOMAIN == *.* ]]; then
@@ -1415,6 +1440,28 @@ _wget() {
 	cd ..
 	rm -r $MYTMPDIR
 	rm $MYTMPFILE
+	return $RET
+}
+
+_ytdlp() {
+	local URL="$1"
+	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	cd $MYTMPDIR
+	yt-dlp --no-playlist --format "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4] / bv*+ba/b" --format-sort "res~240" --sleep-requests 1 --sleep-interval 5 --max-sleep-interval 15 --add-metadata --write-info-json --write-annotations --embed-thumbnail --write-playlist-metafiles --match-filter "!is_live & !live" --merge-output-format "mp4" --socket-timeout 10 --throttled-rate 50K --output "%(id)s.%(ext)s" --no-progress --embed-info-json "$URL" &>/dev/null
+	local YTDLPERR=$?
+	local RET=1
+	if [[ $YTDLPERR -eq 0 ]]; then
+		local CID="$(ipfs add --quieter --pin=false -r $MYTMPDIR)"
+		ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+		if [ $? -eq 0 ]; then
+			echo "$SAVE_HASH/$SUBDIR"
+			RET=$YTDLPERR
+		fi
+	else
+		>&2 echo "Error: could not download '${SUBDIR:18}', yt-dlp err. $YTDLPERR"
+	fi
+	cd ..
+	rm -r $MYTMPDIR
 	return $RET
 }
 
@@ -2489,6 +2536,7 @@ save() {
 				_save_wget $URL
 				local WGETERR=$?
 				local ININET= ; [[ $URL != http://127.0.0.1:* && $URL != http://localhost:* ]] ; ININET=$?
+				_save_media $URL
 				if [ $WGETERR -ne 0 ]; then
 					if [ $WGETERR -le 4 ]; then
 						if [ $ININET -eq 0 ]; then
@@ -2555,12 +2603,12 @@ save() {
 							fi
 						fi
 					fi
-				fi
-			fi
-			if [[ $URL == http*://*.*/ipfs/* ]]; then
-				_save_wget_ipfs "${PARSEDPATH#/ipfs/}"
-			elif [[ $URL == http*://*.*/ipns/* ]]; then
-				_save_wget_ipns "${PARSEDPATH#/ipns/}"
+					if [[ $URL == http*://*.*/ipfs/* ]]; then
+						_save_wget_ipfs "${PARSEDPATH#/ipfs/}"
+					elif [[ $URL == http*://*.*/ipns/* ]]; then
+						_save_wget_ipns "${PARSEDPATH#/ipns/}"
+					fi
+				fi				
 			fi
 			#if [ $_warnings -eq 1 ]; then
 			#	>&2 echo ""
