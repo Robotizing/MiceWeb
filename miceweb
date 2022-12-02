@@ -2172,6 +2172,9 @@ present() {
 			fi
 		fi
 		CID0="$(ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+		if [[ $CID0 == "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn" ]]; then
+			_exit_1 echo "Error: unexpected error, try again"
+		fi
 		CID="$CID0/$HASH"
 	else
 		local MFS_PRESENT_ADDR="/MiceWeb/pages/"
