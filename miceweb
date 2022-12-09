@@ -1592,7 +1592,7 @@ miceweb present		Present saved snapshots
 miceweb present urls
 miceweb remove		Remove saved snapshot
 miceweb request		Request web page snapshots from remote sources
-miceweb resolve		Resolve IPNS path to static IPFS path
+miceweb resolve		Resolve dynamic path (e.g., IPNS) to direct path
 miceweb save		Save web page snapshots
 miceweb save urls
 miceweb snapshots	List saved snapshots
@@ -2370,10 +2370,12 @@ request() {
 
 describe "resolve" <<HEREDOC
 Usage:
-  ${_ME} resolve <IPNS path>
-
+  ${_ME} resolve /ipns/<cid-of-libp2p-key>
+  ${_ME} resolve /ipns/<domain>
+  ${_ME} resolve /zeronet/<domain>
+  
 Description:
-  Resolve IPNS path to static IPFS path
+  Resolve dynamic path to direct path
 HEREDOC
 resolve() {
 	_upgrade
