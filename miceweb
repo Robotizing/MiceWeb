@@ -820,6 +820,10 @@ _resolve_ipns() {
 _resolve_zeronet() {
 	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
 	if [[ $MAIN == *.* ]]; then
+		if ! _command_exists jq; then
+			>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
+			return 1
+		fi
 		local DOMAIN=$MAIN
 		MAIN=$(wget http://127.0.0.1:43110/raw/$MAIN/content.json --timeout=1 --output-document=- 2>/dev/null | jq --raw-output '.address' 2>/dev/null)
 		if [[ $MAIN == 1* ]]; then
