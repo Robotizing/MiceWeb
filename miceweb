@@ -833,7 +833,7 @@ _resolve_zeronet() {
 			>&2 echo "Error: running ZeroNet node is required to resolve such domains"
 			return 1
 		else
-			>&2 echo "Error: could not resolve /zeronet/$DOMAIN"
+			>&2 echo "Error: not supported address /zeronet/$MAIN"
 			return 1
 		fi
 	elif [[ $MAIN == 1* ]]; then
@@ -2568,10 +2568,12 @@ save() {
 					fi
 					if [[ $URL == http://127.0.0.1:43110/* ]]; then
 						if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
-							local ext=$(_parse_extension "$URL")
-							if [[ "$ext" == "" || $ext == htm || $ext == html || $ext == bit || $ext == yo || $ext == zn || $ext == inf || $ext == yu || $ext == of || $ext == list ]]; then
+							#local ext=$(_parse_extension "$URL")
+							#if [[ "$ext" == "" || $ext == htm || $ext == html || $ext == bit || $ext == yo || $ext == zn || $ext == inf || $ext == yu || $ext == of || $ext == list ]]; then
 								_save_zite "${PARSEDPATH#/}"
-							fi
+							#fi
+						else
+							_save_zite "${PARSEDPATH#/raw/}"
 						fi
 					fi
 					if [ $WGETERR -lt 4 ]; then
