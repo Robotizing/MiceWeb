@@ -1820,7 +1820,7 @@ import() {
 			local ADDR=""
 			local RESOLVED=""
 			if [[ "$IMPPATH" == /ipns/* ]]; then
-				ADDR=$(_resolve_ipns "${IMPPATH#/ipns/}")
+				ADDR="/ipfs/$(_resolve_ipns "${IMPPATH#/ipns/}")"
 				>&2 echo "Resolved to $ADDR"
 				RESOLVED=", which resolved to $ADDR"
 			else
@@ -1830,7 +1830,7 @@ import() {
 				local ADDR2=$(ipfs resolve --timeout=60s "${ADDR#/ipfs/}")
 				if [[ "$ADDR2" != "" ]]; then
 					if ipfs files cp /$ADDR2 /$MFS_ADDR/$SUBDIR0; then
-						if [[ "${ADDR%/}" != "${ADDR2#/ipfs/}" ]]; then
+						if [[ "${ADDR%/}" != "$ADDR2" ]]; then
 							>&2 echo "Resolved to $ADDR2"
 							if [[ "$RESOLVED" == "" ]]; then
 								RESOLVED=", which resolved to $ADDR2"
