@@ -1789,6 +1789,13 @@ import() {
 	local URL="$1"
 	local IMPPATH="$2"
 	local COMMENT="$3"
+	if [[ "$IMPPATH" == "" ]]; then
+		if [[ "$URL" == ipfs://* ]]; then
+			IMPPATH="/ipfs/$(echo "${URL#ipfs://}" | awk -F/ '{print $1}')"
+		elif [[ "$URL" == ipns://* ]]; then
+			IMPPATH="/ipns/$(echo "${URL#ipns://}" | awk -F/ '{print $1}')"
+		fi
+	fi
 	if [[ "$URL" == "" || "$IMPPATH" == "" ]]; then
 		>&2 echo "This command requires URL or SHA-1 as a first parameter"
 		>&2 echo " and local/ipfs/ipns path as a second parameter,"
