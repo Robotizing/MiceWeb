@@ -1790,6 +1790,7 @@ import() {
 	local URL="$1"
 	local IMPPATH="$2"
 	local COMMENT="$3"
+	local SNAPTYPE="import"
 	if [[ "$IMPPATH" == "" ]]; then
 		if [[ "$URL" == ipfs://* ]]; then
 			IMPPATH="/ipfs/$(echo "${URL#ipfs://}" | awk -F/ '{print $1}')"
@@ -1799,9 +1800,11 @@ import() {
 			>&2 echo "Set path to $IMPPATH"
 		elif [[ "$URL" == http://127.0.0.1:43110/raw/* ]]; then
 			IMPPATH="/zeronet/$(echo "${URL#http://127.0.0.1:43110/raw/}" | awk -F/ '{print $1}')"
+			SNAPTYPE="zite"
 			>&2 echo "Set path to $IMPPATH"
 		elif [[ "$URL" == http://127.0.0.1:43110/* ]]; then
 			IMPPATH="/zeronet/$(echo "${URL#http://127.0.0.1:43110/}" | awk -F/ '{print $1}')"
+			SNAPTYPE="zite"
 			>&2 echo "Set path to $IMPPATH"
 		fi
 	fi
@@ -1827,7 +1830,7 @@ import() {
 	if [[ "$HASH" != "" ]]; then
 		local MFS_ADDR="/MiceWeb/pages/$HASH"
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		SUBDIR="$DT-import"
+		SUBDIR="$DT-$SNAPTYPE"
 		local SUBDIR0="$SUBDIR"ing
 		local CID=""
 		local LOGTXTCID=""
@@ -2612,16 +2615,6 @@ save() {
 							fi
 						fi
 					fi
-					if [[ $URL == http://127.0.0.1:43110/* ]]; then
-						if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
-							#local ext=$(_parse_extension "$URL")
-							#if [[ "$ext" == "" || $ext == htm || $ext == html || $ext == bit || $ext == yo || $ext == zn || $ext == inf || $ext == yu || $ext == of || $ext == list ]]; then
-								_save_zite "${PARSEDPATH#/}"
-							#fi
-						else
-							_save_zite "${PARSEDPATH#/raw/}"
-						fi
-					fi
 					if [ $WGETERR -lt 4 ]; then
 						if ! _save_curl $URL; then
 							if [ $ININET -eq 0 ]; then
@@ -2667,7 +2660,45 @@ save() {
 					elif [[ $URL == http*://*.*/ipns/* ]]; then
 						_save_wget_ipns "${PARSEDPATH#/ipns/}"
 					fi
-				fi				
+					if [[ $URL == http://127.0.0.1:43110/* ]]; then
+						if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
+							local ext=$(_parse_extension "$URL")
+							local wos=""
+							local SIMILAR_HASH=""
+							if [[ $ext == htm || $ext == html || "$ext" == "" ]]; then
+								if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
+									wos=${URL#http://127.0.0.1:43110/}
+									SIMILAR_HASH=$(hash "http://127.0.0.1:43110/raw/$wos")
+									if [[ "$SIMILAR_HASH" != "" ]]; then
+										"$0" save --no-warnings $SIMILAR_HASH
+									fi
+								fi
+							elif [[ $ext == bit || $ext == yo || $ext == zn || $ext == inf || $ext == yu || $ext == of || $ext == list ]]; then
+								if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
+									wos=${URL#http://127.0.0.1:43110/}
+									SIMILAR_HASH=$(hash "http://127.0.0.1:43110/raw/$wos/")
+									if [[ "$SIMILAR_HASH" != "" ]]; then
+										"$0" save --no-warnings $SIMILAR_HASH
+									fi
+								else
+									SIMILAR_HASH=$(hash "$URL/")
+									if [[ "$SIMILAR_HASH" != "" ]]; then
+										"$0" save --no-warnings $SIMILAR_HASH
+									fi
+								fi
+							fi
+							#if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
+								#local ext=$(_parse_extension "$URL")
+								#
+							#		_save_zite "${PARSEDPATH#/}"
+								#fi
+							#else
+							#	_save_zite "${PARSEDPATH#/raw/}"
+							#fi
+							>&2 echo "Tip: run 'miceweb import $SAVE_HASH'"
+						fi
+					fi
+				fi
 			fi
 			#if [ $_warnings -eq 1 ]; then
 			#	>&2 echo ""
