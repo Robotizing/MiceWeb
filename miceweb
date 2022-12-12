@@ -1778,27 +1778,36 @@ history() {
 
 describe "import" <<HEREDOC
 Usage:
-  ${_ME} import <URL> <local/ipfs/ipns path> [<comment>]
-  ${_ME} import <SHA-1> <local/ipfs/ipns path> [<comment>]
+  ${_ME} import <URL> [<local/ipfs/ipns/zeronet path>] [<comment>]
+  ${_ME} import <SHA-1> [<local/ipfs/ipns/zeronet path>] [<comment>]
 
 Description:
   Import web page snapshot from file or directory
 HEREDOC
 import() {
 	_upgrade
+	_reprovidingWarning
 	local URL="$1"
 	local IMPPATH="$2"
 	local COMMENT="$3"
 	if [[ "$IMPPATH" == "" ]]; then
 		if [[ "$URL" == ipfs://* ]]; then
 			IMPPATH="/ipfs/$(echo "${URL#ipfs://}" | awk -F/ '{print $1}')"
+			>&2 echo "Set path to $IMPPATH"
 		elif [[ "$URL" == ipns://* ]]; then
 			IMPPATH="/ipns/$(echo "${URL#ipns://}" | awk -F/ '{print $1}')"
+			>&2 echo "Set path to $IMPPATH"
+		elif [[ "$URL" == http://127.0.0.1:43110/raw/* ]]; then
+			IMPPATH="/zeronet/$(echo "${URL#http://127.0.0.1:43110/raw/}" | awk -F/ '{print $1}')"
+			>&2 echo "Set path to $IMPPATH"
+		elif [[ "$URL" == http://127.0.0.1:43110/* ]]; then
+			IMPPATH="/zeronet/$(echo "${URL#http://127.0.0.1:43110/}" | awk -F/ '{print $1}')"
+			>&2 echo "Set path to $IMPPATH"
 		fi
 	fi
 	if [[ "$URL" == "" || "$IMPPATH" == "" ]]; then
 		>&2 echo "This command requires URL or SHA-1 as a first parameter"
-		>&2 echo " and local/ipfs/ipns path as a second parameter,"
+		>&2 echo " and local/ipfs/ipns/zeronet path as a second parameter,"
 		>&2 echo " some comment can be specified as a third parameter"
 		return 1
 	fi
@@ -1814,7 +1823,6 @@ import() {
 		return 1
 	fi
 	_addToHistory "$URL"
-	_reprovidingWarning
 	local HASH=$(hash "$URL")
 	if [[ "$HASH" != "" ]]; then
 		local MFS_ADDR="/MiceWeb/pages/$HASH"
@@ -1869,6 +1877,37 @@ import() {
 						return 0
 					fi
 				fi
+			fi
+		elif [[ "$IMPPATH" == /zeronet/* ]]; then
+			ADDR=$(_resolve_zeronet "${IMPPATH#/zeronet/}")
+			if [[ $ADDR != "" ]]; then
+				local datadir="$(_zeronet_data)"
+				if [ -d "$datadir" ]; then
+					local path="$datadir/$ADDR"
+					if [ -e "$path" ]; then
+						if [ -d "$path" ]; then
+							CID="$(ipfs add --quieter --pin=false -r "$path")"
+						else
+							CID="$(ipfs add --quieter --pin=false "$path")"
+						fi
+						ipfs files cp //ipfs/$CID /$MFS_ADDR/$SUBDIR
+						if [ $? -eq 0 ]; then
+							LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH" "$COMMENT" | ipfs add --quieter --pin=false)"
+							ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
+							echo "$HASH/$SUBDIR"
+							return 0
+						fi
+					else
+						>&2 echo "Error: path not found, visit http://127.0.0.1:43110/$ADDR in a browser and try again"
+						return 1
+					fi
+				else
+					>&2 echo "Error: '$datadir' not found,"
+					>&2 echo " check ZERONET_PATH environment variable"
+					return 1
+				fi
+			else
+				return 1
 			fi
 		elif [ -e "$IMPPATH" ]; then
 			if [ -d "$IMPPATH" ]; then
