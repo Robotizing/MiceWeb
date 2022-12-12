@@ -2665,7 +2665,7 @@ save() {
 							local ext=$(_parse_extension "$URL")
 							local wos=""
 							local SIMILAR_HASH=""
-							if [[ $ext == htm || $ext == html || "$ext" == "" ]]; then
+							if [[ $ext == htm || $ext == html || $URL == */ ]]; then
 								if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
 									wos=${URL#http://127.0.0.1:43110/}
 									SIMILAR_HASH=$(hash "http://127.0.0.1:43110/raw/$wos")
@@ -2673,7 +2673,7 @@ save() {
 										"$0" save --no-warnings $SIMILAR_HASH
 									fi
 								fi
-							elif [[ $ext == bit || $ext == yo || $ext == zn || $ext == inf || $ext == yu || $ext == of || $ext == list ]]; then
+							elif [[ $ext == bit || $ext == yo || $ext == zn || $ext == inf || $ext == yu || $ext == of || $ext == list || "$ext" == "" ]]; then
 								if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
 									wos=${URL#http://127.0.0.1:43110/}
 									SIMILAR_HASH=$(hash "http://127.0.0.1:43110/raw/$wos/")
