@@ -2616,8 +2616,8 @@ save() {
 						fi
 					fi
 					if [ $WGETERR -lt 4 ]; then
-						if ! _save_curl $URL; then
-							if [ $ININET -eq 0 ]; then
+						if [ $ININET -eq 0 ]; then
+							if ! _save_curl $URL; then
 								if _command_exists torsocks; then
 									_save_curl_tor $URL
 								fi
