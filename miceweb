@@ -1790,6 +1790,13 @@ import() {
 	local URL="$1"
 	local IMPPATH="$2"
 	local COMMENT="$3"
+	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
+		URL=$(url "$1")
+		if [[ "$URL" == "" ]]; then
+			#TODO: handle it
+			return 1
+		fi
+	fi
 	local SNAPTYPE="import"
 	if [[ "$IMPPATH" == "" ]]; then
 		if [[ "$URL" == ipfs://* ]]; then
@@ -1813,13 +1820,6 @@ import() {
 		>&2 echo " and local/ipfs/ipns/zeronet path as a second parameter,"
 		>&2 echo " some comment can be specified as a third parameter"
 		return 1
-	fi
-	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
-		URL=$(url "$1")
-		if [[ "$URL" == "" ]]; then
-			#TODO: handle it
-			return 1
-		fi
 	fi
 	if ! _check_url "$URL"; then
 		_echo_supported_url_prefixes
