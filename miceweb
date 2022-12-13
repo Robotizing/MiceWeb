@@ -1778,8 +1778,8 @@ history() {
 
 describe "import" <<HEREDOC
 Usage:
-  ${_ME} import <URL> [<local/ipfs/ipns/zeronet path>] [<comment>]
-  ${_ME} import <SHA-1> [<local/ipfs/ipns/zeronet path>] [<comment>]
+  ${_ME} import <URL> <local/ipfs/ipns/zeronet path> [<comment>]
+  ${_ME} import <SHA-1> <local/ipfs/ipns/zeronet path> [<comment>]
 
 Description:
   Import web page snapshot from file or directory
@@ -1798,23 +1798,29 @@ import() {
 		fi
 	fi
 	local SNAPTYPE="import"
-	if [[ "$IMPPATH" == "" ]]; then
-		if [[ "$URL" == ipfs://* ]]; then
-			IMPPATH="/ipfs/$(echo "${URL#ipfs://}" | awk -F/ '{print $1}')"
-			>&2 echo "Set path to $IMPPATH"
-		elif [[ "$URL" == ipns://* ]]; then
-			IMPPATH="/ipns/$(echo "${URL#ipns://}" | awk -F/ '{print $1}')"
-			>&2 echo "Set path to $IMPPATH"
-		elif [[ "$URL" == http://127.0.0.1:43110/raw/* ]]; then
-			IMPPATH="/zeronet/$(echo "${URL#http://127.0.0.1:43110/raw/}" | awk -F/ '{print $1}')"
-			SNAPTYPE="zite"
-			>&2 echo "Set path to $IMPPATH"
-		elif [[ "$URL" == http://127.0.0.1:43110/* ]]; then
-			IMPPATH="/zeronet/$(echo "${URL#http://127.0.0.1:43110/}" | awk -F/ '{print $1}')"
-			SNAPTYPE="zite"
-			>&2 echo "Set path to $IMPPATH"
-		fi
-	fi
+	#if [[ "$IMPPATH" == "" ]]; then
+	#	if [[ "$URL" == ipfs://* ]]; then
+	#		IMPPATH="/ipfs/$(echo "${URL#ipfs://}" | awk -F/ '{print $1}')"
+	#		>&2 echo "Set path to $IMPPATH"
+	#	elif [[ "$URL" == ipns://* ]]; then
+	#		IMPPATH="/ipns/$(echo "${URL#ipns://}" | awk -F/ '{print $1}')"
+	#		>&2 echo "Set path to $IMPPATH"
+	#	elif [[ "$URL" == http://127.0.0.1:43110/raw/* ]]; then
+	#		IMPPATH="/zeronet/$(echo "${URL#http://127.0.0.1:43110/raw/}" | awk -F/ '{print $1}')"
+	#		SNAPTYPE="zite"
+	#		>&2 echo "Set path to $IMPPATH"
+	#	elif [[ "$URL" == http://127.0.0.1:43110/* ]]; then
+	#		IMPPATH="/zeronet/$(echo "${URL#http://127.0.0.1:43110/}" | awk -F/ '{print $1}')"
+	#		SNAPTYPE="zite"
+	#		>&2 echo "Set path to $IMPPATH"
+		#elif [[ "$URL" == http://* || "$URL" == https://* ]]; then
+			#if [[ ! "$URL" =~ ^[0-9a-f]{40}$ ]]; then
+				#if ipfs name resolve --recursive=false --timeout=5s $DOMAIN &>/dev/null; then
+					
+				#fi
+			#fi
+	#	fi
+	#fi
 	if [[ "$URL" == "" || "$IMPPATH" == "" ]]; then
 		>&2 echo "This command requires URL or SHA-1 as a first parameter"
 		>&2 echo " and local/ipfs/ipns/zeronet path as a second parameter,"
@@ -2687,15 +2693,13 @@ save() {
 									fi
 								fi
 							fi
-							#if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
-								#local ext=$(_parse_extension "$URL")
-								#
-							#		_save_zite "${PARSEDPATH#/}"
-								#fi
-							#else
-							#	_save_zite "${PARSEDPATH#/raw/}"
-							#fi
-							>&2 echo "Tip: run 'miceweb import $SAVE_HASH'"
+							#TODO: implement saving zites as a separate mechanism
+							if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
+								_save_zite "${PARSEDPATH#/}"
+							else
+								_save_zite "${PARSEDPATH#/raw/}"
+							fi
+							#>&2 echo "Tip: run 'miceweb save zite 1...'"
 						fi
 					fi
 				fi
