@@ -2662,46 +2662,49 @@ save() {
 							fi
 						fi
 					fi
-					if [[ $URL == http*://*.*/ipfs/* ]]; then
-						_save_wget_ipfs "${PARSEDPATH#/ipfs/}"
-					elif [[ $URL == http*://*.*/ipns/* ]]; then
-						_save_wget_ipns "${PARSEDPATH#/ipns/}"
-					fi
-					if [[ $URL == http://127.0.0.1:43110/* ]]; then
-						if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
-							local ext=$(_parse_extension "$URL")
-							local wos=""
-							local SIMILAR_HASH=""
-							if [[ $ext == htm || $ext == html || $URL == */ ]]; then
-								if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
-									wos=${URL#http://127.0.0.1:43110/}
-									SIMILAR_HASH=$(hash "http://127.0.0.1:43110/raw/$wos")
-									if [[ "$SIMILAR_HASH" != "" ]]; then
-										"$0" save --no-warnings $SIMILAR_HASH
-									fi
-								fi
-							elif [[ $ext == bit || $ext == yo || $ext == zn || $ext == inf || $ext == yu || $ext == of || $ext == list || "$ext" == "" ]]; then
-								if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
-									wos=${URL#http://127.0.0.1:43110/}
-									SIMILAR_HASH=$(hash "http://127.0.0.1:43110/raw/$wos/")
-									if [[ "$SIMILAR_HASH" != "" ]]; then
-										"$0" save --no-warnings $SIMILAR_HASH
-									fi
-								else
-									SIMILAR_HASH=$(hash "$URL/")
-									if [[ "$SIMILAR_HASH" != "" ]]; then
-										"$0" save --no-warnings $SIMILAR_HASH
-									fi
-								fi
-							fi
-							#TODO: implement saving zites as a separate mechanism
-							if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
-								_save_zite "${PARSEDPATH#/}"
-							else
-								_save_zite "${PARSEDPATH#/raw/}"
-							fi
-							#>&2 echo "Tip: run 'miceweb save zite 1...'"
+					if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
+						if [[ $URL == http*://*.*/ipfs/* ]]; then
+							_save_wget_ipfs "${PARSEDPATH#/ipfs/}"
+						elif [[ $URL == http*://*.*/ipns/* ]]; then
+							_save_wget_ipns "${PARSEDPATH#/ipns/}"
 						fi
+					fi
+				fi
+				if [[ $URL == http://127.0.0.1:43110/* ]]; then
+					if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
+						local ext=$(_parse_extension "$URL")
+						local wos=""
+						local SIMILAR_HASH=""
+						if [[ $ext == htm || $ext == html || $URL == */ ]]; then
+							if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
+								wos=${URL#http://127.0.0.1:43110/}
+								SIMILAR_HASH=$(hash "http://127.0.0.1:43110/raw/$wos")
+								if [[ "$SIMILAR_HASH" != "" ]]; then
+									"$0" save --no-warnings $SIMILAR_HASH
+								fi
+							fi
+						elif [[ $ext == bit || $ext == yo || $ext == zn || $ext == inf || $ext == yu || $ext == of || $ext == list || "$ext" == "" ]]; then
+							if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
+								wos=${URL#http://127.0.0.1:43110/}
+								SIMILAR_HASH=$(hash "http://127.0.0.1:43110/raw/$wos/")
+								if [[ "$SIMILAR_HASH" != "" ]]; then
+									"$0" save --no-warnings $SIMILAR_HASH
+								fi
+							else
+								SIMILAR_HASH=$(hash "$URL/")
+								if [[ "$SIMILAR_HASH" != "" ]]; then
+									"$0" save --no-warnings $SIMILAR_HASH
+								fi
+							fi
+						fi
+						#TODO: implement saving zites as a separate mechanism
+						#http://127.0.0.1:43110/1LtvsjbtQ2tY7SCtCZzC4KhErqEK3bXD4n/
+						if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
+							_save_zite "${PARSEDPATH#/}"
+						else
+							_save_zite "${PARSEDPATH#/raw/}"
+						fi
+						#>&2 echo "Tip: run 'miceweb save zite 1...'"
 					fi
 				fi
 			fi
