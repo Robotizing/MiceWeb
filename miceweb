@@ -1415,16 +1415,17 @@ _wget() {
 	local RAND="$(_random_value)"
 	echo "Log $RAND" > $MYTMPFILE
 	echo "$comment" >> $MYTMPFILE
-	local USERAGENT="Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0"
+	local USERAGENT="Mozilla/5.0 (Windows NT 10.0; rv:92.0) Gecko/20100101 Firefox/92.0"
+	local ACCEPT="text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
 	local span=""
 	if [[ $SUBDIR != *-archive ]]; then
 		span="--span-hosts"
 	fi
 	local robotsoff="--execute=robots=off"
 	if [ "$options" != "--torsocks" ]; then
-		wget --adjust-extension --no-cache --page-requisites --follow-ftp --no-remove-listing --retr-symlinks --restrict-file-names=windows --convert-links --backup-converted --no-host-directories $span $robotsoff --timeout=30 --tries=1 --user-agent="$USERAGENT" $options --append-output=$MYTMPFILE "$URL"
+		wget --adjust-extension --no-cache --page-requisites --follow-ftp --no-remove-listing --retr-symlinks --restrict-file-names=windows --convert-links --backup-converted --no-host-directories $span $robotsoff --timeout=30 --tries=1 --header="Accept: $ACCEPT" --user-agent="$USERAGENT" $options --append-output=$MYTMPFILE "$URL"
 	else
-		torsocks --isolate wget --adjust-extension --no-cache --page-requisites --follow-ftp --no-remove-listing --retr-symlinks --restrict-file-names=windows --convert-links --backup-converted --no-host-directories $span $robotsoff --timeout=30 --tries=1 --user-agent="$USERAGENT" --append-output=$MYTMPFILE "$URL" 2>/dev/null
+		torsocks --isolate wget --adjust-extension --no-cache --page-requisites --follow-ftp --no-remove-listing --retr-symlinks --restrict-file-names=windows --convert-links --backup-converted --no-host-directories $span $robotsoff --timeout=30 --tries=1 --header="Accept: $ACCEPT" --user-agent="$USERAGENT" --append-output=$MYTMPFILE "$URL" 2>/dev/null
 	fi
 	local WGETERR=$?
 	local RET=1
