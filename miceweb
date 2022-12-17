@@ -2039,9 +2039,9 @@ present() {
 					>&2 echo ""
 					>&2 echo "If you need to publish or view from an other machine,"
 					>&2 echo " run 'ipfs pin add $CID'"
-					if [[ "$REPROVIDING" == "roots" ]]; then
-						>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
-					fi
+					#if [[ "$REPROVIDING" == "roots" ]]; then
+					#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+					#fi
 				fi
 				local STAT="NumURLs: $COUNT"
 				>&2 echo ""
@@ -2060,8 +2060,33 @@ present() {
 		return 1
 	fi
 	
-	if [[ "$1" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
-		local SNAP="$1"
+	local SOMETHING=""
+	local _arguments=()
+	local _warnings=1
+	local _val=
+	for __arg in "${@:-}"
+	do
+	case ${__arg} in
+	  --no-warnings)
+		_warnings=0
+		;;
+	  -*)
+		_exit_1 printf "Unexpected option: %s\\n" "${__arg}"
+		;;
+	  *)
+		if _blank "${SOMETHING}"
+		then
+		  _val="${__arg}"
+		  SOMETHING="$_val"
+		else
+		  _arguments+=("${__arg}")
+		fi
+		;;
+	esac
+	done
+
+	if [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
+		local SNAP="$SOMETHING"
 		if [[ "$SNAP" != *.* ]]; then
 			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
 			local CID="$(ipfs files stat --hash /$MFS_SNAP_ADDR)"
@@ -2073,9 +2098,9 @@ present() {
 				fi
 			fi
 			if [ "$CID" != "" ]; then
-				echo -n "/ipfs/$CID"
+				#echo -n "/ipfs/$CID"
 				local suffix=""
-				local HASH=$(echo "$1" | awk -F/ '{print $1}')
+				local HASH=$(echo "$SNAP" | awk -F/ '{print $1}')
 				if [[ "$HASH" != "" ]]; then
 					local URL=$(url "$HASH")
 					if [[ "$URL" != "" ]]; then
@@ -2097,31 +2122,40 @@ present() {
 						fi
 					fi
 				fi
-				echo $suffix
 				if [ "$GATEWAY" != "" ]; then
-					>&2 echo ""
-					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID$suffix" ""
-					>&2 echo " in a browser on the local machine"
-				fi
-				if [[ "$REPROVIDING" == "all" ]]; then
-					local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
-					if [[ "$converted" != "" ]]; then
-						>&2 _print_with_hyperlink " or " "ipfs://$converted$suffix" ""
-						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+					if [ $_warnings -eq 1 ]; then
+						echo "/ipfs/$CID$suffix"
+						>&2 echo ""
+						>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID$suffix" ""
+						>&2 echo " in a browser on the local machine"
+					else
+						_print_hyperlink "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID$suffix" "/ipfs/$CID$suffix"
+						echo ""
 					fi
 				else
-					>&2 echo ""
-					>&2 echo "If you need to publish or view from an other machine,"
-					>&2 echo " run 'ipfs pin add $CID'"
-					if [[ "$REPROVIDING" == "roots" ]]; then
-						>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
-					fi
+					echo "/ipfs/$CID$suffix"
 				fi
-				if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
-					>&2 echo ""
-					if ipfs dag stat $CID; then
-						if [ $ing -eq 1 ]; then
-							ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
+				if [ $_warnings -eq 1 ]; then
+					if [[ "$REPROVIDING" == "all" ]]; then
+						local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+						if [[ "$converted" != "" ]]; then
+							>&2 _print_with_hyperlink " or " "ipfs://$converted$suffix" ""
+							>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+						fi
+					else
+						>&2 echo ""
+						>&2 echo "If you need to publish or view from an other machine,"
+						>&2 echo " run 'ipfs pin add $CID'"
+						#if [[ "$REPROVIDING" == "roots" ]]; then
+						#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+						#fi
+					fi
+					if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+						>&2 echo ""
+						if ipfs dag stat $CID; then
+							if [ $ing -eq 1 ]; then
+								ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
+							fi
 						fi
 					fi
 				fi
@@ -2131,15 +2165,15 @@ present() {
 		return 1
 	fi
 	
-	local URL="$1"
+	local URL="$SOMETHING"
 	local HASH=""
 	local CID0=""
 	local CID=""
 	local CNT=0
 	
-	if [[ "$URL" =~ ^[0-9a-f]{40}$ ]]; then
-		HASH="$1"
-		URL=$(url "$1")
+	if [[ "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
+		HASH="$SOMETHING"
+		URL=$(url "$SOMETHING")
 		if [[ "$URL" == "" ]]; then
 			return 1
 		fi
@@ -2169,9 +2203,9 @@ present() {
 				>&2 echo ""
 				>&2 echo "If you need to publish or view from an other machine,"
 				>&2 echo " run 'ipfs pin add $CID'"
-				if [[ "$REPROVIDING" == "roots" ]]; then
-					>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
-				fi
+				#if [[ "$REPROVIDING" == "roots" ]]; then
+				#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+				#fi
 			fi
 			>&2 echo ""
 			if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
@@ -2259,7 +2293,7 @@ present() {
 			done
 			STAT="NumVersions: $COUNT"
 		fi
-		if [ "$1" != "" ]; then
+		if [ "$SOMETHING" != "" ]; then
 			if [[ $CNT -eq 0 && $COUNT -eq 0 ]]; then
 				>&2 echo ""
 				>&2 echo "There are no snapshots to view"
@@ -2280,18 +2314,18 @@ present() {
 				>&2 echo ""
 				>&2 echo "If you need to publish or view from an other machine,"
 				>&2 echo " run 'ipfs pin add $CID0'"
-				if [[ "$REPROVIDING" == "roots" ]]; then
-					>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
-				fi
+				#if [[ "$REPROVIDING" == "roots" ]]; then
+				#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+				#fi
 			fi
 		else
 			>&2 echo ""
 			>&2 echo "There is a content identifier of current pages of all the MiceWeb Library"
 			>&2 echo "It's not recommended to share it because security and other reasons,"
 			>&2 echo " however, if you need it, pin $CID0"
-			if [[ "$REPROVIDING" == "roots" ]]; then
-				>&2 echo " and run 'ipfs config Reprovider.Strategy pinned'"
-			fi
+			#if [[ "$REPROVIDING" == "roots" ]]; then
+			#	>&2 echo " and run 'ipfs config Reprovider.Strategy pinned'"
+			#fi
 			if [ "$GATEWAY" != "" ]; then
 				>&2 echo ""
 				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" ""
