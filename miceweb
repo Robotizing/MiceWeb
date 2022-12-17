@@ -491,16 +491,22 @@ _main() {
 			return 1
 		fi
 		_reprovidingWarning
-		local SNAPS=$(save --no-warnings $SOMETHING | tee -a >(cat>&2))
-		>&2 printf "\n"
-		local SNAP=$(echo "$SNAPS" | sed -n '1p')
-		if [[ "$SNAP" != "" ]]; then
-			present "$SNAP"
-			>&2 printf "\n"
-			>&2 echo "Run 'miceweb present $SOMETHING' to view all saved snapshots"
-		else
-			>&2 echo "Try to run 'miceweb present $SOMETHING' to view snapshots, saved before"
-		fi
+#		local SNAPS=$(save --no-warnings $SOMETHING | tee -a >(cat>&2))
+		#>&2 printf "\n"
+#		local SNAP=$(echo "$SNAPS" | sed -n '1p')
+#		if [[ "$SNAP" != "" ]]; then
+#			present --no-warnings "$SNAP" 1>&2
+			#>&2 printf "\n"
+			#>&2 echo "Run 'miceweb present $SOMETHING' to view all saved snapshots"
+		#else
+			#>&2 echo "Try to run 'miceweb present $SOMETHING' to view snapshots, saved before"
+#		fi
+		save --no-warnings $SOMETHING |
+			while IFS= read -r I
+			do
+				echo $I
+				present --no-warnings $I 1>&2
+			done
 		>&2 printf "\n"
 		return 0
 	elif [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
@@ -510,11 +516,12 @@ _main() {
 			URL=$(url "$HASH")
 			if [[ "$URL" != "" ]]; then
 				if _initiate_saving_url $URL; then
-					_save_archived_snapshot $URL ${SNAP:41} 1>/dev/null
+					_save_archived_snapshot $URL ${SNAP:41} &>/dev/null
 				fi
 			fi
 		fi
-		present "$SNAP"
+		echo $SNAP
+		present --no-warnings "$SNAP" 1>&2
 		>&2 printf "\n"
 		return 1
 	fi
@@ -845,18 +852,24 @@ _resolve_zeronet() {
 
 _save_and_present() {
 	local URL="$1"
-	_reprovidingWarning
-	local URL0=$(_url_but_fragment "$URL")
-	local SNAPS=$(save --no-warnings "$URL" | tee -a >(cat>&2))
-	>&2 printf "\n"
-	local SNAP=$(echo "$SNAPS" | sed -n '1p')
-	if [[ "$SNAP" != "" ]]; then
-		present "$SNAP"
-		>&2 printf "\n"
-		>&2 echo "Run 'miceweb present \"$URL0\"' to view all saved snapshots"
-	else
-		>&2 echo "Try to run 'miceweb present \"$URL0\"' to view snapshots, saved before"
-	fi
+	#_reprovidingWarning
+#	local URL0=$(_url_but_fragment "$URL")
+#	local SNAPS=$(save --no-warnings "$URL" | tee -a >(cat>&2))
+	#>&2 printf "\n"
+#	local SNAP=$(echo "$SNAPS" | sed -n '1p')
+#	if [[ "$SNAP" != "" ]]; then
+#		present --no-warnings "$SNAP" 1>&2
+		#>&2 printf "\n"
+		#>&2 echo "Run 'miceweb present \"$URL0\"' to view all saved snapshots"
+	#else
+		#>&2 echo "Try to run 'miceweb present \"$URL0\"' to view snapshots, saved before"
+#	fi
+	save --no-warnings $URL |
+		while IFS= read -r I
+		do
+			echo $I
+			present --no-warnings $I 1>&2
+		done
 }
 
 _save_archived() {
