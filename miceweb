@@ -1467,7 +1467,7 @@ _ytdlp() {
 	local URL="$1"
 	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
 	cd $MYTMPDIR
-	yt-dlp --no-playlist --format "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4] / bv*+ba/b" --format-sort "res~360" --sleep-requests 1 --sleep-interval 5 --max-sleep-interval 15 --add-metadata --no-write-info-json --no-cookies-from-browser --no-cache-dir --write-description --write-annotations --no-embed-thumbnail --write-all-thumbnails --write-playlist-metafiles --match-filter "!is_live & !live" --merge-output-format "mp4" --socket-timeout 10 --throttled-rate 50K --output "%(title)s [%(id)s] - %(channel)s [%(channel_id)s] - %(upload_date)s.%(ext)s" --output "thumbnail:thumbnails/image.%(ext)s" --no-progress "$URL" &>/dev/null
+	yt-dlp --no-playlist --format "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4] / bv*+ba/b" --format-sort "res~360" --sleep-requests 1 --sleep-interval 5 --max-sleep-interval 15 --add-metadata --no-write-info-json --no-cookies-from-browser --no-cache-dir --write-description --write-annotations --no-embed-thumbnail --write-all-thumbnails --write-playlist-metafiles --match-filter "!is_live & !live" --merge-output-format "mp4" --socket-timeout 10 --throttled-rate 50K --output "%(title)s [%(id)s] - %(channel)s [%(channel_id)s] - %(upload_date)s.%(ext)s" --output "description:media.%(ext)s" --output "thumbnail:thumbnails/image.%(ext)s" --no-progress "$URL" &>/dev/null
 	local YTDLPERR=$?
 	local RET=1
 	if [[ $YTDLPERR -eq 0 ]]; then
