@@ -1100,6 +1100,36 @@ _save_media() {
 	fi
 	return 1
 }
+_save_playlist() {
+	if [[ $1 == https://www.youtube.com/channel/* || $1 == https://www.youtube.com/c/* || $1 == https://www.youtube.com/user/* || $1 == https://www.youtube.com/@* || $1 == https://rutube.ru/channel/*/videos || $1 == https://www.youtube.com/*?list=* ]]; then
+		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		SUBDIR="$DT-playlist"
+		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+		if [ $? -ne 0 ]; then
+			local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
+			local CID=$(yt-dlp --skip-download  --flat-playlist --print "Title: %(title)s
+URL: %(webpage_url)s
+Duration: %(duration_string)s
+Views: %(view_count)s
+Description: %(description)s
+
+" --socket-timeout 10 --no-progress "$URL" 2>/dev/null | ipfs add --cid-version=0 --quieter --pin=false)
+			if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
+				ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+				if [ $? -eq 0 ]; then
+					echo "$SAVE_HASH/$SUBDIR"
+					return 0
+				fi
+			else
+				>&2 echo "Error: could not download '${SUBDIR:18}'"
+			fi
+			return 1
+		else
+			>&2 echo "$SUBDIR exists"
+			return 0
+		fi
+	fi
+}
 _save_zite() {
 	local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
 	if [[ $DOMAIN == *.* ]]; then
@@ -2648,6 +2678,7 @@ save() {
 				fi
 			else
 				_save_media $URL
+				_save_playlist $URL
 				_save_wget $URL
 				local WGETERR=$?
 				local ININET= ; [[ $URL != http://127.0.0.1:* && $URL != http://localhost:* ]] ; ININET=$?
