@@ -1101,13 +1101,13 @@ _save_media() {
 	return 1
 }
 _save_playlist() {
-	if [[ $1 == https://www.youtube.com/channel/* || $1 == https://www.youtube.com/c/* || $1 == https://www.youtube.com/user/* || $1 == https://www.youtube.com/@* || $1 == https://rutube.ru/channel/*/videos || $1 == https://www.youtube.com/*?list=* ]]; then
+	if [[ $1 == https://www.youtube.com/channel/* || $1 == https://www.youtube.com/c/* || $1 == https://www.youtube.com/user/* || $1 == https://www.youtube.com/@* || $1 == https://rutube.ru/channel/*/videos || $1 == https://vimeo.com/* || $1 == https://www.youtube.com/*?list=* ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-playlist"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
-			local CID=$(yt-dlp --skip-download  --flat-playlist --print "Title: %(title)s
+			local CID=$(yt-dlp --flat-playlist --print "Title: %(title)s
 URL: %(webpage_url)s
 Duration: %(duration_string)s
 Views: %(view_count)s
