@@ -1097,6 +1097,26 @@ _save_media() {
 			>&2 echo "$SUBDIR exists"
 			return 0
 		fi
+	elif [[ $1 == https://www.twitch.tv/* || $1 == https://m.twitch.tv/* || $1 == https://rutube.ru/video/* ]]; then
+		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		SUBDIR="$DT-media"
+		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+		if [ $? -ne 0 ]; then
+			if _command_exists yt-dlp; then
+				if _command_exists ffmpeg; then
+					if _command_exists ffprobe; then
+						_ytdlp_audio $1
+						return $?
+					fi
+				fi
+				>&2 echo "Error: ffmpeg and ffprobe are required to save audio"
+			else
+				>&2 echo "Error: yt-dlp is required to save media"
+			fi
+		else
+			>&2 echo "$SUBDIR exists"
+			return 0
+		fi
 	fi
 	return 1
 }
@@ -1497,7 +1517,29 @@ _ytdlp() {
 	local URL="$1"
 	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
 	cd $MYTMPDIR
-	yt-dlp --no-playlist --format "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4] / bv*+ba/b" --format-sort "res~360" --sleep-requests 1 --sleep-interval 5 --max-sleep-interval 15 --add-metadata --add-chapters --no-write-info-json --no-cookies-from-browser --no-cache-dir --write-description --write-annotations --no-embed-thumbnail --write-all-thumbnails --write-playlist-metafiles --live-from-start --merge-output-format "mp4" --socket-timeout 10 --throttled-rate 50K --output "%(title)s [%(id)s] - %(channel)s [%(channel_id)s] - %(upload_date)s.%(ext)s" --output "description:media.%(ext)s" --output "thumbnail:thumbnails/image.%(ext)s" --no-progress "$URL" &>/dev/null
+	yt-dlp --no-playlist --format "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4] / bv*+ba/b" --format-sort "res~360" --sleep-requests 1 --sleep-interval 5 --max-sleep-interval 10 --add-metadata --add-chapters --no-write-info-json --no-cookies-from-browser --no-cache-dir --write-description --write-annotations --no-embed-thumbnail --write-all-thumbnails --write-playlist-metafiles --live-from-start --merge-output-format "mp4" --socket-timeout 10 --throttled-rate 50K --output "%(title)s [%(id)s] - %(channel)s [%(channel_id)s] - %(upload_date)s.%(ext)s" --output "description:media.%(ext)s" --output "thumbnail:thumbnails/image.%(ext)s" --no-progress "$URL" &>/dev/null
+	local YTDLPERR=$?
+	local RET=1
+	if [[ $YTDLPERR -eq 0 ]]; then
+		local CID="$(ipfs add --quieter --pin=false -r $MYTMPDIR)"
+		ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+		if [ $? -eq 0 ]; then
+			echo "$SAVE_HASH/$SUBDIR"
+			RET=$YTDLPERR
+		fi
+	else
+		>&2 echo "Error: could not download '${SUBDIR:18}', yt-dlp err. $YTDLPERR"
+	fi
+	cd ..
+	rm -r $MYTMPDIR
+	return $RET
+}
+
+_ytdlp_audio() {
+	local URL="$1"
+	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	cd $MYTMPDIR
+	yt-dlp --no-playlist --format "(bestaudio[acodec^=opus]/bestaudio)/best" --sleep-requests 1 --sleep-interval 5 --max-sleep-interval 10 --add-metadata --add-chapters --no-write-info-json --no-cookies-from-browser --no-cache-dir --write-description --write-annotations --no-embed-thumbnail --write-all-thumbnails --write-playlist-metafiles --live-from-start --extract-audio --audio-quality 0 --socket-timeout 10 --throttled-rate 50K --output "%(title)s [%(id)s] - %(channel)s [%(channel_id)s] - %(upload_date)s.%(ext)s" --output "description:media.%(ext)s" --output "thumbnail:thumbnails/image.%(ext)s" --no-progress "$URL" &>/dev/null
 	local YTDLPERR=$?
 	local RET=1
 	if [[ $YTDLPERR -eq 0 ]]; then
