@@ -1098,25 +1098,26 @@ _save_media() {
 			return 0
 		fi
 	elif [[ $1 == https://www.twitch.tv/* || $1 == https://m.twitch.tv/* || $1 == https://rutube.ru/video/* ]]; then
-		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		SUBDIR="$DT-media"
-		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
-		if [ $? -ne 0 ]; then
-			if _command_exists yt-dlp; then
-				if _command_exists ffmpeg; then
-					if _command_exists ffprobe; then
-						_ytdlp_audio $1
-						return $?
-					fi
-				fi
-				>&2 echo "Error: ffmpeg and ffprobe are required to save audio"
-			else
-				>&2 echo "Error: yt-dlp is required to save media"
-			fi
-		else
-			>&2 echo "$SUBDIR exists"
-			return 0
-		fi
+		>&2 echo "Warning: skipped downloading 'media', promised to be very slow"
+	#	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	#	SUBDIR="$DT-media"
+	#	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	#	if [ $? -ne 0 ]; then
+	#		if _command_exists yt-dlp; then
+	#			if _command_exists ffmpeg; then
+	#				if _command_exists ffprobe; then
+	#					_ytdlp_audio $1
+	#					return $?
+	#				fi
+	#			fi
+	#			>&2 echo "Error: ffmpeg and ffprobe are required to save audio"
+	#		else
+	#			>&2 echo "Error: yt-dlp is required to save media"
+	#		fi
+	#	else
+	#		>&2 echo "$SUBDIR exists"
+	#		return 0
+	#	fi
 	fi
 	return 1
 }
