@@ -1078,7 +1078,7 @@ _save_wget_tor() {
 	fi
 }
 _save_media() {
-	if [[ $1 == https://www.youtube.com/watch?v=* || $1 == https://youtu.be/* || $1 == https://vk.com/video* || $1 == https://ok.ru/video/* || $1 == https://vimeo.com/* || $1 == https://coub.com/view/* || $1 ==  https://www.instagram.com/p/* || $1 == https://www.tiktok.com/@*/video/* || $1 == https://twitter.com/*/status/* || $1 == https://fb.watch/* || $1 == https://www.facebook.com/reel/* ]]; then
+	if [[ $1 == https://www.youtube.com/watch?v=* || $1 == https://youtu.be/* || $1 == https://vk.com/video* || $1 == https://ok.ru/video/* || $1 == https://vimeo.com/* || $1 == https://coub.com/view/* || $1 ==  https://www.instagram.com/p/* || $1 == https://www.tiktok.com/@*/video/* || $1 == https://twitter.com/*/status/* || $1 == https://fb.watch/* || $1 == https://www.facebook.com/reel/* || $1 == https://my.mail.ru/mail/*/video/* ]]; then	#TODO: support share.tube?
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-media"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
@@ -1097,7 +1097,7 @@ _save_media() {
 			>&2 echo "$SUBDIR exists"
 			return 0
 		fi
-	elif [[ $1 == https://www.twitch.tv/* || $1 == https://m.twitch.tv/* || $1 == https://rutube.ru/video/* ]]; then
+	elif [[ $1 == https://www.twitch.tv/* || $1 == https://m.twitch.tv/* || $1 == https://rutube.ru/video/* || $1 == https://www.dailymotion.com/video/* || $1 == https://zen.yandex.ru/video/watch/* || $1 == https://dzen.ru/video/watch/* ]]; then
 		>&2 echo "Warning: skipped downloading 'media', promised to be very slow"
 	#	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 	#	SUBDIR="$DT-media"
@@ -1122,7 +1122,7 @@ _save_media() {
 	return 1
 }
 _save_playlist() {
-	if [[ $1 == https://www.youtube.com/channel/* || $1 == https://www.youtube.com/c/* || $1 == https://www.youtube.com/user/* || $1 == https://www.youtube.com/@* || $1 == https://rutube.ru/channel/*/videos || $1 == https://vimeo.com/* || $1 == https://www.youtube.com/*?list=* ]]; then
+	if [[ $1 == https://www.youtube.com/channel/* || $1 == https://www.youtube.com/c/* || $1 == https://www.youtube.com/user/* || $1 == https://www.youtube.com/@* || $1 == https://rutube.ru/channel/*/videos || $1 == https://vimeo.com/* || $1 == https://www.youtube.com/*?list=* || $1 == https://www.dailymotion.com/* ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-playlist"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
