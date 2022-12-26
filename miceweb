@@ -2076,7 +2076,6 @@ Usage:
   ${_ME} present <SHA-1>
   ${_ME} present <snapshot>
   ${_ME} present urls [--grep=<expression>] [<local/ipfs/ipns file path>]
-  ${_ME} present
 
 Description:
   Present saved snapshot
@@ -2153,12 +2152,9 @@ present() {
 				fi
 				return 0
 			fi
-		else
-			present
-			return $?
+			#TODO: fix and implement something like >&2 echo "Run 'miceweb save ${@@Q}'"
+			return 1
 		fi
-		#TODO: fix and implement something like >&2 echo "Run 'miceweb save ${@@Q}'"
-		return 1
 	fi
 	
 	local SOMETHING=""
@@ -2325,7 +2321,7 @@ present() {
 	local SIMURL="$URL0"
 	local SIMURLs=()
 	
-	if [[ "$URL" != "" ]]; then
+	if [[ "$URL" != "urls" ]]; then
 		HASH=$(_hash "$URL" 2>/dev/null)
 	fi
 	
@@ -2394,7 +2390,7 @@ present() {
 			done
 			STAT="NumVersions: $COUNT"
 		fi
-		if [ "$SOMETHING" != "" ]; then
+		if [ "$HASH" != "" ]; then
 			if [[ $CNT -eq 0 && $COUNT -eq 0 ]]; then
 				>&2 echo ""
 				>&2 echo "There are no snapshots to view"
