@@ -527,6 +527,23 @@ _main() {
 		fi
 		>&2 printf "\n"
 		return 0
+	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
+		save --no-warnings $SOMETHING |
+			while IFS= read -r I
+			do
+				echo $I
+				present --no-warnings $I 1>&2
+			done
+		>&2 printf "\n"
+		return 0
+	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite ]]; then
+		local SNAP="$SOMETHING"
+		if ipfs files ls //MiceWeb/zites/$SNAP >/dev/null; then
+			echo $SNAP
+			present --no-warnings "$SNAP" 1>&2
+		fi
+		>&2 printf "\n"
+		return 0
 	fi
 	URL="$SOMETHING"
 	if _check_url "$URL"; then
@@ -1169,16 +1186,17 @@ Description: %(description)s
 	fi
 }
 _save_zite() {
-	local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
-	if [[ $DOMAIN == *.* ]]; then
-		MAIN=$(_resolve_zeronet $DOMAIN)
-		if [[ $MAIN != $DOMAIN && "$MAIN" != "" ]]; then
-			>&2 echo "Resolved /zeronet/$DOMAIN to /zeronet/$MAIN"
-		fi
-	else
-		MAIN=$DOMAIN
-	fi
-	if [[ $MAIN == 1* ]]; then
+	#local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
+	#if [[ $DOMAIN == *.* ]]; then
+	#	MAIN=$(_resolve_zeronet $DOMAIN)
+	#	if [[ $MAIN != $DOMAIN && "$MAIN" != "" ]]; then
+	#		>&2 echo "Resolved /zeronet/$DOMAIN to /zeronet/$MAIN"
+	#	fi
+	#else
+	#	MAIN=$DOMAIN
+	#fi
+	local MAIN=$1
+	#if [[ $MAIN == 1* ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-zite"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
@@ -1187,20 +1205,20 @@ _save_zite() {
 			if [[ -d "$ZITEDATA" ]]; then
 				local CID=$(ipfs add -r "$ZITEDATA" --quieter --pin=false --cid-version=0)
 				if [[ "$CID" != "" && "$CID" != "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn" ]]; then
-					if ipfs files mkdir /$SAVE_MFS_ADDR/$SUBDIR; then
-						ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR/$DOMAIN
+					#if ipfs files mkdir /$SAVE_MFS_ADDR/$SUBDIR; then
+						ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR	#/$DOMAIN
 						if [ $? -eq 0 ]; then
 							echo "$SAVE_HASH/$SUBDIR"
 							return 0
 						fi
-					fi
+					#fi
 				fi
 			fi
 		else
 			>&2 echo "$SUBDIR exists"
 			return 0
 		fi
-	fi
+	#fi
 	return 1
 }
 
@@ -1583,6 +1601,27 @@ _zeronet_data() {
 	fi
 }
 
+_zite_address() {
+	local URL="$1"
+	local PARSEDPATH=$(_parse_path $URL)
+	local ZNPATH=""
+	if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
+		ZNPATH="${PARSEDPATH#/}"
+	else
+		ZNPATH="${PARSEDPATH#/raw/}"
+	fi
+	local DOMAIN=$(echo "$ZNPATH" | awk -F/ '{print $1}')
+	if [[ $DOMAIN == *.* ]]; then
+		MAIN=$(_resolve_zeronet $DOMAIN)
+		#if [[ $MAIN != $DOMAIN && "$MAIN" != "" ]]; then
+		#	>&2 echo "Resolved /zeronet/$DOMAIN to /zeronet/$MAIN"
+		#fi
+	else
+		MAIN=$DOMAIN
+	fi
+	echo $MAIN
+}
+
 ###############################################################################
 # Subcommands
 # ===========..................................................................
@@ -1698,15 +1737,18 @@ miceweb import		Import web page snapshot from file or directory
 miceweb log		Print log created when saved snapshot
 miceweb present		Present saved snapshots
 miceweb present urls
+miceweb present zites
 miceweb remove		Remove saved snapshot
 miceweb request		Request web page snapshots from remote sources
 miceweb resolve		Resolve dynamic path (e.g., IPNS) to direct path
 miceweb save		Save web page snapshots
 miceweb save urls
+miceweb save zites
 miceweb snapshots	List saved snapshots
 miceweb url		Return URL by SHA-1 hash
 miceweb urls		List URLs from file, or from the MiceWeb Library
-miceweb version		Display the current program version"
+miceweb version		Display the current program version
+miceweb zites		List zites from the MiceWeb Library"
 }
 
 # discuss #####################################################################
@@ -2065,6 +2107,9 @@ log() {
 			ipfs files read //MiceWeb/pages/$SNAP.log
 			return $?
 		fi
+	elif [[ "$SNAP" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
+		ipfs files read //MiceWeb/zites/$SNAP.log
+		return $?
 	fi
 	>&2 echo "This command requires snapshot as a parameter"
 	return 1
@@ -2074,17 +2119,21 @@ log() {
 
 describe "present" <<HEREDOC
 Usage:
+  ${_ME} present <snapshot>
   ${_ME} present <URL>
   ${_ME} present <SHA-1>
-  ${_ME} present <snapshot>
-  ${_ME} present urls [--grep=<expression>] [<local/ipfs/ipns file path>]
+  ${_ME} present urls [--grep=<expr.>] [<local/ipfs/ipns/zeronet file path>]
+  ${_ME} present <zite>
+  ${_ME} present zites
 
 Description:
   Present saved snapshot
   Present saved snapshots of web page (including similar) by URL
-  Present saved snapshots of web page (including similar) by URL's SHA-1
+  Present saved snapshots of web page by URL's SHA-1
   Present saved snapshots of web pages by URLs from file
   Present saved snapshots of web pages in the MiceWeb Library
+  Present saved snapshots of zite by bitcoin address
+  Present saved snapshots of zites
 HEREDOC
 present() {
 	_upgrade
@@ -2264,6 +2313,50 @@ present() {
 		return 1
 	fi
 	
+	if [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
+		local SNAP="$SOMETHING"
+		local MFS_SNAP_ADDR="/MiceWeb/zites/$SNAP"
+		local CID="$(ipfs files stat --hash /$MFS_SNAP_ADDR)"
+		if [ "$CID" != "" ]; then
+			local suffix=""
+			if [ "$GATEWAY" != "" ]; then
+				if [ $_warnings -eq 1 ]; then
+					echo "/ipfs/$CID$suffix"
+					>&2 echo ""
+					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID$suffix" ""
+					>&2 echo " in a browser on the local machine"
+				else
+					_print_hyperlink "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID$suffix" "/ipfs/$CID$suffix"
+					echo ""
+				fi
+			else
+				echo "/ipfs/$CID$suffix"
+			fi
+			if [ $_warnings -eq 1 ]; then
+				if [[ "$REPROVIDING" == "all" ]]; then
+					local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+					if [[ "$converted" != "" ]]; then
+						>&2 _print_with_hyperlink " or " "ipfs://$converted$suffix" ""
+						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+					fi
+				else
+					>&2 echo ""
+					>&2 echo "If you need to publish or view from an other machine,"
+					>&2 echo " run 'ipfs pin add $CID'"
+					#if [[ "$REPROVIDING" == "roots" ]]; then
+					#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+					#fi
+				fi
+				if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+					>&2 echo ""
+					ipfs dag stat $CID
+				fi
+			fi
+			return 0
+		fi
+		return 1
+	fi
+	
 	local URL="$SOMETHING"
 	local HASH=""
 	local CID0=""
@@ -2277,7 +2370,7 @@ present() {
 			return 1
 		fi
 		local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
-		local CID="$(ipfs files stat --hash /$MFS_PAGE_ADDR)"
+		CID="$(ipfs files stat --hash /$MFS_PAGE_ADDR)"
 		if [ "$CID" != "" ]; then
 			echo "/ipfs/$CID"
 			local COUNT=0
@@ -2305,6 +2398,77 @@ present() {
 				#if [[ "$REPROVIDING" == "roots" ]]; then
 				#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
 				#fi
+			fi
+			>&2 echo ""
+			if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+				ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+			else
+				>&2 echo "$STAT"
+			fi
+			return 0
+		else
+			return 1
+		fi
+	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
+		HASH="$SOMETHING"
+		local MFS_PAGE_ADDR="/MiceWeb/zites/$HASH"
+		CID="$(ipfs files stat --hash /$MFS_PAGE_ADDR)"
+		if [ "$CID" != "" ]; then
+			echo "/ipfs/$CID"
+			local COUNT=0
+			for I in $(ipfs files ls /$MFS_PAGE_ADDR); do
+				if [[ $I != *.* ]]; then
+					((COUNT++))
+				fi
+			done
+			local STAT="NumVersions: $COUNT"
+			if [ "$GATEWAY" != "" ]; then
+				>&2 echo ""
+				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" ""
+				>&2 echo " in a browser on the local machine"
+			fi
+			if [[ "$REPROVIDING" == "all" ]]; then
+				local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+				if [[ "$converted" != "" ]]; then
+					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
+					>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+				fi
+			else
+				>&2 echo ""
+				>&2 echo "If you need to publish or view from an other machine,"
+				>&2 echo " run 'ipfs pin add $CID'"
+				#if [[ "$REPROVIDING" == "roots" ]]; then
+				#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+				#fi
+			fi
+			>&2 echo ""
+			if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+				ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+			else
+				>&2 echo "$STAT"
+			fi
+			return 0
+		else
+			return 1
+		fi
+	elif [[ "$SOMETHING" == "zites" ]]; then
+		local MFS_PRESENT_ADDR="/MiceWeb/zites/"
+		CID="$(ipfs files stat --hash /$MFS_PRESENT_ADDR 2>/dev/null)"
+		if [[ "$CID" != "" ]]; then
+			echo "/ipfs/$CID"
+			local COUNT=$(ipfs files ls //MiceWeb/zites | wc -l)
+			local STAT="NumZites: $COUNT"
+			>&2 echo ""
+			>&2 echo "There is a content identifier of current zites of all the MiceWeb Library"
+			>&2 echo "It's not recommended to share it because security and other reasons,"
+			>&2 echo " however, if you need it, pin $CID"
+			#if [[ "$REPROVIDING" == "roots" ]]; then
+			#	>&2 echo " and run 'ipfs config Reprovider.Strategy pinned'"
+			#fi
+			if [ "$GATEWAY" != "" ]; then
+				>&2 echo ""
+				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" ""
+				>&2 echo " in a browser on the local machine to view snapshots"
 			fi
 			>&2 echo ""
 			if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
@@ -2484,6 +2648,13 @@ remove() {
 			_remove_file "$MFS_SNAP_ADDR.log" 2>/dev/null
 			return 0
 		fi
+	elif [[ "$SNAP" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
+		local MFS_SNAP_ADDR="/MiceWeb/zites/$SNAP"
+		if ! _remove_file $MFS_SNAP_ADDR 2>/dev/null; then
+			_remove_dir $MFS_SNAP_ADDR 2>/dev/null
+		fi
+		_remove_file "$MFS_SNAP_ADDR.log" 2>/dev/null
+		return 0
 	fi
 	>&2 echo "This command requires snapshot as a parameter"
 	return 1
@@ -2597,10 +2768,13 @@ Usage:
   ${_ME} save <URL>
   ${_ME} save <SHA-1>
   ${_ME} save <snapshot>
-  ${_ME} save urls [--grep=<expression>] [<local/ipfs/ipns file path>]
+  ${_ME} save urls [--grep=<expression>] [<local/ipfs/ipns/zeronet file path>]
+  ${_ME} save <zite>
+  ${_ME} save zites
 
 Description:
   Save web page snapshot(s)
+  Save zite snapshot(s)
 HEREDOC
 save() {
 	_upgrade
@@ -2637,6 +2811,18 @@ save() {
 		done
 		#TODO: fix and implement something like >&2 echo "Run 'miceweb present $@' to view saved snapshots"
 		return 0
+	elif [[ "$1" == "zites" ]]; then
+		local datadir="$(_zeronet_data)"
+		if [[ -d "$datadir" ]]; then
+			for ZITE in $(zites); do
+				save --no-warnings $ZITE
+			done
+			return 0
+		else
+			>&2 echo "Error: '$datadir' not found,"
+			>&2 echo " check ZERONET_PATH environment variable"
+			return 1
+		fi
 	fi
 	local SOMETHING=""
 	local _arguments=()
@@ -2683,12 +2869,20 @@ save() {
 			>&2 echo "Only 'archive' snapshot can be specifically saved"
 			return 1
 		fi
-	fi
-	if [[ "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
+	elif [[ "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
 		URL=$(url "$SOMETHING")
 		if [[ "$URL" == "" ]]; then
 			return 1
 		fi
+	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
+		#TODO: warn when ZeroNet node works
+		SAVE_HASH=$SOMETHING
+		ipfs files mkdir //MiceWeb 2>/dev/null
+		ipfs files mkdir //MiceWeb/zites 2>/dev/null
+		SAVE_MFS_ADDR="/MiceWeb/zites/$SAVE_HASH"
+		ipfs files mkdir /$SAVE_MFS_ADDR 2>/dev/null
+		_save_zite $SAVE_HASH
+		return $?
 	fi
 	if ! _check_url "$URL"; then
 		_echo_supported_url_prefixes
@@ -2836,14 +3030,12 @@ save() {
 								fi
 							fi
 						fi
-						#TODO: implement saving zites as a separate mechanism, created snapshots should be available from here as virtual snapshots
-						#http://127.0.0.1:43110/1LtvsjbtQ2tY7SCtCZzC4KhErqEK3bXD4n/
-						if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
-							_save_zite "${PARSEDPATH#/}"
-						else
-							_save_zite "${PARSEDPATH#/raw/}"
+						#TODO: since implemented saving zites as a separate mechanism, created snapshots should be available from there
+						#TODO: look into http://127.0.0.1:43110/1LtvsjbtQ2tY7SCtCZzC4KhErqEK3bXD4n/ (working with .db)
+						local ZITE=$(_zite_address $URL)
+						if [[ "$ZITE" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
+							>&2 echo "Tip: run 'miceweb save $ZITE'"
 						fi
-						#>&2 echo "Tip: run 'miceweb save 1...'"
 					fi
 				fi
 			fi
@@ -2866,14 +3058,20 @@ describe "snapshots" <<HEREDOC
 Usage:
   ${_ME} snapshots <URL>
   ${_ME} snapshots <SHA-1>
+  ${_ME} snapshots <zite>
 
 Description:
   List saved versions of web pages (including similar) by URL
 HEREDOC
 snapshots() {
 	if [[ "$1" == "" ]]; then
-		>&2 echo "This command requires URL or SHA-1 as a parameter"
+		>&2 echo "This command requires URL or SHA-1 or zite as a parameter"
 		return 1
+	fi
+	if [[ "$1" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
+		local ZITE=$1
+		ipfs files ls //MiceWeb/zites/$ZITE 2>/dev/null | sed 's/^/'"$ZITE"'\//'
+		return $?
 	fi
 	local URL="$1"
 	if [[ "$1" =~ ^[0-9a-f]{40}$ ]]; then
@@ -3095,6 +3293,24 @@ Description:
 HEREDOC
 version() {
   printf "%s\\n" "${_VERSION}"
+}
+
+# zites #######################################################################
+
+describe "zites" <<HEREDOC
+Usage:
+  ${_ME} zites
+
+Description:
+  List zites from the MiceWeb Library
+HEREDOC
+zites() {
+	if [[ "$1" != "" ]]; then
+		>&2 echo "This command doesn't require parameters"
+		return 1
+	fi
+	ipfs files ls //MiceWeb/zites 2>/dev/null
+	return $?
 }
 
 
