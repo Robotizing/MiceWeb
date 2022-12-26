@@ -27,7 +27,8 @@
 #  https://docs.ipfs.io/install/command-line/
 #  https://www.gnu.org/software/wget/
 #  https://curl.se/
-#  https://stedolan.github.io/jq/download/
+#  https://stedolan.github.io/jq/
+#  https://kislyuk.github.io/yq/
 #  https://github.com/mgdm/htmlq/
 #  https://github.com/makeworld-the-better-one/gemget
 #  https://github.com/yt-dlp/yt-dlp/
@@ -586,6 +587,20 @@ _cat_json_file() {
 		_cat_file "$1" | jq --raw-output '.. | strings'
 	else
 		>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
+		return 1
+	fi
+}
+
+_cat_xml_file() {
+	if _command_exists xq; then
+		if _command_exists jq; then
+			_cat_file "$1" | xq | jq --raw-output '.. | strings'
+		else
+			>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
+			return 1
+		fi
+	else
+		>&2 _print_with_hyperlink "Error: xq is not installed (seeing " "https://kislyuk.github.io/yq/#installation" ")"
 		return 1
 	fi
 }
@@ -2918,11 +2933,11 @@ url() {
 
 describe "urls" <<HEREDOC
 Usage:
-  ${_ME} urls [--grep=<expression>] [<local/ipfs/ipns file path>]
-  ${_ME} urls --format={txt|json|htm|html} <local/ipfs/ipns file path>
+  ${_ME} urls [--grep=<expression>] [<local/ipfs/ipns/zeronet file path>]
+  ${_ME} urls --format={txt|json|xml|html} <local/ipfs/ipns/zeronet file path>
 
 Description:
-  List URLs from file (text or json or html) or from the MiceWeb Library
+  List URLs from file (text or json or xml or html) or from the MiceWeb Library
 HEREDOC
 urls() {
 	_upgrade
@@ -2955,6 +2970,7 @@ urls() {
 		>&2 echo "This command takes file path as a parameter:"
 		>&2 echo " txt - contain URLs in separate lines"
 		>&2 echo " json - contain URLs in text fields"
+		>&2 echo " xml - contain URLs in text fields"
 		>&2 echo " htm(l) - contain URLs in the 'href' attribute"
 		>&2 echo ""
 		local CID="$(ipfs files stat --hash //MiceWeb/pages/ 2>/dev/null)"
@@ -3039,6 +3055,19 @@ urls() {
 			exit 1
 		fi
 		for I in $(_cat_json_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
+			IFS=' ' read -ra IARR <<< "$I"
+			for J in "${IARR[@]}"; do
+				if _check_url "$J"; then
+					echo "${J%.}"
+				fi
+			done
+		done | grep "$GREP" | awk '!a[$0]++; fflush()'
+	elif [[ $FORMAT == xml ]]; then
+		if [[ "$BASE" != "" ]]; then
+			>&2 echo "Attribute --base is only supported for html files"
+			exit 1
+		fi
+		for I in $(_cat_xml_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
 			IFS=' ' read -ra IARR <<< "$I"
 			for J in "${IARR[@]}"; do
 				if _check_url "$J"; then
