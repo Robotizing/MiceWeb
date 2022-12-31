@@ -1112,7 +1112,7 @@ _save_wget_tor() {
 	fi
 }
 _save_media() {
-	if [[ $1 == https://www.youtube.com/watch?v=* || $1 == https://youtu.be/* || $1 == https://vk.com/video* || $1 == https://ok.ru/video/* || $1 == https://vimeo.com/* || $1 == https://coub.com/view/* || $1 ==  https://www.instagram.com/p/* || $1 == https://www.tiktok.com/@*/video/* || $1 == https://twitter.com/*/status/* || $1 == https://fb.watch/* || $1 == https://www.facebook.com/reel/* || $1 == https://my.mail.ru/mail/*/video/* ]]; then	#TODO: support share.tube?
+	if [[ $1 == https://www.youtube.com/watch?v=* || $1 == https://m.youtube.com/watch?v=* || $1 == https://youtu.be/* || $1 == https://vk.com/video* || $1 == https://ok.ru/video/* || $1 == https://m.ok.ru/video/* || $1 == https://vimeo.com/* || $1 == https://coub.com/view/* || $1 ==  https://www.instagram.com/p/* || $1 == https://www.tiktok.com/@*/video/* || $1 == https://twitter.com/*/status/* || $1 == https://fb.watch/* || $1 == https://www.facebook.com/reel/* || $1 == https://my.mail.ru/mail/*/video/* || $1 == https://music.yandex.ru/album/*/track/* ]]; then	#TODO: support share.tube?
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-media"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
@@ -1156,7 +1156,7 @@ _save_media() {
 	return 1
 }
 _save_playlist() {
-	if [[ $1 == https://www.youtube.com/channel/* || $1 == https://www.youtube.com/c/* || $1 == https://www.youtube.com/user/* || $1 == https://www.youtube.com/@* || $1 == https://rutube.ru/channel/*/videos || $1 == https://vimeo.com/* || $1 == https://www.youtube.com/*?list=* || $1 == https://www.dailymotion.com/* ]]; then
+	if [[ $1 == https://www.youtube.com/channel/* || $1 == https://www.youtube.com/c/* || $1 == https://www.youtube.com/user/* || $1 == https://www.youtube.com/@* || $1 == https://www.youtube.com/*?list=* || $1 == https://m.youtube.com/channel/* || $1 == https://m.youtube.com/c/* || $1 == https://m.youtube.com/user/* || $1 == https://m.youtube.com/@* || $1 == https://m.youtube.com/*?list=* || $1 == https://rutube.ru/channel/*/videos || $1 == https://vimeo.com/* || $1 == https://www.dailymotion.com/* || $1 == https://music.yandex.ru/album/* ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-playlist"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
@@ -2927,8 +2927,10 @@ save() {
 					fi
 				fi
 			else
-				_save_media $URL
-				_save_playlist $URL
+				if [[ $URL == https://* ]]; then
+					_save_media $URL
+					_save_playlist $URL
+				fi
 				_save_wget $URL
 				local WGETERR=$?
 				local ININET= ; [[ $URL != http://127.0.0.1:* && $URL != http://localhost:* ]] ; ININET=$?
