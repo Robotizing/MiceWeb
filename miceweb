@@ -2906,7 +2906,7 @@ save() {
 			if [[ $URL == ipns://* ]]; then
 				if ! _save_wget_ipns "${URL#ipns://}"; then
 					if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
-						local SIMILAR_HASH=$(hash "http://${URL#ipns://}")
+						local SIMILAR_HASH=$(hash "https://${URL#ipns://}")
 						if [[ "$SIMILAR_HASH" != "" ]]; then
 							"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) # | awk '!a[$0]++; fflush()'
 						fi
@@ -2966,10 +2966,10 @@ save() {
 								local SIMILAR_HASH=""
 								if [[ $URL == https://* ]]; then
 									wos=${URL#https://}
-									SIMILAR_HASH=$(hash "http://$wos")
-									if [[ "$SIMILAR_HASH" != "" ]]; then
-										"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) | awk '!a[$0]++; fflush()'
-									fi
+									#SIMILAR_HASH=$(hash "http://$wos")
+									#if [[ "$SIMILAR_HASH" != "" ]]; then
+									#	"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) | awk '!a[$0]++; fflush()'
+									#fi
 								elif [[ $URL == http://* ]]; then
 									wos=${URL#http://}
 								fi
@@ -2980,11 +2980,11 @@ save() {
 										"$0" save --no-warnings $SIMILAR_HASH #2> >(grep .)
 									fi
 								fi
-								if [[ $URL == http://* ]]; then
+								#if [[ $URL == http://* ]]; then
 									if [ $ININET -eq 0 ]; then
 										_save_archived $URL
 									fi
-								fi
+								#fi
 							else
 								if [ $ININET -eq 0 ]; then
 									_save_archived $URL
