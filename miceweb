@@ -27,15 +27,15 @@
 #  https://docs.ipfs.io/install/command-line/
 #  https://www.gnu.org/software/wget/
 #  https://curl.se/
-#  https://stedolan.github.io/jq/
-#  https://kislyuk.github.io/yq/
+#  https://github.com/stedolan/jq/
+#  https://github.com/kislyuk/yq
 #  https://github.com/mgdm/htmlq/
-#  https://github.com/makeworld-the-better-one/gemget
+#  https://github.com/makeworld-the-better-one/gemget/
 #  https://github.com/yt-dlp/yt-dlp/
-#. https://www.ffmpeg.org
-#  https://gitlab.torproject.org/tpo/core/torsocks
-#  https://github.com/ImportTaste/wayback-machine-downloader
-#  https://git-scm.com/downloads
+#. https://www.ffmpeg.org/
+#  https://gitlab.torproject.org/tpo/core/torsocks/
+#  https://github.com/ImportTaste/wayback-machine-downloader/
+#  https://git-scm.com/downloads/
 #  https://www.gnu.org/software/bash/
 #
 # MiceWeb: https://github.com/Robotizing/MiceWeb
@@ -2993,7 +2993,7 @@ save() {
 					if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
 						local wos=""
 						local SIMILAR_HASH=""
-						#TODO: replace it with saving similar links ipfs:// and ipns://, created snapshots should be available from here as virtual snapshots
+						#TODO: replace it with saving similar links ipfs:// and ipns://, created snapshots should be available from here
 						if [[ $URL == http*://*.*/ipfs/* ]]; then
 							wos="${PARSEDPATH#/ipfs/}"
 							_save_wget_ipfs $wos
