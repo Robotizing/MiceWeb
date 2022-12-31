@@ -68,7 +68,7 @@ _ME="$(basename "${0}")"
 # semantic versioning specification: http://semver.org
 _VERSION="0.3"
 
-# The MiceWeb Threads
+# MiceWeb Talks
 _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
 
 # $DEFAULT_SUBCOMMAND
@@ -1728,7 +1728,7 @@ commands() {
 	echo "miceweb backup		Backup CID of the MiceWeb Library
 miceweb cleanup		Cleanup service data
 miceweb commands	Display the list of available commands
-miceweb discuss		Welcome to the MiceWeb Threads in ZeroNet
+miceweb discuss		Welcome to MiceWeb Talks in ZeroNet
 miceweb find		Find saved web pages on the local machine
 miceweb hash		Calculate SHA-1 hash for URL (but fragment)
 miceweb help		Display help information
@@ -1758,7 +1758,7 @@ Usage:
   ${_ME} discuss
 
 Description:
-  Welcome to the MiceWeb Threads in ZeroNet
+  Welcome to MiceWeb Talks in ZeroNet
 HEREDOC
 discuss() {
 	if ! wget "http://127.0.0.1:43110/1HeLLo4uzjaLetFx6NH3PMwFP3qbRbTf3D/uimedia/all.css?rev=1270494604" --timeout=1 --output-document=- &>/dev/null; then
