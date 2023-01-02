@@ -11,9 +11,11 @@
 
 ## Installation (Linux, macOS):
 
-1. Install [IPFS CLI](https://docs.ipfs.io/install/command-line/), [wget](https://www.gnu.org/software/wget/), [curl](https://curl.se/), [gemget](https://github.com/makeworld-the-better-one/gemget/), [jq](https://stedolan.github.io/jq/download/), [xq](https://kislyuk.github.io/yq/#installation), [htmlq](https://github.com/mgdm/htmlq/), [torsocks](https://gitlab.torproject.org/tpo/core/torsocks), [Wayback Machine Downloader](https://github.com/ImportTaste/wayback-machine-downloader), [yt-dlp](https://github.com/yt-dlp/yt-dlp/), [ffmpeg and ffprobe](https://www.ffmpeg.org).
+1. Install [Git](https://git-scm.com/downloads/), [IPFS CLI](https://docs.ipfs.io/install/command-line/).
 
 2. Open a terminal and run `git clone https://github.com/Robotizing/MiceWeb && MiceWeb/install.sh` (also, there is `update.sh` available).
+
+3. Optionally, install [wget](https://www.gnu.org/software/wget/), [curl](https://curl.se/), [gemget](https://github.com/makeworld-the-better-one/gemget/), [jq](https://stedolan.github.io/jq/download/), [xq](https://kislyuk.github.io/yq/#installation), [htmlq](https://github.com/mgdm/htmlq/), [torsocks](https://gitlab.torproject.org/tpo/core/torsocks), [Wayback Machine Downloader](https://github.com/ImportTaste/wayback-machine-downloader), [yt-dlp](https://github.com/yt-dlp/yt-dlp/), [ffmpeg and ffprobe](https://www.ffmpeg.org), and also [ZeroNet](https://en.wikipedia.org/wiki/ZeroNet).
 
 ---
 
@@ -69,7 +71,7 @@ MiceWeb supports following URL schemes: `http`, `https`, `gopher`, `gemini`, `ft
 
 Run `miceweb commands` to see list of commands.
 
-Run `miceweb discuss`, and welcome to the MiceWeb Threads.
+Run `miceweb talks`, and welcome to MiceWeb Talks.
 
 ---
 

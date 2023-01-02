@@ -704,7 +704,7 @@ _news() {
 		echo ""
 	fi
 	echo "Invintation:"
-	echo "  Run 'miceweb discuss' to find answers together"
+	echo "  Run 'miceweb talks' to find answers together"
 }
 
 # https://www.rfc-editor.org/rfc/rfc3986#appendix-B
@@ -1728,7 +1728,6 @@ commands() {
 	echo "miceweb backup		Backup CID of the MiceWeb Library
 miceweb cleanup		Cleanup service data
 miceweb commands	Display the list of available commands
-miceweb discuss		Welcome to MiceWeb Talks in ZeroNet
 miceweb find		Find saved web pages on the local machine
 miceweb hash		Calculate SHA-1 hash for URL (but fragment)
 miceweb help		Display help information
@@ -1745,22 +1744,23 @@ miceweb save		Save web page snapshots
 miceweb save urls
 miceweb save zites
 miceweb snapshots	List saved snapshots
+miceweb talks		Welcome to MiceWeb Talks in ZeroNet
 miceweb url		Return URL by SHA-1 hash
 miceweb urls		List URLs from file, or from the MiceWeb Library
 miceweb version		Display the current program version
 miceweb zites		List zites from the MiceWeb Library"
 }
 
-# discuss #####################################################################
+# talks #######################################################################
 
-describe "discuss" <<HEREDOC
+describe "talks" <<HEREDOC
 Usage:
-  ${_ME} discuss
+  ${_ME} talks
 
 Description:
   Welcome to MiceWeb Talks in ZeroNet
 HEREDOC
-discuss() {
+talks() {
 	if ! wget "http://127.0.0.1:43110/1HeLLo4uzjaLetFx6NH3PMwFP3qbRbTf3D/uimedia/all.css?rev=1270494604" --timeout=1 --output-document=- &>/dev/null; then
 		>&2 echo "Run a local ZeroNet node,"
 		>&2 _print_with_hyperlink " seeing " "https://github.com/ZeroNetX/ZeroNet#user-content-how-to-join"
