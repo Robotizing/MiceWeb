@@ -1391,7 +1391,7 @@ _upgrade() {
 				if ipfs files cp //ipfs/$VERTXTCID /$VERTXT; then
 					return 0
 				else
-					_exit_1 printf "Can't create the MiceWeb Library\n"
+					_exit_1 printf "Can't create MiceWeb library\n"
 				fi
 			fi
 			backup >/dev/null
@@ -1414,12 +1414,12 @@ _upgrade() {
 				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
 				if [ $? -eq 0 ]; then
 					ipfs files flush //MiceWeb &>/dev/null
-					>&2 echo "Upgraded the MiceWeb Library to v.0.2"
+					>&2 echo "Upgraded the MiceWeb library to v.0.2"
 					_upgrade
 					return $?
 				fi
 			fi
-			_exit_1 printf "Can't upgrade the MiceWeb Library\n"
+			_exit_1 printf "Can't upgrade the MiceWeb library\n"
 		else
 			_vercomp "${_VERSION}" "${VER#v.}"
 			if [ $? -eq 1 ]; then
@@ -1430,13 +1430,13 @@ _upgrade() {
 				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
 				if [ $? -eq 0 ]; then
 					ipfs files flush //MiceWeb &>/dev/null
-					>&2 echo "Upgraded the MiceWeb Library to v.0.3"
+					>&2 echo "Upgraded the MiceWeb library to v.0.3"
 					>&2 echo "It's recommended to run 'miceweb save urls --grep=#'"
 					save urls --grep="#"
 					>&2 echo ""
 					return 0
 				fi
-				_exit_1 printf "Can't upgrade the MiceWeb Library\n"
+				_exit_1 printf "Can't upgrade the MiceWeb library\n"
 			else
 				_exit_1 printf "MiceWeb $VER+ is required to work with the current MiceWeb Library\nThe current app version is $APPVER\nRun './update.sh' in the MiceWeb repository\n"
 			fi
@@ -1657,7 +1657,7 @@ Usage:
   ${_ME} backup
 
 Description:
-  Backup CID of the MiceWeb Library
+  Backup CID of the MiceWeb library
 HEREDOC
 backup() {
 	if [[ "$1" != "" ]]; then
@@ -1677,7 +1677,7 @@ backup() {
 			_exit_1 printf "Can't backup CID to ~/.miceweb/backup.txt\n"
 		fi
 	else
-		_exit_1 printf "Can't obtain CID of the MiceWeb Library\n"
+		_exit_1 printf "Can't obtain CID of the MiceWeb library\n"
 	fi
 }
 
@@ -1725,7 +1725,7 @@ HEREDOC
 commands() {
 	echo "miceweb			Introduce MiceWeb"
 	#_subcommands --raw $1 | awk -v PREFIX="miceweb " '{print PREFIX $0}'
-	echo "miceweb backup		Backup CID of the MiceWeb Library
+	echo "miceweb backup		Backup CID of the MiceWeb library
 miceweb cleanup		Cleanup service data
 miceweb commands	Display the list of available commands
 miceweb find		Find saved web pages on the local machine
@@ -1746,9 +1746,9 @@ miceweb save zites
 miceweb snapshots	List saved snapshots
 miceweb talks		Welcome to MiceWeb Talks in ZeroNet
 miceweb url		Return URL by SHA-1 hash
-miceweb urls		List URLs from file, or from the MiceWeb Library
+miceweb urls		List URLs from file, or from the MiceWeb library
 miceweb version		Display the current program version
-miceweb zites		List zites from the MiceWeb Library"
+miceweb zites		List zites from the MiceWeb library"
 }
 
 # talks #######################################################################
@@ -2131,7 +2131,7 @@ Description:
   Present saved snapshots of web page (including similar) by URL
   Present saved snapshots of web page by URL's SHA-1
   Present saved snapshots of web pages by URLs from file
-  Present saved snapshots of web pages in the MiceWeb Library
+  Present saved snapshots of web pages in the MiceWeb library
   Present saved snapshots of zite by bitcoin address
   Present saved snapshots of zites
 HEREDOC
@@ -2459,7 +2459,7 @@ present() {
 			local COUNT=$(ipfs files ls //MiceWeb/zites | wc -l)
 			local STAT="NumZites: $COUNT"
 			>&2 echo ""
-			>&2 echo "There is a content identifier of current zites of all the MiceWeb Library"
+			>&2 echo "There is a content identifier of current zites of all the MiceWeb library"
 			>&2 echo "It's not recommended to share it because security and other reasons,"
 			>&2 echo " however, if you need it, pin $CID"
 			#if [[ "$REPROVIDING" == "roots" ]]; then
@@ -2583,7 +2583,7 @@ present() {
 			fi
 		else
 			>&2 echo ""
-			>&2 echo "There is a content identifier of current pages of all the MiceWeb Library"
+			>&2 echo "There is a content identifier of current pages of all the MiceWeb library"
 			>&2 echo "It's not recommended to share it because security and other reasons,"
 			>&2 echo " however, if you need it, pin $CID0"
 			#if [[ "$REPROVIDING" == "roots" ]]; then
@@ -2604,9 +2604,9 @@ present() {
 		if [ "$HASH" != "" ]; then
 			local PAYATT=""
 			if [ $CNT -ge 2 ]; then
-				PAYATT="There are similar URLs found in the MiceWeb Library:"
+				PAYATT="There are similar URLs found in the MiceWeb library:"
 			elif [ $CNT -eq 1 ]; then
-				PAYATT="There is a similar URL found in the MiceWeb Library:"
+				PAYATT="There is a similar URL found in the MiceWeb library:"
 			fi
 			if [ "$PAYATT" != "" ]; then
 				>&2 echo ""
@@ -3135,7 +3135,7 @@ Usage:
   ${_ME} urls --format={txt|json|xml|html} <local/ipfs/ipns/zeronet file path>
 
 Description:
-  List URLs from file (text or json or xml or html) or from the MiceWeb Library
+  List URLs from file (text or json or xml or html) or from the MiceWeb library
 HEREDOC
 urls() {
 	_upgrade
@@ -3176,7 +3176,7 @@ urls() {
 			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
 			mkdir -p "$CACHE_DIR"
 			if declare -A URLs; then
-				>&2 echo "There are URLs already in the MiceWeb Library (see also 'miceweb history'):"
+				>&2 echo "There are URLs already in the MiceWeb library (see also 'miceweb history'):"
 				local HT="$HOME/.miceweb/cache/urls.hashtable"
 				if [ -e "$HT" ]; then
 					while read line
@@ -3211,7 +3211,7 @@ urls() {
 				>&2 _print_with_hyperlink " seeing " "https://stackoverflow.com/questions/6047648" ","
 				>&2 echo " consider to install newer Bash (v.4.0+) to significantly increase performance"
 				>&2 echo ""
-				>&2 echo "There are URLs already in the MiceWeb Library (see also 'miceweb history'):"
+				>&2 echo "There are URLs already in the MiceWeb library (see also 'miceweb history'):"
 				for I in $(ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f]); do
 					local CACHE_FILE="$CACHE_DIR$I"
 					local URL=$(grep "" "$CACHE_FILE" 2>/dev/null)
@@ -3227,7 +3227,7 @@ urls() {
 				done | grep "$GREP"
 			fi
 		else
-			>&2 echo "The MiceWeb Library has no pages"
+			>&2 echo "The MiceWeb library has no pages"
 		fi
 		return
 	fi
@@ -3304,7 +3304,7 @@ Usage:
   ${_ME} zites
 
 Description:
-  List zites from the MiceWeb Library
+  List zites from text file or from the MiceWeb library
 HEREDOC
 zites() {
 	if [[ "$1" != "" ]]; then
