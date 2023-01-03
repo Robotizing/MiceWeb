@@ -2860,24 +2860,23 @@ save() {
 		#TODO: fix and implement something like >&2 echo "Run 'miceweb present $@' to view saved snapshots"
 		return 0
 	elif [[ "$1" == "zites" ]]; then
-		if [[ "$2" == "" ]]; then
-			local datadir="$(_zeronet_data)"
-			if [[ -d "$datadir" ]]; then
+		local datadir="$(_zeronet_data)"
+		if [[ -d "$datadir" ]]; then
+			if [[ "$2" == "" ]]; then
 				for ZITE in $(zites); do
-					save $ZITE
+					save --no-warnings $ZITE
 				done
-				return 0
 			else
-				>&2 echo "Error: '$datadir' not found,"
-				>&2 echo " check ZERONET_PATH environment variable"
-				return 1
+				for ZITE in $("$0" "$@" 2>/dev/null)
+				do
+					save --no-warnings $ZITE
+				done
 			fi
-		else
-			for ZITE in $("$0" "$@" 2>/dev/null)
-			do
-				save $ZITE
-			done
 			return 0
+		else
+			>&2 echo "Error: '$datadir' not found,"
+			>&2 echo " check ZERONET_PATH environment variable"
+			return 1
 		fi
 	fi
 	local SOMETHING=""
