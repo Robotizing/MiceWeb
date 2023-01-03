@@ -2124,14 +2124,13 @@ Usage:
   ${_ME} present <SHA-1>
   ${_ME} present urls [--grep=<expr.>] [<local/ipfs/ipns/zeronet file path>]
   ${_ME} present <zite>
-  ${_ME} present zites
+  ${_ME} present zites [<local/ipfs/ipns/zeronet file path>]
 
 Description:
   Present saved snapshot
   Present saved snapshots of web page (including similar) by URL
   Present saved snapshots of web page by URL's SHA-1
-  Present saved snapshots of web pages by URLs from file
-  Present saved snapshots of web pages in the MiceWeb library
+  Present saved snapshots of web pages
   Present saved snapshots of zite by bitcoin address
   Present saved snapshots of zites
 HEREDOC
@@ -2205,6 +2204,84 @@ present() {
 			fi
 			#TODO: fix and implement something like >&2 echo "Run 'miceweb save ${@@Q}'"
 			return 1
+		fi
+	fi
+	if [[ "$1" == "zites" ]]; then
+		if [[ "$2" != "" ]]; then
+			ipfs files mkdir //MiceWeb 2>/dev/null
+			ipfs files mkdir //MiceWeb/presents 2>/dev/null
+			local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
+			ipfs files mkdir /$MFS_PRESENT_ADDR 2>/dev/null
+			local COUNT=0
+			local HASH=""
+			for ZITE in $("$0" "$@" 2>/dev/null)
+			do
+				if ipfs files cp //MiceWeb/zites/$ZITE /$MFS_PRESENT_ADDR/$ZITE 2>/dev/null; then
+					((COUNT++))
+				fi
+			done
+			local CID="$(ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
+				echo "/ipfs/$CID"
+				if [ "$GATEWAY" != "" ]; then
+					>&2 echo ""
+					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" ""
+					>&2 echo " in a browser on the local machine"
+				fi
+				if [[ "$REPROVIDING" == "all" ]]; then
+					local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+					if [[ "$converted" != "" ]]; then
+						>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
+						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+					fi
+				else
+					>&2 echo ""
+					>&2 echo "If you need to publish or view from an other machine,"
+					>&2 echo " run 'ipfs pin add $CID'"
+					#if [[ "$REPROVIDING" == "roots" ]]; then
+					#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+					#fi
+				fi
+				local STAT="NumZites: $COUNT"
+				>&2 echo ""
+				if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+					ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+				else
+					>&2 echo "$STAT"
+				fi
+				return 0
+			fi
+			return 1
+		else
+			local MFS_PRESENT_ADDR="/MiceWeb/zites/"
+			local CID="$(ipfs files stat --hash /$MFS_PRESENT_ADDR 2>/dev/null)"
+			if [[ "$CID" != "" ]]; then
+				echo "/ipfs/$CID"
+				local COUNT=$(ipfs files ls //MiceWeb/zites | wc -l)
+				local STAT="NumZites: $COUNT"
+				>&2 echo ""
+				>&2 echo "There is a content identifier of current zites of all the MiceWeb library"
+				>&2 echo "It's not recommended to share it because security and other reasons,"
+				>&2 echo " however, if you need it, pin $CID"
+				#if [[ "$REPROVIDING" == "roots" ]]; then
+				#	>&2 echo " and run 'ipfs config Reprovider.Strategy pinned'"
+				#fi
+				if [ "$GATEWAY" != "" ]; then
+					>&2 echo ""
+					>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" ""
+					>&2 echo " in a browser on the local machine to view snapshots"
+				fi
+				>&2 echo ""
+				if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+					ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+				else
+					>&2 echo "$STAT"
+				fi
+				return 0
+			else
+				return 1
+			fi
 		fi
 	fi
 	
@@ -2440,35 +2517,6 @@ present() {
 				#if [[ "$REPROVIDING" == "roots" ]]; then
 				#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
 				#fi
-			fi
-			>&2 echo ""
-			if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
-				ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
-			else
-				>&2 echo "$STAT"
-			fi
-			return 0
-		else
-			return 1
-		fi
-	elif [[ "$SOMETHING" == "zites" ]]; then
-		local MFS_PRESENT_ADDR="/MiceWeb/zites/"
-		CID="$(ipfs files stat --hash /$MFS_PRESENT_ADDR 2>/dev/null)"
-		if [[ "$CID" != "" ]]; then
-			echo "/ipfs/$CID"
-			local COUNT=$(ipfs files ls //MiceWeb/zites | wc -l)
-			local STAT="NumZites: $COUNT"
-			>&2 echo ""
-			>&2 echo "There is a content identifier of current zites of all the MiceWeb library"
-			>&2 echo "It's not recommended to share it because security and other reasons,"
-			>&2 echo " however, if you need it, pin $CID"
-			#if [[ "$REPROVIDING" == "roots" ]]; then
-			#	>&2 echo " and run 'ipfs config Reprovider.Strategy pinned'"
-			#fi
-			if [ "$GATEWAY" != "" ]; then
-				>&2 echo ""
-				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" ""
-				>&2 echo " in a browser on the local machine to view snapshots"
 			fi
 			>&2 echo ""
 			if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
@@ -3323,7 +3371,9 @@ zites() {
 	for I in $(_cat_file "$1" "^1"); do
 		local J="${I%/}"
 		local K="${J%/}"
-		echo $K
+		if [[ "$K" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
+			echo $K
+		fi
 	done | awk '!a[$0]++; fflush()'
 }
 
