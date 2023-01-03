@@ -815,9 +815,12 @@ _remove_file() {
 _reprovidingWarning() {
 	local REPROVIDING=$(ipfs config Reprovider.Strategy)
 	if [[ "$REPROVIDING" == "all" ]]; then
-		>&2 echo "Warning: the reprovider announces all IPFS data including the MiceWeb Library,"
-		>&2 echo " consider to run 'ipfs config Reprovider.Strategy pinned', seeing"
-		>&2 echo " https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy"
+		>&2 printf '%s' "Warning: "
+		>&2 _print_hyperlink "https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy" "Reprovider.Strategy"
+		>&2 echo " is set to 'all'"
+		#>&2 echo "Warning: the reprovider announces all IPFS data including the MiceWeb Library,"
+		#>&2 echo " consider to run 'ipfs config Reprovider.Strategy pinned', seeing"
+		#>&2 echo " https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy"
 	fi
 }
 
