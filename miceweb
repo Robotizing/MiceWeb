@@ -516,6 +516,7 @@ _main() {
 			local HASH=${SNAP:0:40}
 			URL=$(url "$HASH")
 			if [[ "$URL" != "" ]]; then
+				_reprovidingWarning
 				if _initiate_saving_url $URL; then
 					_save_archived_snapshot $URL ${SNAP:41} &>/dev/null
 				fi
@@ -528,6 +529,7 @@ _main() {
 		>&2 printf "\n"
 		return 0
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
+		_reprovidingWarning
 		save --no-warnings $SOMETHING |
 			while IFS= read -r I
 			do
@@ -886,7 +888,7 @@ _resolve_zeronet() {
 
 _save_and_present() {
 	local URL="$1"
-	#_reprovidingWarning
+	_reprovidingWarning
 #	local URL0=$(_url_but_fragment "$URL")
 #	local SNAPS=$(save --no-warnings "$URL" | tee -a >(cat>&2))
 	#>&2 printf "\n"
@@ -2862,6 +2864,7 @@ save() {
 	elif [[ "$1" == "zites" ]]; then
 		local datadir="$(_zeronet_data)"
 		if [[ -d "$datadir" ]]; then
+			_reprovidingWarning
 			if [[ "$2" == "" ]]; then
 				for ZITE in $(zites); do
 					save --no-warnings $ZITE
@@ -2930,14 +2933,26 @@ save() {
 			return 1
 		fi
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
-		#TODO: warn when ZeroNet node works?
-		SAVE_HASH=$SOMETHING
-		ipfs files mkdir //MiceWeb 2>/dev/null
-		ipfs files mkdir //MiceWeb/zites 2>/dev/null
-		SAVE_MFS_ADDR="/MiceWeb/zites/$SAVE_HASH"
-		ipfs files mkdir /$SAVE_MFS_ADDR 2>/dev/null
-		_save_zite $SAVE_HASH
-		return $?
+		local datadir="$(_zeronet_data)"
+		if [[ -d "$datadir" ]]; then
+			if [ $_warnings -eq 1 ]; then
+				_reprovidingWarning
+			fi
+			#TODO: warn when ZeroNet node works?
+			SAVE_HASH=$SOMETHING
+			ipfs files mkdir //MiceWeb 2>/dev/null
+			ipfs files mkdir //MiceWeb/zites 2>/dev/null
+			SAVE_MFS_ADDR="/MiceWeb/zites/$SAVE_HASH"
+			ipfs files mkdir /$SAVE_MFS_ADDR 2>/dev/null
+			_save_zite $SAVE_HASH
+			return $?
+		else
+			if [ $_warnings -eq 1 ]; then
+				>&2 echo "Error: '$datadir' not found,"
+				>&2 echo " check ZERONET_PATH environment variable"
+			fi
+			return 1
+		fi
 	fi
 	if ! _check_url "$URL"; then
 		_echo_supported_url_prefixes
