@@ -2770,7 +2770,7 @@ Usage:
   ${_ME} save <snapshot>
   ${_ME} save urls [--grep=<expression>] [<local/ipfs/ipns/zeronet file path>]
   ${_ME} save <zite>
-  ${_ME} save zites
+  ${_ME} save zites [<local/ipfs/ipns/zeronet file path>]
 
 Description:
   Save web page snapshot(s)
@@ -2812,16 +2812,24 @@ save() {
 		#TODO: fix and implement something like >&2 echo "Run 'miceweb present $@' to view saved snapshots"
 		return 0
 	elif [[ "$1" == "zites" ]]; then
-		local datadir="$(_zeronet_data)"
-		if [[ -d "$datadir" ]]; then
-			for ZITE in $(zites); do
-				save --no-warnings $ZITE
+		if [[ "$2" == "" ]]; then
+			local datadir="$(_zeronet_data)"
+			if [[ -d "$datadir" ]]; then
+				for ZITE in $(zites); do
+					save $ZITE
+				done
+				return 0
+			else
+				>&2 echo "Error: '$datadir' not found,"
+				>&2 echo " check ZERONET_PATH environment variable"
+				return 1
+			fi
+		else
+			for ZITE in $("$0" "$@" 2>/dev/null)
+			do
+				save $ZITE
 			done
 			return 0
-		else
-			>&2 echo "Error: '$datadir' not found,"
-			>&2 echo " check ZERONET_PATH environment variable"
-			return 1
 		fi
 	fi
 	local SOMETHING=""
@@ -2875,7 +2883,7 @@ save() {
 			return 1
 		fi
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
-		#TODO: warn when ZeroNet node works
+		#TODO: warn when ZeroNet node works?
 		SAVE_HASH=$SOMETHING
 		ipfs files mkdir //MiceWeb 2>/dev/null
 		ipfs files mkdir //MiceWeb/zites 2>/dev/null
@@ -3302,17 +3310,17 @@ version() {
 describe "zites" <<HEREDOC
 Usage:
   ${_ME} zites
+  ${_ME} zites <local/ipfs/ipns/zeronet file path>
 
 Description:
   List zites from text file or from the MiceWeb library
 HEREDOC
 zites() {
-	if [[ "$1" != "" ]]; then
-		>&2 echo "This command doesn't require parameters"
-		return 1
+	if [[ "$1" == "" ]]; then
+		ipfs files ls //MiceWeb/zites 2>/dev/null
+		return $?
 	fi
-	ipfs files ls //MiceWeb/zites 2>/dev/null
-	return $?
+	_cat_file "$1" "^1" | awk '!a[$0]++; fflush()'
 }
 
 
