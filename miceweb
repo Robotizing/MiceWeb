@@ -3320,7 +3320,11 @@ zites() {
 		ipfs files ls //MiceWeb/zites 2>/dev/null
 		return $?
 	fi
-	_cat_file "$1" "^1" | awk '!a[$0]++; fflush()'
+	for I in $(_cat_file "$1" "^1"); do
+		local J="${I%/}"
+		local K="${J%/}"
+		echo $K
+	done | awk '!a[$0]++; fflush()'
 }
 
 
