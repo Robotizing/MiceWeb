@@ -879,7 +879,7 @@ _resolve_zeronet() {
 			return 1
 		fi
 		local DOMAIN=$MAIN
-		MAIN=$(wget http://127.0.0.1:43110/raw/$MAIN/content.json --timeout=1 --output-document=- 2>/dev/null | jq --raw-output '.address' 2>/dev/null)
+		MAIN=$(wget http://127.0.0.1:43110/raw/$MAIN/content.json --timeout=1 --tries=1 --output-document=- 2>/dev/null | jq --raw-output '.address' 2>/dev/null)
 		if [[ $MAIN == 1* ]]; then
 			echo $MAIN"${1#$DOMAIN}"
 			return 0
@@ -1780,7 +1780,7 @@ Description:
   Welcome to MiceWeb Talks in ZeroNet
 HEREDOC
 talks() {
-	if ! wget "http://127.0.0.1:43110/1HeLLo4uzjaLetFx6NH3PMwFP3qbRbTf3D/uimedia/all.css?rev=1270494604" --timeout=1 --output-document=- &>/dev/null; then
+	if ! wget "http://127.0.0.1:43110/1HeLLo4uzjaLetFx6NH3PMwFP3qbRbTf3D/uimedia/all.css?rev=1270494604" --timeout=1 --tries=1 --output-document=- &>/dev/null; then
 		>&2 echo "Run a local ZeroNet node,"
 		>&2 _print_with_hyperlink " seeing " "https://github.com/ZeroNetX/ZeroNet#user-content-how-to-join"
 		>&2 _print_with_hyperlink " or " "https://github.com/zeronet-conservancy/zeronet-conservancy#how-to-join"
