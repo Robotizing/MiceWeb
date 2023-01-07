@@ -2166,7 +2166,7 @@ present() {
 			ipfs files mkdir /$MFS_PRESENT_ADDR 2>/dev/null
 			local COUNT=0
 			local HASH=""
-			for I in $("$0" "$@" 2>/dev/null)
+			for I in $(urls --no-warnings "$2" "$3" "$4" "$5" "$6" "$7")	#$("$0" "$@" 2>/dev/null)
 			do
 				HASH=$(_hash "$I")
 				ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH 2>/dev/null
@@ -2234,7 +2234,7 @@ present() {
 			ipfs files mkdir /$MFS_PRESENT_ADDR 2>/dev/null
 			local COUNT=0
 			local HASH=""
-			for ZITE in $("$0" "$@" 2>/dev/null)
+			for ZITE in $(zites "$2")	#$("$0" "$@" 2>/dev/null)
 			do
 				if ipfs files cp //MiceWeb/zites/$ZITE /$MFS_PRESENT_ADDR/$ZITE 2>/dev/null; then
 					((COUNT++))
@@ -2851,7 +2851,7 @@ save() {
 		if ! _command_exists torsocks; then
 			>&2 echo "Error: torsocks is not installed, some web pages might be inaccessible"
 		fi
-		local URLs=$("$0" "$@" 2>/dev/null)
+		local URLs=$(urls --no-warnings "$2" "$3" "$4" "$5" "$6" "$7") #$("$0" "$@" 2>/dev/null)
 		local count=0	#echo ${#URLs[@]}
 		for I in $URLs; do
 			((count++))
@@ -2892,7 +2892,7 @@ save() {
 					save --no-warnings $ZITE
 				done
 			else
-				for ZITE in $("$0" "$@" 2>/dev/null)
+				for ZITE in $(zites "$2")	#$("$0" "$@" 2>/dev/null)
 				do
 					save --no-warnings $ZITE
 				done
@@ -3236,6 +3236,7 @@ urls() {
 	local GREP=""
 	local BASE=""
 	local FORMAT=""
+	local _warnings=1
 	for I in "$@"; do
 		if [[ $I == "--grep" ]]; then
 			PARAM="grep"
@@ -3243,6 +3244,8 @@ urls() {
 			PARAM="base"
 		elif [[ $I == "--format" ]]; then
 			PARAM="format"
+		elif [[ $I == "--no-warnings" ]]; then
+			_warnings=0
 		else
 			if [[ $PARAM == "grep" ]]; then
 				GREP=$I
@@ -3257,18 +3260,22 @@ urls() {
 		fi
 	done
 	if [[ "$FIL" == "" ]]; then
-		>&2 echo "This command takes file path as a parameter:"
-		>&2 echo " txt - contain URLs in separate lines"
-		>&2 echo " json - contain URLs in text fields"
-		>&2 echo " xml - contain URLs in text fields"
-		>&2 echo " htm(l) - contain URLs in the 'href' attribute"
-		>&2 echo ""
+		if [ $_warnings -eq 1 ]; then
+			>&2 echo "This command takes file path as a parameter:"
+			>&2 echo " txt - contain URLs in separate lines"
+			>&2 echo " json - contain URLs in text fields"
+			>&2 echo " xml - contain URLs in text fields"
+			>&2 echo " htm(l) - contain URLs in the 'href' attribute"
+			>&2 echo ""
+		fi
 		local CID="$(ipfs files stat --hash //MiceWeb/pages/ 2>/dev/null)"
 		if [[ "$CID" != "" ]]; then
 			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
 			mkdir -p "$CACHE_DIR"
 			if declare -A URLs; then
-				>&2 echo "There are URLs already in the MiceWeb library (see also 'miceweb history'):"
+				if [ $_warnings -eq 1 ]; then
+					>&2 echo "There are URLs already in the MiceWeb library (see also 'miceweb history'):"
+				fi
 				local HT="$HOME/.miceweb/cache/urls.hashtable"
 				if [ -e "$HT" ]; then
 					while read line
@@ -3302,8 +3309,10 @@ urls() {
 				>&2 echo "Warning: installed Bash v.$BASH_VERSION is too old,"
 				>&2 _print_with_hyperlink " seeing " "https://stackoverflow.com/questions/6047648" ","
 				>&2 echo " consider to install newer Bash (v.4.0+) to significantly increase performance"
-				>&2 echo ""
-				>&2 echo "There are URLs already in the MiceWeb library (see also 'miceweb history'):"
+				if [ $_warnings -eq 1 ]; then
+					>&2 echo ""
+					>&2 echo "There are URLs already in the MiceWeb library (see also 'miceweb history'):"
+				fi
 				for I in $(ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f]); do
 					local CACHE_FILE="$CACHE_DIR$I"
 					local URL=$(grep "" "$CACHE_FILE" 2>/dev/null)
@@ -3319,7 +3328,9 @@ urls() {
 				done | grep "$GREP"
 			fi
 		else
-			>&2 echo "The MiceWeb library has no pages"
+			if [ $_warnings -eq 1 ]; then
+				>&2 echo "The MiceWeb library has no pages"
+			fi
 		fi
 		return
 	fi
