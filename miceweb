@@ -3246,7 +3246,8 @@ urls() {
 			PARAM="format"
 		elif [[ $I == "--no-warnings" ]]; then
 			_warnings=0
-		else
+			PARAM=""
+		elif [[ $I != "" ]]; then
 			if [[ $PARAM == "grep" ]]; then
 				GREP=$I
 			elif [[ $PARAM == "base" ]]; then
