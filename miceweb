@@ -491,7 +491,7 @@ _main() {
 			>&2 printf "\n"
 			return 1
 		fi
-		_reprovidingWarning
+		_reproviding_warning
 #		local SNAPS=$(save --no-warnings $SOMETHING | tee -a >(cat>&2))
 		#>&2 printf "\n"
 #		local SNAP=$(echo "$SNAPS" | sed -n '1p')
@@ -516,7 +516,7 @@ _main() {
 			local HASH=${SNAP:0:40}
 			URL=$(url "$HASH")
 			if [[ "$URL" != "" ]]; then
-				_reprovidingWarning
+				_reproviding_warning
 				if _initiate_saving_url $URL; then
 					_save_archived_snapshot $URL ${SNAP:41} &>/dev/null
 				fi
@@ -529,7 +529,7 @@ _main() {
 		>&2 printf "\n"
 		return 0
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
-		_reprovidingWarning
+		_reproviding_warning
 		save --no-warnings $SOMETHING |
 			while IFS= read -r I
 			do
@@ -772,6 +772,14 @@ _print_hyperlink() {
 	fi
 	printf '\e]8;;%s\e\\%s\e]8;;\e\\' "$URL" "$URLTEXT"
 }
+_print_hyperlink_string() {
+	local URL="$1"
+	local URLTEXT="$2"
+	if [[ "$URLTEXT" == "" ]]; then
+		URLTEXT="$URL"
+	fi
+	printf '\e]8;;%s\e\\%s\e]8;;\e\\\n' "$URL" "$URLTEXT"
+}
 _print_with_hyperlink() {
 	local PREFIX="$1"
 	local URL="$2"
@@ -812,7 +820,7 @@ _remove_file() {
 	return 1
 }
 
-_reprovidingWarning() {
+_reproviding_warning() {
 	local REPROVIDING=$(ipfs config Reprovider.Strategy)
 	if [[ "$REPROVIDING" == "all" ]]; then
 		>&2 printf '%s' "Warning: "
@@ -891,7 +899,7 @@ _resolve_zeronet() {
 
 _save_and_present() {
 	local URL="$1"
-	_reprovidingWarning
+	_reproviding_warning
 #	local URL0=$(_url_but_fragment "$URL")
 #	local SNAPS=$(save --no-warnings "$URL" | tee -a >(cat>&2))
 	#>&2 printf "\n"
@@ -1509,6 +1517,12 @@ _versions() {
 	fi
 }
 
+_warn_about_version() {
+	#TODO: compare current and actual version numbers?
+	>&2 echo "Disclaimer: it's important to use an actual MiceWeb version for communication"
+	>&2 echo ""
+}
+
 _wget() {
 	local URL="$1"
 	local options="$2"
@@ -1937,7 +1951,7 @@ Description:
 HEREDOC
 import() {
 	_upgrade
-	_reprovidingWarning
+	_reproviding_warning
 	local URL="$1"
 	local IMPPATH="$2"
 	local COMMENT="$3"
@@ -2833,7 +2847,7 @@ save() {
 	_upgrade
 	#TODO: --archives={default|none|last|set}
 	if [[ "$1" == "urls" ]]; then
-		_reprovidingWarning
+		_reproviding_warning
 		if ! _command_exists torsocks; then
 			>&2 echo "Error: torsocks is not installed, some web pages might be inaccessible"
 		fi
@@ -2872,7 +2886,7 @@ save() {
 	elif [[ "$1" == "zites" ]]; then
 		local datadir="$(_zeronet_data)"
 		if [[ -d "$datadir" ]]; then
-			_reprovidingWarning
+			_reproviding_warning
 			if [[ "$2" == "" ]]; then
 				for ZITE in $(zites); do
 					save --no-warnings $ZITE
@@ -2944,7 +2958,7 @@ save() {
 		local datadir="$(_zeronet_data)"
 		if [[ -d "$datadir" ]]; then
 			if [ $_warnings -eq 1 ]; then
-				_reprovidingWarning
+				_reproviding_warning
 			fi
 			#TODO: warn when ZeroNet node works?
 			SAVE_HASH=$SOMETHING
@@ -2974,7 +2988,7 @@ save() {
 		return 127
 	fi
 	if [ $_warnings -eq 1 ]; then
-		_reprovidingWarning
+		_reproviding_warning
 	fi
 	local URL0=$(_url_but_fragment "$URL")
 	if _initiate_saving_url $URL; then
