@@ -1362,8 +1362,13 @@ _similar_concrete() {
 		# YouTube
 		if [[ $URL == https://youtu.be/* ]]; then
 			echo "https://www.youtube.com/watch?v=${URL#https://youtu.be/}"
+			echo "https://m.youtube.com/watch?v=${URL#https://youtu.be/}"
 		elif [[ $URL == https://www.youtube.com/watch?v=* ]]; then
+			echo "https://m.youtube.com/watch?v=${URL#https://www.youtube.com/watch?v=}"
 			echo "https://youtu.be/${URL#https://www.youtube.com/watch?v=}"
+		elif [[ $URL == https://m.youtube.com/watch?v=* ]]; then
+			echo "https://www.youtube.com/watch?v=${URL#https://m.youtube.com/watch?v=}"
+			echo "https://youtu.be/${URL#https://m.youtube.com/watch?v=}"
 		fi
 	fi
 }
