@@ -1125,7 +1125,7 @@ _save_wget_tor() {
 	fi
 }
 _save_media() {
-	if [[ $1 == https://www.youtube.com/watch?v=* || $1 == https://m.youtube.com/watch?v=* || $1 == https://youtu.be/* || $1 == https://vk.com/video* || $1 == https://ok.ru/video/* || $1 == https://m.ok.ru/video/* || $1 == https://vimeo.com/* || $1 == https://coub.com/view/* || $1 ==  https://www.instagram.com/p/* || $1 == https://www.tiktok.com/@*/video/* || $1 == https://twitter.com/*/status/* || $1 == https://fb.watch/* || $1 == https://www.facebook.com/reel/* || $1 == https://my.mail.ru/mail/*/video/* || $1 == https://music.yandex.ru/album/*/track/* ]]; then	#TODO: support share.tube?
+	if [[ $1 == https://www.youtube.com/watch?v=* || $1 == https://m.youtube.com/watch?v=* || $1 == https://youtu.be/* || $1 == https://vk.com/video* || $1 == https://ok.ru/video/* || $1 == https://m.ok.ru/video/* || $1 == https://vimeo.com/* || $1 == https://coub.com/view/* || $1 ==  https://www.instagram.com/p/* || $1 == https://www.tiktok.com/@*/video/* || $1 == https://twitter.com/*/status/* || $1 == https://fb.watch/* || $1 == https://www.facebook.com/reel/* || $1 == https://my.mail.ru/mail/*/video/* || $1 == https://music.yandex.ru/album/*/track/* || $1 == https://www.youtube.com/shorts/* || $1 == https://m.youtube.com/shorts/* ]]; then	#TODO: support share.tube?
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-media"
 		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
