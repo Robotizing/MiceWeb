@@ -2872,7 +2872,33 @@ Description:
   Save zite snapshot(s)
 HEREDOC
 save() {
-	_upgrade
+	local SOMETHING=""
+	local _arguments=()
+	local _warnings=1
+	local _val=
+	for __arg in "${@:-}"
+	do
+	case ${__arg} in
+	  --no-warnings)
+		_warnings=0
+		;;
+	  -*)
+		_exit_1 printf "Unexpected option: %s\\n" "${__arg}"
+		;;
+	  *)
+		if _blank "${SOMETHING}"
+		then
+		  _val="${__arg}"
+		  SOMETHING="$_val"
+		else
+		  _arguments+=("${__arg}")
+		fi
+		;;
+	esac
+	done
+	if [ $_warnings -eq 1 ]; then
+		_upgrade
+	fi
 	#TODO: --archives={default|none|last|set}
 	if [[ "$1" == "urls" ]]; then
 		_reproviding_warning
@@ -2932,30 +2958,6 @@ save() {
 			return 1
 		fi
 	fi
-	local SOMETHING=""
-	local _arguments=()
-	local _warnings=1
-	local _val=
-	for __arg in "${@:-}"
-	do
-	case ${__arg} in
-	  --no-warnings)
-		_warnings=0
-		;;
-	  -*)
-		_exit_1 printf "Unexpected option: %s\\n" "${__arg}"
-		;;
-	  *)
-		if _blank "${SOMETHING}"
-		then
-		  _val="${__arg}"
-		  SOMETHING="$_val"
-		else
-		  _arguments+=("${__arg}")
-		fi
-		;;
-	esac
-	done
 	if [[ "$SOMETHING" == "" ]]; then
 		>&2 echo "This command requires URL or SHA-1 or snapshot as a parameter"
 		return 1
