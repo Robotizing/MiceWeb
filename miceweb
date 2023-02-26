@@ -1527,20 +1527,20 @@ _versions() {
 }
 
 _safe() {
-	local IPFS_REPO_PATH="$IPFS_PATH"
-	if [[ "$IPFS_REPO_PATH" == "" ]]; then
-		IPFS_REPO_PATH="$HOME/.ipfs"
-	fi
-	local IPFS_REPO_LOCK="$IPFS_REPO_PATH/repo.lock"
-	if [ -e "$IPFS_REPO_LOCK" ]; then
-		>&2 echo -n "Waiting until removed $IPFS_REPO_LOCK..."
-		sleep 1
-		while [ -e "$IPFS_REPO_LOCK" ]; do
-			>&2 echo -n "."
-			sleep 1
-		done
-		>&2 echo ""
-	fi
+	#local IPFS_REPO_PATH="$IPFS_PATH"
+	#if [[ "$IPFS_REPO_PATH" == "" ]]; then
+	#	IPFS_REPO_PATH="$HOME/.ipfs"
+	#fi
+	#local IPFS_REPO_LOCK="$IPFS_REPO_PATH/repo.lock"
+	#if [ -e "$IPFS_REPO_LOCK" ]; then
+	#	>&2 echo -n "Waiting until removed $IPFS_REPO_LOCK..."
+	#	sleep 1
+	#	while [ -e "$IPFS_REPO_LOCK" ]; do
+	#		>&2 echo -n "."
+	#		sleep 1
+	#	done
+	#	>&2 echo ""
+	#fi
 	"${@}"
 	return $?
 }
