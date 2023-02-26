@@ -522,7 +522,7 @@ _main() {
 				fi
 			fi
 		fi
-		if ipfs files ls //MiceWeb/pages/$SNAP >/dev/null; then
+		if _safe ipfs files ls //MiceWeb/pages/$SNAP >/dev/null; then
 			echo $SNAP
 			present --no-warnings "$SNAP" 1>&2
 		fi
@@ -540,7 +540,7 @@ _main() {
 		return 0
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite ]]; then
 		local SNAP="$SOMETHING"
-		if ipfs files ls //MiceWeb/zites/$SNAP >/dev/null; then
+		if _safe ipfs files ls //MiceWeb/zites/$SNAP >/dev/null; then
 			echo $SNAP
 			present --no-warnings "$SNAP" 1>&2
 		fi
@@ -573,10 +573,10 @@ _cat_file() {
 	local ADDR=""
 	if [[ "$FIL" == /ipns/* ]]; then
 		ADDR=$(_resolve_ipns "${FIL#/ipns/}")
-		ipfs cat "$ADDR" | grep -a "$GREP"
+		_safe ipfs cat "$ADDR" | grep -a "$GREP"
 	elif [[ "$FIL" == /ipfs/* ]]; then
 		ADDR="${FIL#/ipfs/}"
-		ipfs cat "$ADDR" | grep -a "$GREP"
+		_safe ipfs cat "$ADDR" | grep -a "$GREP"
 	elif [[ "$FIL" == /zeronet/* ]]; then
 		ADDR=$(_resolve_zeronet "${FIL#/zeronet/}")
 		if [[ $ADDR != "" ]]; then
@@ -799,9 +799,9 @@ _random_value() {
 
 _remove_dir() {
 	local DIRPATH="$1"
-	local CID="$(ipfs files stat --hash /$DIRPATH)"
+	local CID="$(_safe ipfs files stat --hash /$DIRPATH)"
 	if [[ "$CID" != "" ]]; then
-		if ipfs files rm -r /$DIRPATH &>/dev/null; then
+		if _safe ipfs files rm -r /$DIRPATH &>/dev/null; then
 			echo "Removed $DIRPATH, you can try to undo that right now by running 'ipfs files cp /ipfs/$CID $DIRPATH'"
 			return 0
 		fi
@@ -810,9 +810,9 @@ _remove_dir() {
 }
 _remove_file() {
 	local FILEPATH="$1"
-	local CID="$(ipfs files stat --hash /$FILEPATH)"
+	local CID="$(_safe ipfs files stat --hash /$FILEPATH)"
 	if [[ "$CID" != "" ]]; then
-		if ipfs files rm /$FILEPATH &>/dev/null; then
+		if _safe ipfs files rm /$FILEPATH &>/dev/null; then
 			echo "Removed $FILEPATH, you can try to undo that right now by running 'ipfs files cp /ipfs/$CID $FILEPATH'"
 			return 0
 		fi
@@ -821,7 +821,7 @@ _remove_file() {
 }
 
 _reproviding_warning() {
-	local REPROVIDING=$(ipfs config Reprovider.Strategy)
+	local REPROVIDING=$(_safe ipfs config Reprovider.Strategy)
 	if [[ "$REPROVIDING" == "all" ]]; then
 		>&2 printf '%s' "Warning: "
 		>&2 _print_hyperlink "https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy" "Reprovider.Strategy"
@@ -840,26 +840,26 @@ _resolve_ipns() {
 		echo "$CID${1#$DOMAIN}"
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		local LOGTXTADDR=""
-		for I in $(ipfs files ls //MiceWeb/resolves/ipns/$DOMAIN 2>/dev/null | sort --reverse); do
-			local PREVCID=$(ipfs files read //MiceWeb/resolves/ipns/$DOMAIN/$I | sed -n 2p)
+		for I in $(_safe ipfs files ls //MiceWeb/resolves/ipns/$DOMAIN 2>/dev/null | sort --reverse); do
+			local PREVCID=$(_safe ipfs files read //MiceWeb/resolves/ipns/$DOMAIN/$I | sed -n 2p)
 			if [[ $PREVCID == $CID ]]; then
 				LOGTXTADDR="/MiceWeb/resolves/ipns/$DOMAIN/$I"
 				break
 			fi
 		done
 		if [[ $LOGTXTADDR == "" ]]; then
-			LOGTXTADDR="/ipfs/$(printf "%s\n%s\n" "CID $(_random_value)" "$CID" | ipfs add --quieter --pin=false)"
+			LOGTXTADDR="/ipfs/$(printf "%s\n%s\n" "CID $(_random_value)" "$CID" | _safe ipfs add --quieter --pin=false)"
 		fi
 		if [[ $LOGTXTADDR != "" ]]; then
-			ipfs files mkdir //MiceWeb/resolves 2>/dev/null
-			ipfs files mkdir //MiceWeb/resolves/ipns 2>/dev/null
-			ipfs files mkdir //MiceWeb/resolves/ipns/$DOMAIN 2>/dev/null
-			ipfs files cp /$LOGTXTADDR //MiceWeb/resolves/ipns/$DOMAIN/$DT.txt
+			_safe ipfs files mkdir //MiceWeb/resolves 2>/dev/null
+			_safe ipfs files mkdir //MiceWeb/resolves/ipns 2>/dev/null
+			_safe ipfs files mkdir //MiceWeb/resolves/ipns/$DOMAIN 2>/dev/null
+			_safe ipfs files cp /$LOGTXTADDR //MiceWeb/resolves/ipns/$DOMAIN/$DT.txt
 		fi
 		return 0
 	else
-		for I in $(ipfs files ls //MiceWeb/resolves/ipns/$DOMAIN 2>/dev/null | sort --reverse); do
-			CID=$(ipfs files read //MiceWeb/resolves/ipns/$DOMAIN/$I | sed -n 2p)
+		for I in $(_safe ipfs files ls //MiceWeb/resolves/ipns/$DOMAIN 2>/dev/null | sort --reverse); do
+			CID=$(_safe ipfs files read //MiceWeb/resolves/ipns/$DOMAIN/$I | sed -n 2p)
 			if [[ $CID != "" ]]; then
 				>&2 echo "Warning: could not resolve /ipns/$DOMAIN actually"
 				echo "$CID${1#$DOMAIN}"
@@ -943,7 +943,7 @@ _save_archived() {
 	local RET=1
 	for I in $(wayback_machine_downloader -s -e -l "$1" 2>/dev/null | jq --raw-output '.. | .timestamp? | strings' | tail -n1); do
 		SUBDIR="${I:0:8}GMT${I:8:6}-archive"
-		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			_wget "https://web.archive.org/web/$I/$ADDR" --cut-dirs=3
 			RET=$?
@@ -967,7 +967,7 @@ _save_archived_snapshot() {
 	fi
 	local RET=1
 	SUBDIR="$2"
-	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		_wget "https://web.archive.org/web/${SUBDIR:0:8}${SUBDIR:11:6}/$ADDR" --cut-dirs=3
 		RET=$?
@@ -981,19 +981,18 @@ _save_archived_snapshot() {
 _save_curl() {
 	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 	SUBDIR="$DT-curl"
-	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
-		_wait_while_ipfs_locked
-		local CID=$(curl --connect-timeout 60 -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter --pin=false)
+		local CID=$(curl --connect-timeout 60 -f "$1" 2>/dev/null | _safe ipfs add --cid-version=0 --quieter --pin=false)
 		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
-			ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+			_safe ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
 				echo "$SAVE_HASH/$SUBDIR"
 				#TODO: make it better
-				local sz=$(ipfs files stat --size /$SAVE_MFS_ADDR/$SUBDIR)
+				local sz=$(_safe ipfs files stat --size /$SAVE_MFS_ADDR/$SUBDIR)
 				if [ $sz -le 1024 ]; then
-					local content=$(ipfs files read /$SAVE_MFS_ADDR/$SUBDIR)
+					local content=$(_safe ipfs files read /$SAVE_MFS_ADDR/$SUBDIR)
 					if [[ "$content" == "<meta http-equiv=\"refresh\" content=\"0; url="*"\">" ]]; then
 						content="${content#<meta http-equiv=\"refresh\" content=\"0; url=}"
 						content="${content%\">}"
@@ -1016,12 +1015,12 @@ _save_curl() {
 _save_curl_tor() {
 	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 	SUBDIR="$DT-curl-tor"
-	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
-		local CID=$(torsocks --isolate curl --connect-timeout 60 -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter --pin=false)
+		local CID=$(torsocks --isolate curl --connect-timeout 60 -f "$1" 2>/dev/null | _safe ipfs add --cid-version=0 --quieter --pin=false)
 		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
-			ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+			_safe ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
 				echo "$SAVE_HASH/$SUBDIR"
 				#TODO: handle redirections like in _save_curl
@@ -1039,12 +1038,12 @@ _save_curl_tor() {
 _save_gemget() {
 	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 	SUBDIR="$DT-gemget"
-	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
-		local CID=$(gemget --output=- "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter --pin=false)
+		local CID=$(gemget --output=- "$1" 2>/dev/null | _safe ipfs add --cid-version=0 --quieter --pin=false)
 		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
-			ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+			_safe ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
 				echo "$SAVE_HASH/$SUBDIR"
 				return 0
@@ -1060,13 +1059,13 @@ _save_gemget() {
 }
 _save_wget_ipfs() {
 	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
-	local ADDR=$(ipfs resolve --timeout=60s $MAIN)
+	local ADDR=$(_safe ipfs resolve --timeout=60s $MAIN)
 	if [[ "$ADDR" != "" ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-wget-ipfs"
-		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
-			local GATEWAY=$(ipfs config Addresses.Gateway)
+			local GATEWAY=$(_safe ipfs config Addresses.Gateway)
 			if [ "$GATEWAY" != "" ]; then
 				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$1" --cut-dirs=2
 				return $?
@@ -1085,9 +1084,9 @@ _save_wget_ipns() {
 	if [[ "$ADDR" != "" ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-wget-ipns"
-		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
-			local GATEWAY=$(ipfs config Addresses.Gateway)
+			local GATEWAY=$(_safe ipfs config Addresses.Gateway)
 			if [ "$GATEWAY" != "" ]; then
 				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$ADDR" --cut-dirs=2 "Resolved /ipns/$1 to /ipfs/$ADDR"
 				return $?
@@ -1104,7 +1103,7 @@ _save_wget_ipns() {
 _save_wget() {
 	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 	SUBDIR="$DT-wget"
-	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		_wget $1
 		return $?
@@ -1116,7 +1115,7 @@ _save_wget() {
 _save_wget_tor() {
 	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 	SUBDIR="$DT-wget-tor"
-	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		_wget $1 --torsocks
 		return $?
@@ -1129,7 +1128,7 @@ _save_media() {
 	if [[ $1 == https://www.youtube.com/watch?v=* || $1 == https://m.youtube.com/watch?v=* || $1 == https://youtu.be/* || $1 == https://vk.com/video* || $1 == https://ok.ru/video/* || $1 == https://m.ok.ru/video/* || $1 == https://vimeo.com/* || $1 == https://coub.com/view/* || $1 ==  https://www.instagram.com/p/* || $1 == https://www.tiktok.com/@*/video/* || $1 == https://twitter.com/*/status/* || $1 == https://fb.watch/* || $1 == https://www.facebook.com/reel/* || $1 == https://my.mail.ru/mail/*/video/* || $1 == https://music.yandex.ru/album/*/track/* || $1 == https://www.youtube.com/shorts/* || $1 == https://m.youtube.com/shorts/* ]]; then	#TODO: support share.tube?
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-media"
-		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			if _command_exists yt-dlp; then
 				if _command_exists ffmpeg; then
@@ -1149,7 +1148,7 @@ _save_media() {
 		>&2 echo "Warning: skipped downloading 'media', promised to be very slow"
 	#	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 	#	SUBDIR="$DT-media"
-	#	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+	#	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	#	if [ $? -ne 0 ]; then
 	#		if _command_exists yt-dlp; then
 	#			if _command_exists ffmpeg; then
@@ -1173,7 +1172,7 @@ _save_playlist() {
 	if [[ $1 == https://www.youtube.com/channel/* || $1 == https://www.youtube.com/c/* || $1 == https://www.youtube.com/user/* || $1 == https://www.youtube.com/@* || $1 == https://www.youtube.com/*?list=* || $1 == https://m.youtube.com/channel/* || $1 == https://m.youtube.com/c/* || $1 == https://m.youtube.com/user/* || $1 == https://m.youtube.com/@* || $1 == https://m.youtube.com/*?list=* || $1 == https://rutube.ru/channel/*/videos || $1 == https://vimeo.com/* || $1 == https://www.dailymotion.com/* || $1 == https://music.yandex.ru/album/* ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-playlist"
-		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
 			local CID=$(yt-dlp --flat-playlist --print "Title: %(title)s
@@ -1182,9 +1181,9 @@ Duration: %(duration_string)s
 Views: %(view_count)s
 Description: %(description)s
 
-" --socket-timeout 10 --no-progress "$URL" 2>/dev/null | ipfs add --cid-version=0 --quieter --pin=false)
+" --socket-timeout 10 --no-progress "$URL" 2>/dev/null | _safe ipfs add --cid-version=0 --quieter --pin=false)
 			if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
-				ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+				_safe ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 				if [ $? -eq 0 ]; then
 					echo "$SAVE_HASH/$SUBDIR"
 					return 0
@@ -1213,14 +1212,14 @@ _save_zite() {
 	#if [[ $MAIN == 1* ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-zite"
-		ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
+		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 		if [ $? -ne 0 ]; then
 			local ZITEDATA="$(_zeronet_data)/$MAIN"
 			if [[ -d "$ZITEDATA" ]]; then
-				local CID=$(ipfs add -r "$ZITEDATA" --quieter --pin=false --cid-version=0)
+				local CID=$(_safe ipfs add -r "$ZITEDATA" --quieter --pin=false --cid-version=0)
 				if [[ "$CID" != "" && "$CID" != "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn" ]]; then
-					#if ipfs files mkdir /$SAVE_MFS_ADDR/$SUBDIR; then
-						ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR	#/$DOMAIN
+					#if _safe ipfs files mkdir /$SAVE_MFS_ADDR/$SUBDIR; then
+						_safe ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR	#/$DOMAIN
 						if [ $? -eq 0 ]; then
 							echo "$SAVE_HASH/$SUBDIR"
 							return 0
@@ -1318,12 +1317,12 @@ _similar_but_something() {
 	# IPFS
 	if [[ $URL == ipfs://$host/* ]]; then
 		if [[ $URL == ipfs://Qm* ]]; then
-			local converted="$(ipfs cid format -v 1 -b base32 $host 2>/dev/null)"
+			local converted="$(_safe ipfs cid format -v 1 -b base32 $host 2>/dev/null)"
 			if [[ "$converted" != "" ]]; then
 				echo "ipfs://$converted/${URL#ipfs://$host/}"
 			fi
 		elif [[ $URL == ipfs://bafy* ]]; then
-			local converted="$(ipfs cid format -v 0 -b base58btc $host 2>/dev/null)"
+			local converted="$(_safe ipfs cid format -v 0 -b base58btc $host 2>/dev/null)"
 			if [[ "$converted" != "" ]]; then
 				echo "ipfs://$converted/${URL#ipfs://$host/}"
 			fi
@@ -1397,9 +1396,9 @@ _upgrade() {
 		exit 1
 	fi
 	local VERTXT="/MiceWeb/attributes.txt"
-	local VER=$(ipfs files read /$VERTXT 2>/dev/null | sed -n 2p)
+	local VER=$(_safe ipfs files read /$VERTXT 2>/dev/null | sed -n 2p)
 	if [[ $VER == "" ]]; then
-		local TESTHASH2="$(echo -n "test" | ipfs add --only-hash --quieter --cid-version=0)"
+		local TESTHASH2="$(echo -n "test" | _safe ipfs add --only-hash --quieter --cid-version=0)"
 		#TODO: _IPFS_FEATURES="--to-files" when accessible
 		if [[ "$TESTHASH2" != "QmRf22bZar3WKmojipms22PkXH1MZGmvsqzQtuSvQE3uhm" ]]; then
 			_exit_1 _print_with_hyperlink "Installed IPFS CLI like " "https://github.com/ipfs/kubo" " is required for MiceWeb"
@@ -1408,35 +1407,35 @@ _upgrade() {
 	local APPVER="v.${_VERSION}"
 	if [[ $APPVER != $VER ]]; then
 		if [[ $VER == "" ]]; then
-			if ! ipfs files ls //MiceWeb &>/dev/null; then
-				ipfs files mkdir //MiceWeb 2>/dev/null
-				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "$APPVER" | ipfs add --quieter --pin=false)"
-				if ipfs files cp //ipfs/$VERTXTCID /$VERTXT; then
+			if ! _safe ipfs files ls //MiceWeb &>/dev/null; then
+				_safe ipfs files mkdir //MiceWeb 2>/dev/null
+				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "$APPVER" | _safe ipfs add --quieter --pin=false)"
+				if _safe ipfs files cp //ipfs/$VERTXTCID /$VERTXT; then
 					return 0
 				else
 					_exit_1 printf "Can't create MiceWeb library\n"
 				fi
 			fi
 			backup >/dev/null
-			ipfs files mkdir //MiceWeb/pages 2>/dev/null
-			local CID="$(ipfs files stat --hash //MiceWeb/pages/)"
+			_safe ipfs files mkdir //MiceWeb/pages 2>/dev/null
+			local CID="$(_safe ipfs files stat --hash //MiceWeb/pages/)"
 			if [[ "$CID" != "" ]]; then
-				for I in $(ipfs files ls //MiceWeb/pages/ | grep ^page-Qm); do
-					local URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
+				for I in $(_safe ipfs files ls //MiceWeb/pages/ | grep ^page-Qm); do
+					local URL=$(_safe ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
 					if [[ "$URL" != "" ]]; then
 						>&2 echo -n "Upgrading $URL..."
 						local HASH=$(_hash "$URL")
 						>&2 echo -n "."
 						if [[ "$HASH" != "" ]]; then
-							ipfs files mv //MiceWeb/pages/$I "//MiceWeb/pages/$HASH"
+							_safe ipfs files mv //MiceWeb/pages/$I "//MiceWeb/pages/$HASH"
 						fi
 						>&2 echo "."
 					fi
 				done
-				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.2" | ipfs add --quieter --pin=false)"
-				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
+				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.2" | _safe ipfs add --quieter --pin=false)"
+				_safe ipfs files cp //ipfs/$VERTXTCID /$VERTXT
 				if [ $? -eq 0 ]; then
-					ipfs files flush //MiceWeb &>/dev/null
+					_safe ipfs files flush //MiceWeb &>/dev/null
 					>&2 echo "Upgraded the MiceWeb library to v.0.2"
 					_upgrade
 					return $?
@@ -1448,11 +1447,11 @@ _upgrade() {
 			if [ $? -eq 1 ]; then
 				# updating to v.0.3
 				backup >/dev/null
-				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.3" | ipfs add --quieter --pin=false)"
-				ipfs files rm /$VERTXT
-				ipfs files cp //ipfs/$VERTXTCID /$VERTXT
+				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "v.0.3" | _safe ipfs add --quieter --pin=false)"
+				_safe ipfs files rm /$VERTXT
+				_safe ipfs files cp //ipfs/$VERTXTCID /$VERTXT
 				if [ $? -eq 0 ]; then
-					ipfs files flush //MiceWeb &>/dev/null
+					_safe ipfs files flush //MiceWeb &>/dev/null
 					>&2 echo "Upgraded the MiceWeb library to v.0.3"
 					>&2 echo "It's recommended to run 'miceweb save urls --grep=#'"
 					save urls --grep="#"
@@ -1518,7 +1517,7 @@ _versions() {
 	fi
 	local HASH=$(_hash_string "$URL")
 	if [[ "$HASH" != "" ]]; then
-		for I in $(ipfs files ls //MiceWeb/pages/$HASH 2>/dev/null | sed 's/^/'"$HASH"'\//')
+		for I in $(_safe ipfs files ls //MiceWeb/pages/$HASH 2>/dev/null | sed 's/^/'"$HASH"'\//')
 		do
 			if [[ $I != *.* ]]; then
 				echo "${I%ing}"
@@ -1527,21 +1526,23 @@ _versions() {
 	fi
 }
 
-_wait_while_ipfs_locked() {
+_safe() {
 	local IPFS_REPO_PATH="$IPFS_PATH"
 	if [[ "$IPFS_REPO_PATH" == "" ]]; then
 		IPFS_REPO_PATH="$HOME/.ipfs"
 	fi
 	local IPFS_REPO_LOCK="$IPFS_REPO_PATH/repo.lock"
 	if [ -e "$IPFS_REPO_LOCK" ]; then
-		echo -n "Waiting until removed IPFS repo.lock"
+		>&2 echo -n "Waiting until removed $IPFS_REPO_LOCK..."
 		sleep 1
-		echo -n "..."
 		while [ -e "$IPFS_REPO_LOCK" ]; do
+			>&2 echo -n "."
 			sleep 1
-			echo -n "."
 		done
+		>&2 echo ""
 	fi
+	"${@}"
+	return $?
 }
 
 _warn_about_version() {
@@ -1578,11 +1579,11 @@ _wget() {
 		if [ $WGETERR -ne 0 ]; then
 			>&2 echo "Warning: detected issues when downloading '${SUBDIR:18}', wget err. $WGETERR"
 		fi
-		local CID="$(ipfs add --quieter --pin=false -r $MYTMPDIR)"
-		ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+		local CID="$(_safe ipfs add --quieter --pin=false -r $MYTMPDIR)"
+		_safe ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 		if [ $? -eq 0 ]; then
-			local LOGCID="$(ipfs add --quieter --pin=false $MYTMPFILE)"
-			ipfs files cp //ipfs/$LOGCID /$SAVE_MFS_ADDR/$SUBDIR.log
+			local LOGCID="$(_safe ipfs add --quieter --pin=false $MYTMPFILE)"
+			_safe ipfs files cp //ipfs/$LOGCID /$SAVE_MFS_ADDR/$SUBDIR.log
 			echo "$SAVE_HASH/$SUBDIR"
 			RET=$WGETERR
 		fi
@@ -1603,8 +1604,8 @@ _ytdlp() {
 	local YTDLPERR=$?
 	local RET=1
 	if [[ $YTDLPERR -eq 0 ]]; then
-		local CID="$(ipfs add --quieter --pin=false -r $MYTMPDIR)"
-		ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+		local CID="$(_safe ipfs add --quieter --pin=false -r $MYTMPDIR)"
+		_safe ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 		if [ $? -eq 0 ]; then
 			echo "$SAVE_HASH/$SUBDIR"
 			RET=$YTDLPERR
@@ -1625,8 +1626,8 @@ _ytdlp_audio() {
 	local YTDLPERR=$?
 	local RET=1
 	if [[ $YTDLPERR -eq 0 ]]; then
-		local CID="$(ipfs add --quieter --pin=false -r $MYTMPDIR)"
-		ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+		local CID="$(_safe ipfs add --quieter --pin=false -r $MYTMPDIR)"
+		_safe ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 		if [ $? -eq 0 ]; then
 			echo "$SAVE_HASH/$SUBDIR"
 			RET=$YTDLPERR
@@ -1712,7 +1713,7 @@ backup() {
 	fi
 	mkdir -p "$HOME/.miceweb"
 	local DT=$(export TZ=GMT ; date '+%Y-%m-%d GMT %H:%M:%S')
-	local CID="$(ipfs files stat --hash //MiceWeb 2>/dev/null)"
+	local CID="$(_safe ipfs files stat --hash //MiceWeb 2>/dev/null)"
 	if [[ "$CID" != "" ]]; then
 		printf "%s\t%s\n" "$DT" "$CID" >> "$HOME/.miceweb/backup.txt"
 		if [ $? -eq 0 ]; then
@@ -1742,12 +1743,12 @@ cleanup() {
 		return 1
 	fi
 	local MFS_PRESENTS_ADDR="/MiceWeb/presents"
-	local CID="$(ipfs files stat --hash /$MFS_PRESENTS_ADDR)"
+	local CID="$(_safe ipfs files stat --hash /$MFS_PRESENTS_ADDR)"
 	if [[ "$CID" == "" ]]; then
 		>&2 echo "Nothing to cleanup"
 		return 0
 	fi
-	if ipfs files rm -r /$MFS_PRESENTS_ADDR; then
+	if _safe ipfs files rm -r /$MFS_PRESENTS_ADDR; then
 		>&2 echo "Removed the history of presents"
 		>&2 echo ""
 		>&2 echo "You can try to undo that right now by running"
@@ -1890,14 +1891,14 @@ hash() {
 	if [[ "$HASH" != "" ]]; then
 		echo $HASH
 		local MFS_ADDR="/MiceWeb/pages/$HASH"
-		ipfs files ls /$MFS_ADDR/URL.txt >/dev/null 2>/dev/null
+		_safe ipfs files ls /$MFS_ADDR/URL.txt >/dev/null 2>/dev/null
 		if [ $? -ne 0 ]; then
-			ipfs files mkdir //MiceWeb 2>/dev/null
-			ipfs files mkdir //MiceWeb/pages 2>/dev/null
-			ipfs files mkdir /$MFS_ADDR 2>/dev/null
+			_safe ipfs files mkdir //MiceWeb 2>/dev/null
+			_safe ipfs files mkdir //MiceWeb/pages 2>/dev/null
+			_safe ipfs files mkdir /$MFS_ADDR 2>/dev/null
 			local URL0=$(_url_but_fragment "$URL")
-			local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | ipfs add --quieter --pin=false)"
-			ipfs files cp //ipfs/$URLTXTCID /$MFS_ADDR/URL.txt
+			local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | _safe ipfs add --quieter --pin=false)"
+			_safe ipfs files cp //ipfs/$URLTXTCID /$MFS_ADDR/URL.txt
 		fi
 		return 0
 	else
@@ -2007,7 +2008,7 @@ import() {
 	#		>&2 echo "Set path to $IMPPATH"
 		#elif [[ "$URL" == http://* || "$URL" == https://* ]]; then
 			#if [[ ! "$URL" =~ ^[0-9a-f]{40}$ ]]; then
-				#if ipfs name resolve --recursive=false --timeout=5s $DOMAIN &>/dev/null; then
+				#if _safe ipfs name resolve --recursive=false --timeout=5s $DOMAIN &>/dev/null; then
 					
 				#fi
 			#fi
@@ -2043,9 +2044,9 @@ import() {
 				ADDR="$IMPPATH"
 			fi
 			if [[ "$ADDR" != "" ]]; then
-				local ADDR2=$(ipfs resolve --timeout=60s "${ADDR#/ipfs/}")
+				local ADDR2=$(_safe ipfs resolve --timeout=60s "${ADDR#/ipfs/}")
 				if [[ "$ADDR2" != "" ]]; then
-					if ipfs files cp /$ADDR2 /$MFS_ADDR/$SUBDIR0; then
+					if _safe ipfs files cp /$ADDR2 /$MFS_ADDR/$SUBDIR0; then
 						if [[ "${ADDR%/}" != "$ADDR2" ]]; then
 							>&2 echo "Resolved to $ADDR2"
 							if [[ "$RESOLVED" == "" ]]; then
@@ -2054,13 +2055,13 @@ import() {
 								RESOLVED="$RESOLVED, then to $ADDR2"
 							fi
 						fi
-						LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | ipfs add --quieter --pin=false)"
-						ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
+						LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | _safe ipfs add --quieter --pin=false)"
+						_safe ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
 						echo "$HASH/$SUBDIR"
-						if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+						if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
 							>&2 echo "Getting content from IPFS Network..."
-							if ipfs dag stat "${ADDR2#/ipfs/}"; then
-								if ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
+							if _safe ipfs dag stat "${ADDR2#/ipfs/}"; then
+								if _safe ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
 									>&2 echo "Done"
 								else
 									>&2 echo "Done, but could not confirm it"
@@ -2070,7 +2071,7 @@ import() {
 								>&2 echo "Incompleted"
 							fi
 						fi
-						if [[ "$(ipfs files stat --format="<type>" /$MFS_ADDR/$SUBDIR0)" == "file" ]]; then
+						if [[ "$(_safe ipfs files stat --format="<type>" /$MFS_ADDR/$SUBDIR0)" == "file" ]]; then
 							>&2 echo "Run 'ipfs get ${ADDR2#/ipfs/} --output=/dev/null' to ensure availability"
 						else
 							>&2 echo "Run 'ipfs get ${ADDR2#/ipfs/}' to ensure availability"
@@ -2087,14 +2088,14 @@ import() {
 					local path="$datadir/$ADDR"
 					if [ -e "$path" ]; then
 						if [ -d "$path" ]; then
-							CID="$(ipfs add --quieter --pin=false -r "$path")"
+							CID="$(_safe ipfs add --quieter --pin=false -r "$path")"
 						else
-							CID="$(ipfs add --quieter --pin=false "$path")"
+							CID="$(_safe ipfs add --quieter --pin=false "$path")"
 						fi
-						ipfs files cp //ipfs/$CID /$MFS_ADDR/$SUBDIR
+						_safe ipfs files cp //ipfs/$CID /$MFS_ADDR/$SUBDIR
 						if [ $? -eq 0 ]; then
-							LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH" "$COMMENT" | ipfs add --quieter --pin=false)"
-							ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
+							LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH" "$COMMENT" | _safe ipfs add --quieter --pin=false)"
+							_safe ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
 							echo "$HASH/$SUBDIR"
 							return 0
 						fi
@@ -2112,18 +2113,18 @@ import() {
 			fi
 		elif [ -e "$IMPPATH" ]; then
 			if [ -d "$IMPPATH" ]; then
-				CID="$(ipfs add --quieter --pin=false -r "$IMPPATH")"
+				CID="$(_safe ipfs add --quieter --pin=false -r "$IMPPATH")"
 			else
-				CID="$(ipfs add --quieter --pin=false "$IMPPATH")"
+				CID="$(_safe ipfs add --quieter --pin=false "$IMPPATH")"
 			fi
-			ipfs files cp //ipfs/$CID /$MFS_ADDR/$SUBDIR
+			_safe ipfs files cp //ipfs/$CID /$MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
 				local IMPPATH0=${IMPPATH%/}
 				local IMPBASE=${IMPPATH0%/*}
 				local IMPBASEDIR=${IMPBASE##*/}
 				local IMPNAME=${IMPPATH0##*/}
-				LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" "$COMMENT" | ipfs add --quieter --pin=false)"
-				ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
+				LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" "$COMMENT" | _safe ipfs add --quieter --pin=false)"
+				_safe ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
 				echo "$HASH/$SUBDIR"
 				#>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
 				#>&2 echo "Run 'miceweb $HASH/$SUBDIR' to present"
@@ -2150,11 +2151,11 @@ log() {
 	local SNAP="$1"
 	if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		if [[ "$SNAP" != *.* ]]; then
-			ipfs files read //MiceWeb/pages/$SNAP.log
+			_safe ipfs files read //MiceWeb/pages/$SNAP.log
 			return $?
 		fi
 	elif [[ "$SNAP" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
-		ipfs files read //MiceWeb/zites/$SNAP.log
+		_safe ipfs files read //MiceWeb/zites/$SNAP.log
 		return $?
 	fi
 	>&2 echo "This command requires snapshot as a parameter"
@@ -2182,21 +2183,21 @@ Description:
 HEREDOC
 present() {
 	_upgrade
-	local REPROVIDING=$(ipfs config Reprovider.Strategy)
-	local GATEWAY=$(ipfs config Addresses.Gateway)
+	local REPROVIDING=$(_safe ipfs config Reprovider.Strategy)
+	local GATEWAY=$(_safe ipfs config Addresses.Gateway)
 	if [[ "$1" == "urls" ]]; then
 		if [[ "$2" != "" ]]; then
-			ipfs files mkdir //MiceWeb 2>/dev/null
-			ipfs files mkdir //MiceWeb/presents 2>/dev/null
+			_safe ipfs files mkdir //MiceWeb 2>/dev/null
+			_safe ipfs files mkdir //MiceWeb/presents 2>/dev/null
 			local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
-			ipfs files mkdir /$MFS_PRESENT_ADDR 2>/dev/null
+			_safe ipfs files mkdir /$MFS_PRESENT_ADDR 2>/dev/null
 			local COUNT=0
 			local HASH=""
 			for I in $(urls --no-warnings "$2" "$3" "$4" "$5" "$6" "$7")	#$("$0" "$@" 2>/dev/null)
 			do
 				HASH=$(_hash "$I")
-				ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH 2>/dev/null
+				_safe ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH 2>/dev/null
 				if [ $? -eq 0 ]; then
 					((COUNT++))
 				fi
@@ -2204,20 +2205,20 @@ present() {
 				#for J in $(_similar "$I" 2>/dev/null)
 				#do
 				#	local HASH=$(_hash "$J")
-				#	ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH 2>/dev/null
+				#	_safe ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH 2>/dev/null
 				#	if [ $? -eq 0 ]; then
 				#		((COUNT++))
 				#	fi
 				#done
 				if _has_url_fragment "$I"; then
 					HASH=$(_hash_string "$I")
-					ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH 2>/dev/null
+					_safe ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH 2>/dev/null
 					if [ $? -eq 0 ]; then
 						((COUNT++))
 					fi
 				fi
 			done
-			local CID="$(ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+			local CID="$(_safe ipfs files stat --hash /$MFS_PRESENT_ADDR)"
 			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
 				echo "/ipfs/$CID"
 				if [ "$GATEWAY" != "" ]; then
@@ -2226,7 +2227,7 @@ present() {
 					>&2 echo " in a browser on the local machine"
 				fi
 				if [[ "$REPROVIDING" == "all" ]]; then
-					local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
 					if [[ "$converted" != "" ]]; then
 						>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
 						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
@@ -2241,8 +2242,8 @@ present() {
 				fi
 				local STAT="NumURLs: $COUNT"
 				>&2 echo ""
-				if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
-					ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+					_safe ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
 				else
 					>&2 echo "$STAT"
 				fi
@@ -2254,20 +2255,20 @@ present() {
 	fi
 	if [[ "$1" == "zites" ]]; then
 		if [[ "$2" != "" ]]; then
-			ipfs files mkdir //MiceWeb 2>/dev/null
-			ipfs files mkdir //MiceWeb/presents 2>/dev/null
+			_safe ipfs files mkdir //MiceWeb 2>/dev/null
+			_safe ipfs files mkdir //MiceWeb/presents 2>/dev/null
 			local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
-			ipfs files mkdir /$MFS_PRESENT_ADDR 2>/dev/null
+			_safe ipfs files mkdir /$MFS_PRESENT_ADDR 2>/dev/null
 			local COUNT=0
 			local HASH=""
 			for ZITE in $(zites "$2")	#$("$0" "$@" 2>/dev/null)
 			do
-				if ipfs files cp //MiceWeb/zites/$ZITE /$MFS_PRESENT_ADDR/$ZITE 2>/dev/null; then
+				if _safe ipfs files cp //MiceWeb/zites/$ZITE /$MFS_PRESENT_ADDR/$ZITE 2>/dev/null; then
 					((COUNT++))
 				fi
 			done
-			local CID="$(ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+			local CID="$(_safe ipfs files stat --hash /$MFS_PRESENT_ADDR)"
 			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
 				echo "/ipfs/$CID"
 				if [ "$GATEWAY" != "" ]; then
@@ -2276,7 +2277,7 @@ present() {
 					>&2 echo " in a browser on the local machine"
 				fi
 				if [[ "$REPROVIDING" == "all" ]]; then
-					local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
 					if [[ "$converted" != "" ]]; then
 						>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
 						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
@@ -2291,8 +2292,8 @@ present() {
 				fi
 				local STAT="NumZites: $COUNT"
 				>&2 echo ""
-				if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
-					ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+					_safe ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
 				else
 					>&2 echo "$STAT"
 				fi
@@ -2301,10 +2302,10 @@ present() {
 			return 1
 		else
 			local MFS_PRESENT_ADDR="/MiceWeb/zites/"
-			local CID="$(ipfs files stat --hash /$MFS_PRESENT_ADDR 2>/dev/null)"
+			local CID="$(_safe ipfs files stat --hash /$MFS_PRESENT_ADDR 2>/dev/null)"
 			if [[ "$CID" != "" ]]; then
 				echo "/ipfs/$CID"
-				local COUNT=$(ipfs files ls //MiceWeb/zites | wc -l)
+				local COUNT=$(_safe ipfs files ls //MiceWeb/zites | wc -l)
 				local STAT="NumZites: $COUNT"
 				>&2 echo ""
 				>&2 echo "There is a content identifier of current zites of all the MiceWeb library"
@@ -2319,8 +2320,8 @@ present() {
 					>&2 echo " in a browser on the local machine to view snapshots"
 				fi
 				>&2 echo ""
-				if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
-					ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+					_safe ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
 				else
 					>&2 echo "$STAT"
 				fi
@@ -2360,12 +2361,12 @@ present() {
 		local SNAP="$SOMETHING"
 		if [[ "$SNAP" != *.* ]]; then
 			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
-			local CID="$(ipfs files stat --hash /$MFS_SNAP_ADDR)"
+			local CID="$(_safe ipfs files stat --hash /$MFS_SNAP_ADDR)"
 			local ing=0
 			if [ "$CID" == "" ]; then
 				if [[ "$SNAP" == *-import ]]; then
 					ing=1
-					CID="$(ipfs files stat --hash "/$MFS_SNAP_ADDR"ing)"
+					CID="$(_safe ipfs files stat --hash "/$MFS_SNAP_ADDR"ing)"
 				fi
 			fi
 			if [ "$CID" != "" ]; then
@@ -2382,11 +2383,11 @@ present() {
 						part=$(echo $suffix | awk -F/ '{print $1}'); suffix="${suffix#$part/}"
 						local suff="$suffix"
 						suffix="/$suffix"
-						if ! ipfs resolve --timeout=1s $CID$suffix &>/dev/null; then
+						if ! _safe ipfs resolve --timeout=1s $CID$suffix &>/dev/null; then
 							suffix="${suffix%/}.html"
-							if ! ipfs resolve --timeout=1s $CID$suffix &>/dev/null; then
+							if ! _safe ipfs resolve --timeout=1s $CID$suffix &>/dev/null; then
 								part=$(echo $suff | awk -F/ '{print $1}'); suffix="/${suff#$part/}"
-								if ! ipfs resolve --timeout=1s $CID$suffix &>/dev/null; then
+								if ! _safe ipfs resolve --timeout=1s $CID$suffix &>/dev/null; then
 									suffix=""
 								fi
 							fi
@@ -2408,7 +2409,7 @@ present() {
 				fi
 				if [ $_warnings -eq 1 ]; then
 					if [[ "$REPROVIDING" == "all" ]]; then
-						local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+						local converted="$(_safe ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
 						if [[ "$converted" != "" ]]; then
 							>&2 _print_with_hyperlink " or " "ipfs://$converted$suffix" ""
 							>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
@@ -2421,11 +2422,11 @@ present() {
 						#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
 						#fi
 					fi
-					if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+					if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
 						>&2 echo ""
-						if ipfs dag stat $CID; then
+						if _safe ipfs dag stat $CID; then
 							if [ $ing -eq 1 ]; then
-								ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
+								_safe ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
 							fi
 						fi
 					fi
@@ -2439,7 +2440,7 @@ present() {
 	if [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
 		local SNAP="$SOMETHING"
 		local MFS_SNAP_ADDR="/MiceWeb/zites/$SNAP"
-		local CID="$(ipfs files stat --hash /$MFS_SNAP_ADDR)"
+		local CID="$(_safe ipfs files stat --hash /$MFS_SNAP_ADDR)"
 		if [ "$CID" != "" ]; then
 			local suffix=""
 			if [ "$GATEWAY" != "" ]; then
@@ -2457,7 +2458,7 @@ present() {
 			fi
 			if [ $_warnings -eq 1 ]; then
 				if [[ "$REPROVIDING" == "all" ]]; then
-					local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
 					if [[ "$converted" != "" ]]; then
 						>&2 _print_with_hyperlink " or " "ipfs://$converted$suffix" ""
 						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
@@ -2470,9 +2471,9 @@ present() {
 					#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
 					#fi
 				fi
-				if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
 					>&2 echo ""
-					ipfs dag stat $CID
+					_safe ipfs dag stat $CID
 				fi
 			fi
 			return 0
@@ -2493,11 +2494,11 @@ present() {
 			return 1
 		fi
 		local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
-		CID="$(ipfs files stat --hash /$MFS_PAGE_ADDR)"
+		CID="$(_safe ipfs files stat --hash /$MFS_PAGE_ADDR)"
 		if [ "$CID" != "" ]; then
 			echo "/ipfs/$CID"
 			local COUNT=0
-			for I in $(ipfs files ls /$MFS_PAGE_ADDR); do
+			for I in $(_safe ipfs files ls /$MFS_PAGE_ADDR); do
 				if [[ $I != *.* ]]; then
 					((COUNT++))
 				fi
@@ -2509,7 +2510,7 @@ present() {
 				>&2 echo " in a browser on the local machine"
 			fi
 			if [[ "$REPROVIDING" == "all" ]]; then
-				local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+				local converted="$(_safe ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
 				if [[ "$converted" != "" ]]; then
 					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
 					>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
@@ -2523,8 +2524,8 @@ present() {
 				#fi
 			fi
 			>&2 echo ""
-			if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
-				ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+			if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+				_safe ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
 			else
 				>&2 echo "$STAT"
 			fi
@@ -2535,11 +2536,11 @@ present() {
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
 		HASH="$SOMETHING"
 		local MFS_PAGE_ADDR="/MiceWeb/zites/$HASH"
-		CID="$(ipfs files stat --hash /$MFS_PAGE_ADDR)"
+		CID="$(_safe ipfs files stat --hash /$MFS_PAGE_ADDR)"
 		if [ "$CID" != "" ]; then
 			echo "/ipfs/$CID"
 			local COUNT=0
-			for I in $(ipfs files ls /$MFS_PAGE_ADDR); do
+			for I in $(_safe ipfs files ls /$MFS_PAGE_ADDR); do
 				if [[ $I != *.* ]]; then
 					((COUNT++))
 				fi
@@ -2551,7 +2552,7 @@ present() {
 				>&2 echo " in a browser on the local machine"
 			fi
 			if [[ "$REPROVIDING" == "all" ]]; then
-				local converted="$(ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
+				local converted="$(_safe ipfs cid format -v 1 -b base32 $CID 2>/dev/null)"
 				if [[ "$converted" != "" ]]; then
 					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
 					>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
@@ -2565,8 +2566,8 @@ present() {
 				#fi
 			fi
 			>&2 echo ""
-			if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
-				ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+			if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+				_safe ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
 			else
 				>&2 echo "$STAT"
 			fi
@@ -2587,28 +2588,28 @@ present() {
 	
 	if [[ "$HASH" != "" ]]; then
 		local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
-		ipfs files ls /$MFS_PAGE_ADDR/URL.txt >/dev/null 2>/dev/null
+		_safe ipfs files ls /$MFS_PAGE_ADDR/URL.txt >/dev/null 2>/dev/null
 		if [ $? -ne 0 ]; then
 			if _check_url "$URL"; then
-				ipfs files mkdir //MiceWeb 2>/dev/null
-				ipfs files mkdir //MiceWeb/pages 2>/dev/null
-				ipfs files mkdir /$MFS_PAGE_ADDR 2>/dev/null
-				local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | ipfs add --quieter --pin=false)"
-				ipfs files cp //ipfs/$URLTXTCID /$MFS_PAGE_ADDR/URL.txt
+				_safe ipfs files mkdir //MiceWeb 2>/dev/null
+				_safe ipfs files mkdir //MiceWeb/pages 2>/dev/null
+				_safe ipfs files mkdir /$MFS_PAGE_ADDR 2>/dev/null
+				local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | _safe ipfs add --quieter --pin=false)"
+				_safe ipfs files cp //ipfs/$URLTXTCID /$MFS_PAGE_ADDR/URL.txt
 			else
 				_echo_supported_url_prefixes
 				return 1
 			fi
 		fi
-		ipfs files mkdir //MiceWeb 2>/dev/null
-		ipfs files mkdir //MiceWeb/presents 2>/dev/null
+		_safe ipfs files mkdir //MiceWeb 2>/dev/null
+		_safe ipfs files mkdir //MiceWeb/presents 2>/dev/null
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
-		ipfs files mkdir /$MFS_PRESENT_ADDR 2>/dev/null
+		_safe ipfs files mkdir /$MFS_PRESENT_ADDR 2>/dev/null
 		for I in $(_similar "$URL" 2>/dev/null)
 		do
 			local SIMHASH=$(_hash "$I")
-			if ipfs files cp //MiceWeb/pages/$SIMHASH /$MFS_PRESENT_ADDR/$SIMHASH 2>/dev/null; then
+			if _safe ipfs files cp //MiceWeb/pages/$SIMHASH /$MFS_PRESENT_ADDR/$SIMHASH 2>/dev/null; then
 				if [[ "$I" != "$URL0" ]]; then
 					SIMURL="$I"
 					SIMURLs+=("$I")
@@ -2619,19 +2620,19 @@ present() {
 		done
 		if _has_url_fragment "$URL"; then
 			local SIMHASH=$(_hash_string "$URL")
-			if ipfs files cp //MiceWeb/pages/$SIMHASH /$MFS_PRESENT_ADDR/$SIMHASH 2>/dev/null; then
+			if _safe ipfs files cp //MiceWeb/pages/$SIMHASH /$MFS_PRESENT_ADDR/$SIMHASH 2>/dev/null; then
 				SIMURLs+=("$URL")
 				((CNT++))
 			fi
 		fi
-		CID0="$(ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+		CID0="$(_safe ipfs files stat --hash /$MFS_PRESENT_ADDR)"
 		if [[ $CID0 == "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn" ]]; then
 			_exit_1 echo "Error: unexpected error, try again"
 		fi
 		CID="$CID0/$HASH"
 	else
 		local MFS_PRESENT_ADDR="/MiceWeb/pages/"
-		CID0="$(ipfs files stat --hash /$MFS_PRESENT_ADDR 2>/dev/null)"
+		CID0="$(_safe ipfs files stat --hash /$MFS_PRESENT_ADDR 2>/dev/null)"
 		CID="$CID0"
 	fi
 	
@@ -2640,10 +2641,10 @@ present() {
 		local STAT=""
 		local COUNT=0
 		if [[ "$HASH" == "" ]]; then
-			COUNT=$(ipfs files ls //MiceWeb/pages | grep ^[0-9a-f] | wc -l)
+			COUNT=$(_safe ipfs files ls //MiceWeb/pages | grep ^[0-9a-f] | wc -l)
 			STAT="NumURLs: $COUNT"
 		else
-			for I in $(ipfs files ls //MiceWeb/pages/$HASH); do
+			for I in $(_safe ipfs files ls //MiceWeb/pages/$HASH); do
 				if [[ $I != *.* ]]; then
 					((COUNT++))
 				fi
@@ -2661,7 +2662,7 @@ present() {
 				>&2 _print_with_hyperlink "Open " "http://127.0.0.1:${GATEWAY##*/}/ipfs/$CID" " in a browser on the local machine"
 			fi
 			if [[ "$REPROVIDING" == "all" ]]; then
-				local converted="$(ipfs cid format -v 1 -b base32 $CID0 2>/dev/null)"
+				local converted="$(_safe ipfs cid format -v 1 -b base32 $CID0 2>/dev/null)"
 				if [[ "$converted" != "" ]]; then
 					>&2 _print_with_hyperlink " or " "ipfs://$converted/$HASH" " in an IPFS friendly browser"
 				fi
@@ -2690,8 +2691,8 @@ present() {
 			fi
 		fi
 		>&2 echo ""
-		if ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
-			ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+		if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s &>/dev/null; then
+			_safe ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
 		else
 			>&2 echo "$STAT"
 		fi
@@ -2842,9 +2843,9 @@ resolve() {
 		return 0
 		#TODO: show history in stderr?
 		#local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
-		#for I in $(ipfs files ls //MiceWeb/resolves/ipns/$DOMAIN)
+		#for I in $(_safe ipfs files ls //MiceWeb/resolves/ipns/$DOMAIN)
 		#do
-		#	echo ${I%.txt} $(ipfs files read //MiceWeb/resolves/ipns/$DOMAIN/$I | sed -n 2p)
+		#	echo ${I%.txt} $(_safe ipfs files read //MiceWeb/resolves/ipns/$DOMAIN/$I | sed -n 2p)
 		#done
 	elif [[ $1 == /zeronet/* ]]; then
 		_resolve_zeronet "${1#/zeronet/}" | awk -v PREFIX="/zeronet/" '{print PREFIX $0}'
@@ -2989,10 +2990,10 @@ save() {
 			fi
 			#TODO: warn when ZeroNet node works?
 			SAVE_HASH=$SOMETHING
-			ipfs files mkdir //MiceWeb 2>/dev/null
-			ipfs files mkdir //MiceWeb/zites 2>/dev/null
+			_safe ipfs files mkdir //MiceWeb 2>/dev/null
+			_safe ipfs files mkdir //MiceWeb/zites 2>/dev/null
 			SAVE_MFS_ADDR="/MiceWeb/zites/$SAVE_HASH"
-			ipfs files mkdir /$SAVE_MFS_ADDR 2>/dev/null
+			_safe ipfs files mkdir /$SAVE_MFS_ADDR 2>/dev/null
 			_save_zite $SAVE_HASH
 			return $?
 		else
@@ -3093,7 +3094,7 @@ save() {
 									wos=${URL#http://}
 								fi
 								local DOMAIN=$(echo "$wos" | awk -F/ '{print $1}')
-								if ipfs name resolve --recursive=false --timeout=5s $DOMAIN &>/dev/null; then
+								if _safe ipfs name resolve --recursive=false --timeout=5s $DOMAIN &>/dev/null; then	#TODO: use fast version of _resolve_ipns (timeout=5s, recursive=false)
 									SIMILAR_HASH=$(hash "ipns://$wos")
 									if [[ "$SIMILAR_HASH" != "" ]]; then
 										"$0" save --no-warnings $SIMILAR_HASH #2> >(grep .)
@@ -3191,7 +3192,7 @@ snapshots() {
 	fi
 	if [[ "$1" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
 		local ZITE=$1
-		ipfs files ls //MiceWeb/zites/$ZITE 2>/dev/null | sed 's/^/'"$ZITE"'\//'
+		_safe ipfs files ls //MiceWeb/zites/$ZITE 2>/dev/null | sed 's/^/'"$ZITE"'\//'
 		return $?
 	fi
 	local URL="$1"
@@ -3234,7 +3235,7 @@ url() {
 			return 0
 		fi
 	fi
-	URL=$(ipfs files read //MiceWeb/pages/$1/URL.txt | sed -n 2p)
+	URL=$(_safe ipfs files read //MiceWeb/pages/$1/URL.txt | sed -n 2p)
 	if [[ "$URL" != "" ]]; then
 		local HASH=$(_hash "$URL")
 		if [[ "$1" == "$HASH" ]]; then
@@ -3296,7 +3297,7 @@ urls() {
 			>&2 echo " htm(l) - contain URLs in the 'href' attribute"
 			>&2 echo ""
 		fi
-		local CID="$(ipfs files stat --hash //MiceWeb/pages/ 2>/dev/null)"
+		local CID="$(_safe ipfs files stat --hash //MiceWeb/pages/ 2>/dev/null)"
 		if [[ "$CID" != "" ]]; then
 			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
 			mkdir -p "$CACHE_DIR"
@@ -3318,14 +3319,14 @@ urls() {
 				else
 					>&2 echo "Warning: it could be slowly, at first"
 				fi
-				for I in $(ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f]); do
+				for I in $(_safe ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f]); do
 					local URL="${URLs[$I]}"
 					if [[ "$URL" != "" ]]; then
 						echo "$URL"
 					else
 						URL=$(grep "" "$CACHE_DIR$I" 2>/dev/null)
 						if [[ "$URL" == "" ]]; then
-							URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
+							URL=$(_safe ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
 						fi
 						if [[ "$URL" != "" ]]; then
 							echo "$URL"
@@ -3341,13 +3342,13 @@ urls() {
 					>&2 echo ""
 					>&2 echo "There are URLs already in the MiceWeb library (see also 'miceweb history'):"
 				fi
-				for I in $(ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f]); do
+				for I in $(_safe ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f]); do
 					local CACHE_FILE="$CACHE_DIR$I"
 					local URL=$(grep "" "$CACHE_FILE" 2>/dev/null)
 					if [[ "$URL" != "" ]]; then
 						echo "$URL"
 					else
-						URL=$(ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
+						URL=$(_safe ipfs cat $CID/$I/URL.txt 2>/dev/null | sed -n 2p)
 						if [[ "$URL" != "" ]]; then
 							echo "$URL" > "$CACHE_FILE"
 							echo "$URL"
@@ -3440,7 +3441,7 @@ Description:
 HEREDOC
 zites() {
 	if [[ "$1" == "" ]]; then
-		ipfs files ls //MiceWeb/zites 2>/dev/null
+		_safe ipfs files ls //MiceWeb/zites 2>/dev/null
 		return $?
 	fi
 	for I in $(_cat_file "$1" "^1"); do
