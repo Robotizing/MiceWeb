@@ -984,6 +984,7 @@ _save_curl() {
 	ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR &>/dev/null
 	if [ $? -ne 0 ]; then
 		local EMPTY="QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH"
+		_wait_while_ipfs_locked
 		local CID=$(curl --connect-timeout 60 -f "$1" 2>/dev/null | ipfs add --cid-version=0 --quieter --pin=false)
 		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
 			ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
@@ -1522,6 +1523,23 @@ _versions() {
 			if [[ $I != *.* ]]; then
 				echo "${I%ing}"
 			fi
+		done
+	fi
+}
+
+_wait_while_ipfs_locked() {
+	local IPFS_REPO_PATH="$IPFS_PATH"
+	if [[ "$IPFS_REPO_PATH" == "" ]]; then
+		IPFS_REPO_PATH="$HOME/.ipfs"
+	fi
+	local IPFS_REPO_LOCK="$IPFS_REPO_PATH/repo.lock"
+	if [ -e "$IPFS_REPO_LOCK" ]; then
+		echo -n "Waiting until removed IPFS repo.lock"
+		sleep 1
+		echo -n "..."
+		while [ -e "$IPFS_REPO_LOCK" ]; do
+			sleep 1
+			echo -n "."
 		done
 	fi
 }
