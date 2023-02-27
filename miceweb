@@ -80,6 +80,12 @@ DEFAULT_SUBCOMMAND="${DEFAULT_SUBCOMMAND:-help}"
 
 _IPFS_FEATURES=""
 
+if [[ "$IPFS_PATH" == "" ]]; then
+	_IPFS_REPO_PATH="$HOME/.ipfs"
+else
+	_IPFS_REPO_PATH="$IPFS_PATH"
+fi
+
 SAVE_MFS_ADDR=""
 SUBDIR=""
 
@@ -698,6 +704,11 @@ _initiate_saving_url() {
 	else
 		return 1
 	fi
+}
+
+_ipfs_gateway() {	# Kubo v.0.15.0+
+	cat "$_IPFS_REPO_PATH/gateway" 2>/dev/null
+	return $?
 }
 
 _news() {
