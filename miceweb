@@ -931,13 +931,70 @@ _safe() {
 	#	done
 	#	>&2 echo ""
 	#fi
-	"${@}" 2>/dev/null
-	return $?
+	
+	#"${@}" 2>/dev/null
+	
+	#TODO: https://unix.stackexchange.com/questions/716971/bin-sh-capture-stderr-into-a-variable ?
+#	(echo $(./outerr.sh) # Collect and flatten the stdout output 
+                     # Meanwhile stderr flows through the pipe
+#) 2>&1|tac|{         # reverse the output so the stdout line comes first
+#        read out
+#        err=$(tac)   # reverse lines again, back to the original line order
+#        echo "err=$err"
+#        echo "out=$out"
+#}
+
+	local tmpFN=$(_temp_file)
+	local RET=
+	if [[ "$tmpFN" != "" ]]; then
+		while true; do
+			"${@}" 2>$tmpFN
+			RET=$?
+			if [ $RET -eq 0 ]; then
+				rm $tmpFN
+				return $RET
+			fi
+			if [[ $(cat $tmpFN) == "Error: lock "*": someone else has the lock" ]]; then
+				sleep 1
+			else
+				rm $tmpFN
+				return $RET
+			fi
+		done
+	else
+		"${@}" 2>/dev/null
+		RET=$?
+	fi
+	return $RET
 }
 
 _safe_w() {
-	"${@}"
-	return $?
+	local tmpFN=$(_temp_file)
+	local RET=
+	if [[ "$tmpFN" != "" ]]; then
+		while true; do
+			"${@}" 2>$tmpFN
+			RET=$?
+			if [ $RET -eq 0 ]; then
+				#>&2 echo $tmpFN
+				>&2 cat $tmpFN
+				rm $tmpFN
+				return $RET
+			fi
+			if [[ $(cat $tmpFN) == "Error: lock "*": someone else has the lock" ]]; then
+				sleep 1
+			else
+				#>&2 echo $tmpFN
+				>&2 cat $tmpFN
+				rm $tmpFN
+				return $RET
+			fi
+		done
+	else
+		"${@}"
+		RET=$?
+	fi
+	return $RET
 }
 
 _save_and_present() {
@@ -1431,6 +1488,23 @@ _subcommands() {
     printf "Available commands:\\n"
     printf "  %s\\n" "${_DEFINED_SUBCOMMANDS[@]}"
   fi
+}
+
+_temp_file() {
+	# https://stackoverflow.com/questions/39230353/creating-a-temporary-file-in-memory-and-using-it-as-input-file-of-a-command
+	#local ramTempFN="$(mktemp -p /dev/shm/)"
+	#if [[ "$ramTempFN" != "" ]]; then
+	#	echo "$ramTempFN"
+	#	return 0
+	#else
+	#	local tempFN=$(mktemp 2>/dev/null || mktemp -t 'mytmpfile')
+	#	if [[ "$tempFN" != "" ]]; then
+	#		echo "$tempFN"
+	#		return 0
+	#	fi
+	#fi
+	#return 1
+	mktemp -p /dev/shm/ 2>/dev/null || mktemp 2>/dev/null || mktemp -t 'mytmpfile'
 }
 
 _upgrade() {
