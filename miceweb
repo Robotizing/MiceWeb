@@ -1504,7 +1504,7 @@ _temp_file() {
 	#	fi
 	#fi
 	#return 1
-	mktemp -p /dev/shm/ 2>/dev/null || mktemp 2>/dev/null || mktemp -t 'mytmpfile'
+	mktemp -p /dev/shm/ 2>/dev/null || mktemp 2>/dev/null || mktemp -t 'mytmpfile' 2>/dev/null
 }
 
 _upgrade() {
