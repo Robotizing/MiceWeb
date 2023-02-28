@@ -2158,7 +2158,7 @@ import() {
 						echo "$HASH/$SUBDIR"
 						if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
 							>&2 echo "Getting content from IPFS Network..."
-							if _safe_w ipfs dag stat "${ADDR2#/ipfs/}"; then
+							if ipfs dag stat "${ADDR2#/ipfs/}"; then
 								if _safe_w ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
 									>&2 echo "Done"
 								else
@@ -2341,7 +2341,7 @@ present() {
 				local STAT="NumURLs: $COUNT"
 				>&2 echo ""
 				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-					_safe_w ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+					ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
 				else
 					>&2 echo "$STAT"
 				fi
@@ -2391,7 +2391,7 @@ present() {
 				local STAT="NumZites: $COUNT"
 				>&2 echo ""
 				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-					_safe_w ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+					ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
 				else
 					>&2 echo "$STAT"
 				fi
@@ -2419,7 +2419,7 @@ present() {
 				fi
 				>&2 echo ""
 				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-					_safe_w ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+					ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
 				else
 					>&2 echo "$STAT"
 				fi
@@ -2522,7 +2522,7 @@ present() {
 					fi
 					if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
 						>&2 echo ""
-						if _safe_w ipfs dag stat $CID; then
+						if ipfs dag stat $CID; then
 							if [ $ing -eq 1 ]; then
 								_safe_w ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
 							fi
@@ -2571,7 +2571,7 @@ present() {
 				fi
 				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
 					>&2 echo ""
-					_safe_w ipfs dag stat $CID
+					ipfs dag stat $CID
 				fi
 			fi
 			return 0
@@ -2623,7 +2623,7 @@ present() {
 			fi
 			>&2 echo ""
 			if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-				_safe_w ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+				ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
 			else
 				>&2 echo "$STAT"
 			fi
@@ -2665,7 +2665,7 @@ present() {
 			fi
 			>&2 echo ""
 			if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-				_safe_w ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+				ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
 			else
 				>&2 echo "$STAT"
 			fi
@@ -2790,7 +2790,7 @@ present() {
 		fi
 		>&2 echo ""
 		if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-			_safe_w ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
+			ipfs dag stat $CID | awk -v SUFFIX=", $STAT" '{print $0 SUFFIX}' 1>&2
 		else
 			>&2 echo "$STAT"
 		fi
