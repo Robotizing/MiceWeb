@@ -831,8 +831,12 @@ _remove_file() {
 	return 1
 }
 
+_reprovider_strategy() {
+	_safe ipfs config Reprovider.Strategy
+}
+
 _reproviding_warning() {
-	local REPROVIDING=$(_safe_w ipfs config Reprovider.Strategy)
+	local REPROVIDING=$(_reprovider_strategy)
 	if [[ "$REPROVIDING" == "all" ]]; then
 		>&2 printf '%s' "Warning: "
 		>&2 _print_hyperlink "https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy" "Reprovider.Strategy"
@@ -840,6 +844,10 @@ _reproviding_warning() {
 		#>&2 echo "Warning: the reprovider announces all IPFS data including the MiceWeb Library,"
 		#>&2 echo " consider to run 'ipfs config Reprovider.Strategy pinned', seeing"
 		#>&2 echo " https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy"
+	elif [[ "$REPROVIDING" == "" ]]; then
+		>&2 printf '%s' "Warning: "
+		>&2 _print_hyperlink "https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy" "Reprovider.Strategy"
+		>&2 echo " is not determined"
 	fi
 }
 
@@ -2199,7 +2207,7 @@ Description:
 HEREDOC
 present() {
 	_upgrade
-	local REPROVIDING=$(_safe_w ipfs config Reprovider.Strategy)
+	local REPROVIDING=$(_reprovider_strategy)
 	local GATEWAY=$(_ipfs_gateway)
 	if [[ "$1" == "urls" ]]; then
 		if [[ "$2" != "" ]]; then
@@ -2242,7 +2250,7 @@ present() {
 					>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 					>&2 echo " in a browser on the local machine"
 				fi
-				if [[ "$REPROVIDING" == "all" ]]; then
+				if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
 					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
 					if [[ "$converted" != "" ]]; then
 						>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
@@ -2292,7 +2300,7 @@ present() {
 					>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 					>&2 echo " in a browser on the local machine"
 				fi
-				if [[ "$REPROVIDING" == "all" ]]; then
+				if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
 					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
 					if [[ "$converted" != "" ]]; then
 						>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
@@ -2424,7 +2432,7 @@ present() {
 					echo "/ipfs/$CID$suffix"
 				fi
 				if [ $_warnings -eq 1 ]; then
-					if [[ "$REPROVIDING" == "all" ]]; then
+					if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
 						local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
 						if [[ "$converted" != "" ]]; then
 							>&2 _print_with_hyperlink " or " "ipfs://$converted$suffix" ""
@@ -2473,7 +2481,7 @@ present() {
 				echo "/ipfs/$CID$suffix"
 			fi
 			if [ $_warnings -eq 1 ]; then
-				if [[ "$REPROVIDING" == "all" ]]; then
+				if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
 					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
 					if [[ "$converted" != "" ]]; then
 						>&2 _print_with_hyperlink " or " "ipfs://$converted$suffix" ""
@@ -2525,7 +2533,7 @@ present() {
 				>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 				>&2 echo " in a browser on the local machine"
 			fi
-			if [[ "$REPROVIDING" == "all" ]]; then
+			if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
 				local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
 				if [[ "$converted" != "" ]]; then
 					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
@@ -2567,7 +2575,7 @@ present() {
 				>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 				>&2 echo " in a browser on the local machine"
 			fi
-			if [[ "$REPROVIDING" == "all" ]]; then
+			if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
 				local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
 				if [[ "$converted" != "" ]]; then
 					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
@@ -2677,7 +2685,7 @@ present() {
 				>&2 echo ""
 				>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" " in a browser on the local machine"
 			fi
-			if [[ "$REPROVIDING" == "all" ]]; then
+			if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
 				local converted="$(_safe ipfs cid format -v 1 -b base32 $CID0)"
 				if [[ "$converted" != "" ]]; then
 					>&2 _print_with_hyperlink " or " "ipfs://$converted/$HASH" " in an IPFS friendly browser"
