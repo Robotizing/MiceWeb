@@ -1269,7 +1269,7 @@ _save_media() {
 	return 1
 }
 _save_playlist() {
-	if [[ $1 == https://www.youtube.com/channel/* || $1 == https://www.youtube.com/c/* || $1 == https://www.youtube.com/user/* || $1 == https://www.youtube.com/@* || $1 == https://www.youtube.com/*?list=* || $1 == https://m.youtube.com/channel/* || $1 == https://m.youtube.com/c/* || $1 == https://m.youtube.com/user/* || $1 == https://m.youtube.com/@* || $1 == https://m.youtube.com/*?list=* || $1 == https://rutube.ru/channel/*/videos || $1 == https://vimeo.com/* || $1 == https://www.dailymotion.com/* || $1 == https://music.yandex.ru/album/* ]]; then
+	if [[ $1 == https://www.youtube.com/channel/* || $1 == https://www.youtube.com/c/* || $1 == https://www.youtube.com/user/* || $1 == https://www.youtube.com/@* || $1 == https://www.youtube.com/*?list=* || $1 == https://m.youtube.com/channel/* || $1 == https://m.youtube.com/c/* || $1 == https://m.youtube.com/user/* || $1 == https://m.youtube.com/@* || $1 == https://m.youtube.com/*?list=* || $1 == https://rutube.ru/channel/*/videos/ || $1 == https://rutube.ru/channel/*/videos || $1 == https://vimeo.com/* || $1 == https://www.dailymotion.com/* || $1 == https://music.yandex.ru/album/* ]]; then
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-playlist"
 		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
