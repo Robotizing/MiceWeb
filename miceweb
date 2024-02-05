@@ -79,7 +79,10 @@ _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
 # is used.
 DEFAULT_SUBCOMMAND="${DEFAULT_SUBCOMMAND:-help}"
 
+_REQUESTS_TOPIC="MiceWebRequests"	#TODO: handle MICEWEB_PUBSUB_TOPIC?
+
 _IPFS_FEATURES=""
+# [[ $(ipfs help add) == *"--to-files"* ]]
 
 if [[ "$IPFS_PATH" == "" ]]; then
 	_IPFS_REPO_PATH="$HOME/.ipfs"
@@ -664,6 +667,10 @@ _free_space() {
 	echo $(df -Pk $1 | sed 1d | grep -v used | awk '{ print $4 "\t" }')
 }
 
+_grep_supported_urls() {
+	grep -e "^http://" -e "^https://" -e "^gopher://" -e "^gemini://" -e "^ftp://" -e "^ftps://" -e "^ipfs://" -e "^ipns://" -e "^git://"
+}
+
 _has_url_fragment() {
 	local URL="$1"
 	if [[ "$URL" =~ ['#'] ]]; then
@@ -1166,6 +1173,7 @@ _save_wget_ipfs() {
 		SUBDIR="$DT-wget-ipfs"
 		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 		if [ $? -ne 0 ]; then
+			#TODO: check _ipfs_gateway first
 			local GATEWAY=$(_safe_w ipfs config Addresses.Gateway)
 			if [ "$GATEWAY" != "" ]; then
 				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$1" --cut-dirs=2
@@ -1187,6 +1195,7 @@ _save_wget_ipns() {
 		SUBDIR="$DT-wget-ipns"
 		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 		if [ $? -ne 0 ]; then
+			#TODO: check _ipfs_gateway first
 			local GATEWAY=$(_safe_w ipfs config Addresses.Gateway)
 			if [ "$GATEWAY" != "" ]; then
 				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$ADDR" --cut-dirs=2 "Resolved /ipns/$1 to /ipfs/$ADDR"
@@ -1246,9 +1255,9 @@ _save_media() {
 			return 0
 		fi
 	elif [[ $1 == https://www.twitch.tv/* || $1 == https://m.twitch.tv/* || $1 == https://rutube.ru/video/* || $1 == https://www.dailymotion.com/video/* || $1 == https://zen.yandex.ru/video/watch/* || $1 == https://dzen.ru/video/watch/* ]]; then
-		>&2 echo "Warning: skipped downloading 'media', promised to be very slow"
+		>&2 echo "Warning: skipped downloading 'media', promised to be very slow"	#TODO: download just audio?
 	#	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-	#	SUBDIR="$DT-media"
+	#	SUBDIR="$DT-audio"
 	#	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 	#	if [ $? -ne 0 ]; then
 	#		if _command_exists yt-dlp; then
@@ -1260,7 +1269,7 @@ _save_media() {
 	#			fi
 	#			>&2 echo "Error: ffmpeg and ffprobe are required to save audio"
 	#		else
-	#			>&2 echo "Error: yt-dlp is required to save media"
+	#			>&2 echo "Error: yt-dlp is required to save audio"
 	#		fi
 	#	else
 	#		>&2 echo "$SUBDIR exists"
@@ -1328,6 +1337,8 @@ _save_zite() {
 					#fi
 				fi
 			fi
+			#TODO: try to load zite: "try later" and wget if zeronet node is running, "run ZeroNet node" if not
+			>&2 echo "Error: $MAIN is not loaded"
 		else
 			>&2 echo "$SUBDIR exists"
 			return 0
@@ -1655,7 +1666,7 @@ _wget() {
 	local options="$2"
 	local comment="$3"
 	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
-	local MYTMPFILE=$(mktemp 2>/dev/null || mktemp -t 'mytmpfile')
+	local MYTMPFILE=$(_temp_file)
 	cd $MYTMPDIR
 	local RAND="$(_random_value)"
 	echo "Log $RAND" > $MYTMPFILE
@@ -2342,7 +2353,7 @@ Version: ${_SUB_VERSION}
 Usage:
   ${_ME} <URL>
   ${_ME} <SHA-1>
-  ${_ME} <command> [--command-options] [<arguments>]
+  ${_ME} <command> [--<command-options>] [<arguments>]
 
 Help:
   ${_ME} help [<command>]
@@ -2663,6 +2674,7 @@ present() {
 		fi
 	fi
 	if [[ "$1" == "zites" ]]; then
+		#TODO: support http://127.0.0.1:43110/ipfs/...
 		if [[ "$2" != "" ]]; then
 			_safe ipfs files mkdir //MiceWeb
 			_safe ipfs files mkdir //MiceWeb/presents
@@ -3288,10 +3300,12 @@ save() {
 	fi
 	#TODO: --archives={default|none|last|set}
 	if [[ "$1" == "urls" ]]; then
+		#TODO: add "urls ..." to history.txt?
 		_reproviding_warning
 		if ! _command_exists torsocks; then
 			>&2 echo "Error: torsocks is not installed, some web pages might be inaccessible"
 		fi
+		#TODO: hash all valid urls, sort the list, then download?
 		local URLs=$(urls --no-warnings "$2" "$3" "$4" "$5" "$6" "$7") #$("$0" "$@" 2>/dev/null)
 		local count=0	#echo ${#URLs[@]}
 		for I in $URLs; do
@@ -3313,6 +3327,7 @@ save() {
 				if [[ "$PAGE_HASH" != "" ]]; then
 					>&2 echo -n "Saving $I ($index of $count)"
 					local rnumber=$((RANDOM%11+5))
+					#TODO: wait just 3 seconds, plus something dependent from time spent on previous saving
 					for (( i = 1; i <= $rnumber; i++ )) ; do
 						sleep 1
 						>&2 echo -n "."
