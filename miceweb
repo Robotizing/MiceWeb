@@ -1827,6 +1827,315 @@ backup() {
 	fi
 }
 
+# check #####################################################################
+
+describe "check" <<HEREDOC
+Usage:
+  ${_ME} check <snapshot>
+  ${_ME} check <URL>
+  ${_ME} check <SHA-1>
+  ${_ME} check urls [--grep=<expr.>] [<local/ipfs/ipns/zeronet file path>]
+  ${_ME} check <zite>
+  ${_ME} check zites [<local/ipfs/ipns/zeronet file path>]
+
+Description:
+  Check saved snapshot
+  Check saved snapshots of web page (including similar) by URL
+  Check saved snapshots of web page by URL's SHA-1
+  Check saved snapshots of web pages
+  Check saved snapshots of zite by bitcoin address
+  Check saved snapshots of zites
+HEREDOC
+check() {
+	_upgrade
+	local REPROVIDING=$(_reprovider_strategy)
+	local GATEWAY=$(_ipfs_gateway)
+	if [[ "$1" == "urls" ]]; then
+		if [[ "$2" != "" ]]; then
+			_safe ipfs files mkdir //MiceWeb
+			_safe ipfs files mkdir //MiceWeb/presents
+			local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
+			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
+			local COUNT=0
+			local HASH=""
+			for I in $(urls --no-warnings "$2" "$3" "$4" "$5" "$6" "$7")	#$("$0" "$@" 2>/dev/null)
+			do
+				HASH=$(_hash "$I")
+				_safe ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH
+				if [ $? -eq 0 ]; then
+					((COUNT++))
+				fi
+				#TODO: or with similar (maybe support --similar option)
+				#for J in $(_similar "$I" 2>/dev/null)
+				#do
+				#	local HASH=$(_hash "$J")
+				#	_safe ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH
+				#	if [ $? -eq 0 ]; then
+				#		((COUNT++))
+				#	fi
+				#done
+				if _has_url_fragment "$I"; then
+					HASH=$(_hash_string "$I")
+					_safe ipfs files cp //MiceWeb/pages/$HASH /$MFS_PRESENT_ADDR/$HASH
+					if [ $? -eq 0 ]; then
+						((COUNT++))
+					fi
+				fi
+			done
+			local CID="$(_safe_w ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
+				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
+					ipfs dag stat $CID
+				else
+					>&2 echo "Can't check $CID,"
+					>&2 echo " consider to run 'ipfs update'"
+					return 1
+				fi
+				return 0
+			fi
+			#TODO: fix and implement something like >&2 echo "Run 'miceweb save ${@@Q}'"
+			return 1
+		fi
+	fi
+	if [[ "$1" == "zites" ]]; then
+		#TODO: support http://127.0.0.1:43110/ipfs/...
+		if [[ "$2" != "" ]]; then
+			_safe ipfs files mkdir //MiceWeb
+			_safe ipfs files mkdir //MiceWeb/presents
+			local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
+			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
+			local COUNT=0
+			local HASH=""
+			for ZITE in $(zites "$2")	#$("$0" "$@" 2>/dev/null)
+			do
+				if _safe ipfs files cp //MiceWeb/zites/$ZITE /$MFS_PRESENT_ADDR/$ZITE; then
+					((COUNT++))
+				fi
+			done
+			local CID="$(_safe_w ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
+				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
+					ipfs dag stat $CID
+				else
+					>&2 echo "Can't check $CID,"
+					>&2 echo " consider to run 'ipfs update'"
+					return 1
+				fi
+				return 0
+			fi
+			return 1
+		else
+			local MFS_PRESENT_ADDR="/MiceWeb/zites/"
+			local CID="$(_safe ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+			if [[ "$CID" != "" ]]; then
+				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
+					ipfs dag stat $CID
+				else
+					>&2 echo "Can't check $CID,"
+					>&2 echo " consider to run 'ipfs update'"
+					return 1
+				fi
+				return 0
+			else
+				return 1
+			fi
+		fi
+	fi
+	
+	local SOMETHING=""
+	local _arguments=()
+	local _warnings=1
+	local _val=
+	for __arg in "${@:-}"
+	do
+	case ${__arg} in
+	  --no-warnings)
+		_warnings=0
+		;;
+	  -*)
+		_exit_1 printf "Unexpected option: %s\\n" "${__arg}"
+		;;
+	  *)
+		if _blank "${SOMETHING}"
+		then
+		  _val="${__arg}"
+		  SOMETHING="$_val"
+		else
+		  _arguments+=("${__arg}")
+		fi
+		;;
+	esac
+	done
+
+	if [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
+		local SNAP="$SOMETHING"
+		if [[ "$SNAP" != *.* ]]; then
+			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
+			local CID="$(_safe_w ipfs files stat --hash /$MFS_SNAP_ADDR)"
+			local ing=0
+			if [ "$CID" == "" ]; then
+				if [[ "$SNAP" == *-import ]]; then
+					ing=1
+					CID="$(_safe_w ipfs files stat --hash "/$MFS_SNAP_ADDR"ing)"
+				fi
+			fi
+			if [ "$CID" != "" ]; then
+				if [ $_warnings -eq 1 ]; then
+					if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
+						if ipfs dag stat $CID; then
+							if [ $ing -eq 1 ]; then
+								_safe_w ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
+							fi
+						fi
+					else
+						>&2 echo "Can't check $CID,"
+						>&2 echo " consider to run 'ipfs update'"
+						return 1
+					fi
+				fi
+				return 0
+			fi
+		fi
+		return 1
+	fi
+	
+	if [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
+		local SNAP="$SOMETHING"
+		local MFS_SNAP_ADDR="/MiceWeb/zites/$SNAP"
+		local CID="$(_safe_w ipfs files stat --hash /$MFS_SNAP_ADDR)"
+		if [ "$CID" != "" ]; then
+			if [ $_warnings -eq 1 ]; then
+				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
+					ipfs dag stat $CID
+				else
+					>&2 echo "Can't check $CID,"
+					>&2 echo " consider to run 'ipfs update'"
+					return 1
+				fi
+			fi
+			return 0
+		fi
+		return 1
+	fi
+	
+	local URL="$SOMETHING"
+	local HASH=""
+	local CID0=""
+	local CID=""
+	local CNT=0
+	
+	if [[ "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
+		HASH="$SOMETHING"
+		URL=$(url "$SOMETHING")
+		if [[ "$URL" == "" ]]; then
+			return 1
+		fi
+		local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
+		CID="$(_safe_w ipfs files stat --hash /$MFS_PAGE_ADDR)"
+		if [ "$CID" != "" ]; then
+			if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
+				ipfs dag stat $CID
+			else
+				>&2 echo "Can't check $CID,"
+				>&2 echo " consider to run 'ipfs update'"
+				return 1
+			fi
+			return 0
+		else
+			return 1
+		fi
+	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
+		HASH="$SOMETHING"
+		local MFS_PAGE_ADDR="/MiceWeb/zites/$HASH"
+		CID="$(_safe_w ipfs files stat --hash /$MFS_PAGE_ADDR)"
+		if [ "$CID" != "" ]; then
+			if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
+				ipfs dag stat $CID
+			else
+				>&2 echo "Can't check $CID,"
+				>&2 echo " consider to run 'ipfs update'"
+				return 1
+			fi
+			return 0
+		else
+			return 1
+		fi
+	fi
+	
+	local URL0="$(_url_but_fragment "$URL")"
+	
+	local SIMURL="$URL0"
+	local SIMURLs=()
+	
+	if [[ "$URL" != "urls" ]]; then
+		HASH=$(_hash "$URL" 2>/dev/null)
+	fi
+	
+	if [[ "$HASH" != "" ]]; then
+		local MFS_PAGE_ADDR="/MiceWeb/pages/$HASH"
+		_safe ipfs files ls /$MFS_PAGE_ADDR/URL.txt >/dev/null
+		if [ $? -ne 0 ]; then
+			if _check_url "$URL"; then
+				_safe ipfs files mkdir //MiceWeb
+				_safe ipfs files mkdir //MiceWeb/pages
+				_safe ipfs files mkdir /$MFS_PAGE_ADDR
+				local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | _safe_w ipfs add --quieter --pin=false)"
+				_safe_w ipfs files cp //ipfs/$URLTXTCID /$MFS_PAGE_ADDR/URL.txt
+			else
+				_echo_supported_url_prefixes
+				return 1
+			fi
+		fi
+		_safe ipfs files mkdir //MiceWeb
+		_safe ipfs files mkdir //MiceWeb/presents
+		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
+		_safe ipfs files mkdir /$MFS_PRESENT_ADDR
+		for I in $(_similar "$URL" 2>/dev/null)
+		do
+			local SIMHASH=$(_hash "$I")
+			if _safe ipfs files cp //MiceWeb/pages/$SIMHASH /$MFS_PRESENT_ADDR/$SIMHASH; then
+				if [[ "$I" != "$URL0" ]]; then
+					SIMURL="$I"
+					SIMURLs+=("$I")
+					((CNT++))
+				fi
+			fi
+		done
+		if _has_url_fragment "$URL"; then
+			local SIMHASH=$(_hash_string "$URL")
+			if _safe ipfs files cp //MiceWeb/pages/$SIMHASH /$MFS_PRESENT_ADDR/$SIMHASH; then
+				SIMURLs+=("$URL")
+				((CNT++))
+			fi
+		fi
+		CID0="$(_safe_w ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+		if [[ $CID0 == "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn" ]]; then
+			_exit_1 echo "Error: unexpected error, try again"
+		fi
+		CID="$CID0/$HASH"
+	else
+		local MFS_PRESENT_ADDR="/MiceWeb/pages/"
+		CID0="$(_safe ipfs files stat --hash /$MFS_PRESENT_ADDR)"
+		CID="$CID0"
+	fi
+	
+	if [[ "$CID0" != "" ]]; then
+		if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
+			ipfs dag stat $CID0
+		else
+			>&2 echo "Can't check $CID0,"
+			>&2 echo " consider to run 'ipfs update'"
+			return 1
+		fi
+	else
+		#TODO: fix and implement something like >&2 echo "Run 'miceweb save ${@@Q}'"
+		return 1
+	fi
+}
+
 # cleanup #####################################################################
 
 describe "cleanup" <<HEREDOC
@@ -1872,6 +2181,7 @@ commands() {
 	echo "miceweb			Introduce MiceWeb"
 	#_subcommands --raw $1 | awk -v PREFIX="miceweb " '{print PREFIX $0}'
 	echo "miceweb backup		Backup CID of the MiceWeb library
+miceweb check		Check saved snapshots data
 miceweb cleanup		Cleanup service data
 miceweb commands	Display the list of available commands
 miceweb find		Find saved web pages on the local machine
