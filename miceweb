@@ -66,7 +66,7 @@ _ME="$(basename "${0}")"
 #
 # Manually set this to to current version of the program. Adhere to the
 # semantic versioning specification: http://semver.org
-_VERSION="0.3"
+_VERSION="0.3"	#WARNING: affects _upgrade()
 _SUB_VERSION="${_VERSION}.1"
 
 # MiceWeb Talks
@@ -789,6 +789,7 @@ _parse_fragment () {
 _parse_extension() {
 	local rpath=$(_parse_rpath "$@")
 	local LPC="${rpath##*/}"
+	#echo $@,$rpath,$LPC
 	if [[ "$LPC" != "" ]]; then
 		local extension="${LPC##*.}"
 		if [[ "$LPC" != "$extension" ]]; then
@@ -866,6 +867,7 @@ _reprovider_strategy() {
 }
 
 _reproviding_warning() {
+	#>&2 echo "Tip: run 'miceweb tune' to control"
 	local REPROVIDING=$(_reprovider_strategy)
 	if [[ "$REPROVIDING" == "" ]]; then
 		>&2 printf '%s' "Warning: "
@@ -1079,6 +1081,8 @@ _save_archived() {
 			RET=$?
 		else
 			>&2 echo "Warning: $SUBDIR is already downloaded, doing nothing"
+			#local CID="$(_safe_w ipfs files stat --hash /$SAVE_MFS_ADDR/$SUBDIR)"
+			#_echo_saved_snapshot $CID
 			echo "$SAVE_HASH/$SUBDIR"
 			RET=0
 		fi
@@ -1103,6 +1107,8 @@ _save_archived_snapshot() {
 		RET=$?
 	else
 		>&2 echo "Warning: $SUBDIR is already downloaded, doing nothing"
+		#local CID="$(_safe_w ipfs files stat --hash /$SAVE_MFS_ADDR/$SUBDIR)"
+		#_echo_saved_snapshot $CID
 		echo "$SAVE_HASH/$SUBDIR"
 		RET=0
 	fi
@@ -1118,6 +1124,7 @@ _save_curl() {
 		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
 			_safe_w ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
+				#_echo_saved_snapshot $CID
 				echo "$SAVE_HASH/$SUBDIR"
 				#TODO: make it better
 				local sz=$(_safe_w ipfs files stat --size /$SAVE_MFS_ADDR/$SUBDIR)
@@ -1152,6 +1159,7 @@ _save_curl_tor() {
 		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
 			_safe_w ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
+				#_echo_saved_snapshot $CID
 				echo "$SAVE_HASH/$SUBDIR"
 				#TODO: handle redirections like in _save_curl
 				return 0
@@ -1175,6 +1183,7 @@ _save_gemget() {
 		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
 			_safe_w ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
+				#_echo_saved_snapshot $CID
 				echo "$SAVE_HASH/$SUBDIR"
 				return 0
 			fi
@@ -1336,6 +1345,7 @@ Description: %(description)s
 			if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
 				_safe_w ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 				if [ $? -eq 0 ]; then
+					#_echo_saved_snapshot $CID
 					echo "$SAVE_HASH/$SUBDIR"
 					return 0
 				fi
@@ -1372,6 +1382,7 @@ _save_zite() {
 					#if _safe_w ipfs files mkdir /$SAVE_MFS_ADDR/$SUBDIR; then
 						_safe_w ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR	#/$DOMAIN
 						if [ $? -eq 0 ]; then
+							#_echo_saved_snapshot $CID
 							echo "$SAVE_HASH/$SUBDIR"
 							return 0
 						fi
@@ -1735,6 +1746,7 @@ _wget() {
 		if [ $? -eq 0 ]; then
 			local LOGCID="$(_safe_w ipfs add --quieter --pin=false $MYTMPFILE)"
 			_safe_w ipfs files cp //ipfs/$LOGCID /$SAVE_MFS_ADDR/$SUBDIR.log
+			#_echo_saved_snapshot $CID
 			echo "$SAVE_HASH/$SUBDIR"
 			RET=$WGETERR
 		fi
@@ -1758,6 +1770,7 @@ _ytdlp() {
 		local CID="$(_safe_w ipfs add --quieter --pin=false -r $MYTMPDIR)"
 		_safe_w ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 		if [ $? -eq 0 ]; then
+			#_echo_saved_snapshot $CID
 			echo "$SAVE_HASH/$SUBDIR"
 			RET=$YTDLPERR
 		fi
@@ -1780,6 +1793,7 @@ _ytdlp_audio() {
 		local CID="$(_safe_w ipfs add --quieter --pin=false -r $MYTMPDIR)"
 		_safe_w ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 		if [ $? -eq 0 ]; then
+			#_echo_saved_snapshot $CID
 			echo "$SAVE_HASH/$SUBDIR"
 			RET=$YTDLPERR
 		fi
@@ -3231,7 +3245,6 @@ Description:
 HEREDOC
 request() {
 	_upgrade
-	>&2 echo "Run following commands 'miceweb <parameters>' to get snapshots"
 	local URL="$(_url_but_fragment "$1")"
 	if [[ "$URL" == "" ]]; then
 		>&2 echo "This command requires URL or SHA-1 as a parameter"
@@ -3247,6 +3260,7 @@ request() {
 		_echo_supported_url_prefixes
 		return 1
 	fi
+	>&2 echo "Run following commands 'miceweb <parameters>' to obtain snapshots"
 	if _command_exists wayback_machine_downloader; then
 		if _command_exists jq; then
 			if [[ $URL == http://* || $URL == https://* || $URL == ipns://* ]]; then
