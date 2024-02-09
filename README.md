@@ -63,7 +63,7 @@ It's possible to have several libraries on a single machine by running [several 
 
 ## Supported URLs:
 
-MiceWeb supports following URL schemes: `http`, `https`, `gopher`, `gemini`, `ftp`, `ftps`, `ipfs`, `ipns`.
+MiceWeb supports following URL schemes: `http`, `https`, `gopher`, `gemini`, `ftp`, `ftps`, `ipfs`, `ipns`, `git`.
 
 ---
 
