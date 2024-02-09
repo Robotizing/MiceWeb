@@ -3674,6 +3674,8 @@ Usage:
 
 Description:
   List saved versions of web pages (including similar) by URL
+  List saved versions of web page by SHA-1
+  List saved versions of zite
 HEREDOC
 snapshots() {
 	if [[ "$1" == "" ]]; then
@@ -3691,13 +3693,20 @@ snapshots() {
 		if [[ "$URL" == "" ]]; then
 			return 1
 		fi
-	fi
-	for I in $(_similar "$URL" 2>/dev/null)
-	do
-		_versions "$I"
-	done
-	if _has_url_fragment "$URL"; then
 		_versions "$URL"
+		return 0
+	fi
+	if _check_url "$URL"; then
+		for I in $(_similar "$URL" 2>/dev/null)
+		do
+			_versions "$I"
+		done
+		if _has_url_fragment "$URL"; then
+			_versions "$URL"
+		fi
+	else
+		_echo_supported_url_prefixes
+		return 1
 	fi
 }
 
