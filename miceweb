@@ -646,7 +646,7 @@ _check_free_space_for_temp() {
 
 _check_url() {
 	local URL="$1"
-	if [[ "$URL" != http://* && "$URL" != https://* && "$URL" != gopher://* && "$URL" != gemini://* && "$URL" != ipns://* && "$URL" != ipfs://* && "$URL" != ftp://* && "$URL" != ftps://* ]]; then
+	if [[ "$URL" != http://* && "$URL" != https://* && "$URL" != gopher://* && "$URL" != gemini://* && "$URL" != ipns://* && "$URL" != ipfs://* && "$URL" != ftp://* && "$URL" != ftps://* && "$URL" != git://* ]]; then
 		return 1
 	else
 		return 0
@@ -656,15 +656,37 @@ _check_url() {
 _echo_supported_url_prefixes() {
 	#>&2 echo "Supported URL prefixes: http://, https://, ftp://, ftps://, ipns://, ipfs://"
 	>&2 echo "Supported URL prefixes:"
-	>&2 echo " http://, https://,"
-	>&2 echo " gopher://,"
-	>&2 echo " gemini://,"
-	>&2 echo " ftp://, ftps://,"
-	>&2 echo " ipns://, ipfs://"
+	>&2 echo " http://, https://, gopher://, gemini://,"
+	>&2 echo " ftp://, ftps://, ipns://, ipfs://, git://"
 }
 
 _free_space() {
 	echo $(df -Pk $1 | sed 1d | grep -v used | awk '{ print $4 "\t" }')
+}
+
+_git() {
+	# no checkout, no recursive, no LFS (https://stackoverflow.com/questions/42019529/how-to-clone-pull-a-git-repository-ignoring-lfs)
+	# use snapshot with 'git push --mirror <path>' as described in https://blog.plataformatec.com.br/2013/05/how-to-properly-mirror-a-git-repository/
+	local URL="$1"
+	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	cd $MYTMPDIR
+	GIT_LFS_SKIP_SMUDGE=1 GIT_ASKPASS=false GIT_TERMINAL_PROMPT=0 git clone --quiet --m "$URL" . &>/dev/null
+	local GITERR=$?
+	local RET=1
+	if [[ $GITERR -eq 0 ]]; then
+		local CID="$(_safe_w ipfs add --quieter --pin=false -r --hidden $MYTMPDIR)"
+		_safe_w ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+		if [ $? -eq 0 ]; then
+			#_echo_saved_snapshot $CID
+			echo "$SAVE_HASH/$SUBDIR"
+			RET=$GITERR
+		fi
+	else
+		>&2 echo "Error: could not download '${SUBDIR:18}', git clone err. $GITERR"
+	fi
+	cd ..
+	rm -rf $MYTMPDIR
+	return $RET
 }
 
 _grep_supported_urls() {
@@ -1164,6 +1186,25 @@ _save_gemget() {
 		>&2 echo "$SUBDIR exists"
 		return 0
 	fi
+}
+_save_git() {
+	if [[ $1 == git://* || $1 == *.git || $1 == https://github.com/*/* ]]; then
+		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		SUBDIR="$DT-git"
+		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
+		if [ $? -ne 0 ]; then
+			if _command_exists git; then
+				_git $1
+				return $?
+			else
+				>&2 echo "Error: git is required to save git repositories"
+			fi
+		else
+			>&2 echo "$SUBDIR exists"
+			return 0
+		fi
+	fi
+	return 1
 }
 _save_wget_ipfs() {
 	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
@@ -3474,6 +3515,8 @@ save() {
 						_save_curl_tor $URL
 					fi
 				fi
+			elif [[ $URL == git://* ]]; then
+				_save_git $URL
 			else
 				if [[ $URL == https://* ]]; then
 					_save_media $URL
@@ -3482,6 +3525,11 @@ save() {
 				_save_wget $URL
 				local WGETERR=$?
 				local ININET= ; [[ $URL != http://127.0.0.1:* && $URL != http://localhost:* ]] ; ININET=$?
+				if [ $WGETERR -ne 1 ]; then
+					if [[ $URL == http* ]]; then
+						_save_git $URL
+					fi
+				fi
 				if [ $WGETERR -ne 0 ]; then
 					if [ $WGETERR -le 4 ]; then
 						if [ $ININET -eq 0 ]; then
