@@ -2248,6 +2248,8 @@ commands() {
 	#_subcommands --raw $1 | awk -v PREFIX="miceweb " '{print PREFIX $0}'
 	echo "miceweb backup		Backup CID of the MiceWeb library
 miceweb check		Check saved snapshots data
+miceweb check urls
+miceweb check zites
 miceweb cleanup		Cleanup service data
 miceweb commands	Display the list of available commands
 miceweb find		Find saved web pages on the local machine
@@ -2406,8 +2408,7 @@ help() {
 Version: ${_SUB_VERSION}
 
 Usage:
-  ${_ME} <URL>
-  ${_ME} <SHA-1>
+  ${_ME} <URL|SHA-1|zite|snapshot>
   ${_ME} <command> [--<command-options>] [<arguments>]
 
 Help:
@@ -3329,7 +3330,8 @@ resolve() {
 		_resolve_zeronet "${1#/zeronet/}" | awk -v PREFIX="/zeronet/" '{print PREFIX $0}'
 		return 0
 	else
-		>&2 echo "This command requires IPNS path (e.g., /ipns/ratbrowser.com) as a parameter"
+		#>&2 echo "This command requires IPNS path (e.g., /ipns/ratbrowser.com) as a parameter"
+		help resolve 1>&2
 	fi
 	return 1
 }
@@ -3679,7 +3681,7 @@ Usage:
 Description:
   List saved versions of web pages (including similar) by URL
   List saved versions of web page by SHA-1
-  List saved versions of zite
+  List saved versions of zite by bitcoin address
 HEREDOC
 snapshots() {
 	if [[ "$1" == "" ]]; then
