@@ -3340,7 +3340,7 @@ describe "save" <<HEREDOC
 Usage:
   ${_ME} save <URL>
   ${_ME} save <SHA-1>
-  ${_ME} save <snapshot>
+  ${_ME} save <SHA-1>/<timestamp>-archive
   ${_ME} save urls [--grep=<expression>] [<local/ipfs/ipns/zeronet file path>]
   ${_ME} save <zite>
   ${_ME} save zites [<local/ipfs/ipns/zeronet file path>]
@@ -3440,7 +3440,8 @@ save() {
 	esac
 	done
 	if [[ "$SOMETHING" == "" ]]; then
-		>&2 echo "This command requires URL or SHA-1 or snapshot as a parameter"
+		#>&2 echo "This command requires URL or SHA-1 or zite as a parameter"
+		help save 1>&2
 		return 1
 	fi
 	local URL="$SOMETHING"
@@ -3451,6 +3452,9 @@ save() {
 			URL=$(url "$HASH")
 			if [[ "$URL" == "" ]]; then
 				return 1
+			fi
+			if [ $_warnings -eq 1 ]; then
+				_reproviding_warning
 			fi
 			if _initiate_saving_url $URL; then
 				_save_archived_snapshot $URL ${SNAP:41}
