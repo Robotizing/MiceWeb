@@ -1309,19 +1309,21 @@ _save_gemget() {
 }
 _save_git() {
 	if [[ $1 == git://* || $1 == *.git || $1 == https://github.com/*/* ]]; then
-		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
-		SUBDIR="$DT-git"
-		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
-		if [ $? -ne 0 ]; then
-			if _command_exists git; then
-				_git $1
-				return $?
+		if [[ $1 != https://github.com/*/*/?* ]]; then
+			local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+			SUBDIR="$DT-git"
+			_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
+			if [ $? -ne 0 ]; then
+				if _command_exists git; then
+					_git $1
+					return $?
+				else
+					>&2 echo "Error: git is required to save git repositories"
+				fi
 			else
-				>&2 echo "Error: git is required to save git repositories"
+				>&2 echo "$SUBDIR exists"
+				return 0
 			fi
-		else
-			>&2 echo "$SUBDIR exists"
-			return 0
 		fi
 	fi
 	return 1
