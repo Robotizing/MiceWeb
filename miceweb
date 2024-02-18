@@ -847,6 +847,52 @@ _initiate_saving_url() {
 	fi
 }
 
+# for data
+_ipfs_add_directory_to_mfs() {
+	local path="$1"
+	local addr="$2"
+	if [[ "$addr" != "" ]]; then
+		if _safe_w ipfs add --quieter --pin=false -r $path --to-files /$addr; then
+			return 0
+		else
+			local CID="$(_safe_w ipfs add --quieter --pin=false -r $path)"
+			if [[ "$CID" != "" ]]; then
+				echo "$CID"
+				_safe_w ipfs files cp //ipfs/$CID /$addr
+				return $?
+			fi
+		fi
+	fi
+	return 1
+}
+_ipfs_add_file_to_mfs() {
+	local path="$1"
+	local addr="$2"
+	if [[ "$addr" != "" ]]; then
+		if _safe_w ipfs add --quieter --pin=false $path --to-files /$addr; then
+			return 0
+		else
+			local CID="$(_safe_w ipfs add --quieter --pin=false $path)"
+			if [[ "$CID" != "" ]]; then
+				echo "$CID"
+				_safe_w ipfs files cp //ipfs/$CID /$addr
+				return $?
+			fi
+		fi
+	fi
+	return 1
+}
+
+# for logs and settings
+_ipfs_add_pipe_to_mfs() {
+	local addr="$1"
+	if [[ "$addr" != "" ]]; then
+		_safe_w ipfs files write --create /$addr
+		return $?
+	fi
+	return 1
+}
+
 _ipfs_gateway() {	# Kubo v.0.15.0+
 	cat "$_IPFS_REPO_PATH/gateway" 2>/dev/null
 	return $?
@@ -1854,13 +1900,11 @@ _wget() {
 		if [ $WGETERR -ne 0 ]; then
 			>&2 echo "Warning: detected issues when downloading '${SUBDIR:18}', wget err. $WGETERR"
 		fi
-		local CID="$(_safe_w ipfs add --quieter --pin=false -r $MYTMPDIR)"
-		_safe_w ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
-		if [ $? -eq 0 ]; then
-			local LOGCID="$(_safe_w ipfs add --quieter --pin=false $MYTMPFILE)"
-			_safe_w ipfs files cp //ipfs/$LOGCID /$SAVE_MFS_ADDR/$SUBDIR.log
+		local CID="$(_ipfs_add_directory_to_mfs $MYTMPDIR $SAVE_MFS_ADDR/$SUBDIR)"
+		if [[ "$CID" != "" ]]; then
 			#_echo_saved_snapshot $CID
 			echo "$SAVE_HASH/$SUBDIR"
+			local logCID="$(_ipfs_add_file_to_mfs $MYTMPFILE $SAVE_MFS_ADDR/$SUBDIR.log)"
 			RET=$WGETERR
 		fi
 	else
@@ -2623,8 +2667,9 @@ import() {
 		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
 		SUBDIR="$DT-$SNAPTYPE"
 		local SUBDIR0="$SUBDIR"ing
+		SAVE_HASH=$HASH
+		SAVE_MFS_ADDR=$MFS_ADDR
 		local CID=""
-		local LOGTXTCID=""
 		if [[ "$IMPPATH" == /ipfs/* || "$IMPPATH" == /ipns/* ]]; then
 			local ADDR=""
 			local RESOLVED=""
@@ -2647,12 +2692,13 @@ import() {
 								RESOLVED="$RESOLVED, then to $ADDR2"
 							fi
 						fi
-						LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | _safe_w ipfs add --quieter --pin=false)"
-						_safe_w ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
-						echo "$HASH/$SUBDIR"
+						CID="${ADDR2#/ipfs/}"
+						#_echo_saved_snapshot $CID
+						echo "$SAVE_HASH/$SUBDIR"
+						printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
 						if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
 							>&2 echo "Getting content from IPFS Network..."
-							if ipfs dag stat "${ADDR2#/ipfs/}"; then
+							if ipfs dag stat $CID; then
 								if _safe_w ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
 									>&2 echo "Done"
 								else
@@ -2664,9 +2710,9 @@ import() {
 							fi
 						fi
 						if [[ "$(_safe_w ipfs files stat --format="<type>" /$MFS_ADDR/$SUBDIR0)" == "file" ]]; then
-							>&2 echo "Run 'ipfs get ${ADDR2#/ipfs/} --output=/dev/null' to ensure availability"
+							>&2 echo "Run 'ipfs get $CID --output=/dev/null' to ensure availability"
 						else
-							>&2 echo "Run 'ipfs get ${ADDR2#/ipfs/}' to ensure availability"
+							>&2 echo "Run 'ipfs get $CID' to ensure availability"
 						fi
 						return 0
 					fi
@@ -2680,15 +2726,14 @@ import() {
 					local path="$datadir/$ADDR"
 					if [ -e "$path" ]; then
 						if [ -d "$path" ]; then
-							CID="$(_safe_w ipfs add --quieter --pin=false -r "$path")"
+							CID="$(_ipfs_add_directory_to_mfs "$path" $SAVE_MFS_ADDR/$SUBDIR)"
 						else
-							CID="$(_safe_w ipfs add --quieter --pin=false "$path")"
+							CID="$(_ipfs_add_file_to_mfs "$path" $SAVE_MFS_ADDR/$SUBDIR)"
 						fi
-						_safe_w ipfs files cp //ipfs/$CID /$MFS_ADDR/$SUBDIR
-						if [ $? -eq 0 ]; then
-							LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH" "$COMMENT" | _safe_w ipfs add --quieter --pin=false)"
-							_safe_w ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
-							echo "$HASH/$SUBDIR"
+						if [[ "$CID" != "" ]]; then
+							#_echo_saved_snapshot $CID
+							echo "$SAVE_HASH/$SUBDIR"
+							printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
 							return 0
 						fi
 					else
@@ -2705,19 +2750,18 @@ import() {
 			fi
 		elif [ -e "$IMPPATH" ]; then
 			if [ -d "$IMPPATH" ]; then
-				CID="$(_safe_w ipfs add --quieter --pin=false -r "$IMPPATH")"
+				CID="$(_ipfs_add_directory_to_mfs "$IMPPATH" $SAVE_MFS_ADDR/$SUBDIR)"
 			else
-				CID="$(_safe_w ipfs add --quieter --pin=false "$IMPPATH")"
+				CID="$(_ipfs_add_file_to_mfs "$IMPPATH" $SAVE_MFS_ADDR/$SUBDIR)"
 			fi
-			_safe_w ipfs files cp //ipfs/$CID /$MFS_ADDR/$SUBDIR
-			if [ $? -eq 0 ]; then
+			if [[ "$CID" != "" ]]; then
+				#_echo_saved_snapshot $CID
+				echo "$SAVE_HASH/$SUBDIR"
 				local IMPPATH0=${IMPPATH%/}
 				local IMPBASE=${IMPPATH0%/*}
 				local IMPBASEDIR=${IMPBASE##*/}
 				local IMPNAME=${IMPPATH0##*/}
-				LOGTXTCID="$(printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" "$COMMENT" | _safe_w ipfs add --quieter --pin=false)"
-				_safe_w ipfs files cp //ipfs/$LOGTXTCID /$MFS_ADDR/$SUBDIR.log
-				echo "$HASH/$SUBDIR"
+				printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
 				#>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
 				#>&2 echo "Run 'miceweb $HASH/$SUBDIR' to present"
 				return 0
