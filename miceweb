@@ -2818,7 +2818,9 @@ Description:
   Present saved snapshots of zites
 HEREDOC
 present() {
-	_upgrade
+	if [[ "$1" != "--no-warnings" ]]; then
+		_upgrade
+	fi
 	local REPROVIDING=$(_reprovider_strategy)
 	local GATEWAY=$(_ipfs_gateway)
 	if [[ "$1" == "urls" ]]; then
