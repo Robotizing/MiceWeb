@@ -501,7 +501,7 @@ _main() {
 			>&2 printf "\n"
 			return 1
 		fi
-		_reproviding_warning
+#		_reproviding_warning
 #		local SNAPS=$(save --no-warnings $SOMETHING | tee -a >(cat>&2))
 		#>&2 printf "\n"
 #		local SNAP=$(echo "$SNAPS" | sed -n '1p')
@@ -512,54 +512,116 @@ _main() {
 		#else
 			#>&2 echo "Try to run 'miceweb present $SOMETHING' to view snapshots, saved before"
 #		fi
-		save --no-warnings $SOMETHING |
+		snapshots "$SOMETHING" |
 			while IFS= read -r I
 			do
-				echo $I
-				present --no-warnings $I 1>&2
+				_echo_existing_page_snapshot $I
 			done
+		save "$SOMETHING" |
+			while IFS= read -r I
+			do
+				_echo_existing_page_snapshot $I
+			done
+		#_reproviding_warning
+		#save --no-warnings $SOMETHING |
+		#	while IFS= read -r I
+		#	do
+		#		echo $I
+		#		present --no-warnings $I 1>&2
+		#	done
 		>&2 printf "\n"
 		return 0
 	elif [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		local SNAP="$SOMETHING"
+		#if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-archive ]]; then
+		#	local HASH=${SNAP:0:40}
+		#	URL=$(url "$HASH")
+		#	if [[ "$URL" != "" ]]; then
+		#		_reproviding_warning
+		#		if _initiate_saving_url $URL; then
+		#			_save_archived_snapshot $URL ${SNAP:41} &>/dev/null
+		#		fi
+		#	fi
+		#fi
+		#if _safe_w ipfs files ls //MiceWeb/pages/$SNAP >/dev/null; then
+		#	echo $SNAP
+		#	present --no-warnings "$SNAP" 1>&2
+		#fi
 		if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-archive ]]; then
-			local HASH=${SNAP:0:40}
-			URL=$(url "$HASH")
-			if [[ "$URL" != "" ]]; then
-				_reproviding_warning
-				if _initiate_saving_url $URL; then
-					_save_archived_snapshot $URL ${SNAP:41} &>/dev/null
-				fi
+			#local HASH=${SNAP:0:40}
+			#URL=$(url "$HASH" 2>/dev/null)
+			#if [[ "$URL" != "" ]]; then
+			#	_reproviding_warning
+			#	if _initiate_saving_url $URL; then
+			#		if _save_archived_snapshot $URL ${SNAP:41} >/dev/null; then
+			#			_echo_existing_page_snapshot $SNAP
+			#		fi
+			#	fi
+			#fi
+			if save "$SNAP" >/dev/null; then
+				_echo_existing_page_snapshot $SNAP
 			fi
-		fi
-		if _safe_w ipfs files ls //MiceWeb/pages/$SNAP >/dev/null; then
-			echo $SNAP
-			present --no-warnings "$SNAP" 1>&2
+		elif [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-import ]]; then
+			if _safe_w ipfs files ls //MiceWeb/pages/$SNAP &>/dev/null; then
+				_echo_existing_page_snapshot $SNAP
+			elif _safe_w ipfs files ls "//MiceWeb/pages/$SNAP"ing >/dev/null; then
+				_echo_existing_page_snapshot $SNAP
+				>&2 echo "Resuming getting content from IPFS Network"
+				check $SNAP 1>&2
+			else
+				>&2 printf "\n"
+				return 1
+			fi
+		elif _safe_w ipfs files ls //MiceWeb/pages/$SNAP >/dev/null; then
+			_echo_existing_page_snapshot $SNAP
+		else
+			>&2 printf "\n"
+			return 1
 		fi
 		>&2 printf "\n"
 		return 0
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
-		_reproviding_warning
-		save --no-warnings $SOMETHING |
+		#_reproviding_warning
+		#save --no-warnings $SOMETHING |
+		#	while IFS= read -r I
+		#	do
+		#		echo $I
+		#		present --no-warnings $I 1>&2
+		#	done
+		snapshots "$SOMETHING" |
 			while IFS= read -r I
 			do
-				echo $I
-				present --no-warnings $I 1>&2
+				_echo_existing_zite_snapshot $I
+			done
+		save "$SOMETHING" |
+			while IFS= read -r I
+			do
+				_echo_existing_zite_snapshot $I
 			done
 		>&2 printf "\n"
 		return 0
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite ]]; then
 		local SNAP="$SOMETHING"
 		if _safe_w ipfs files ls //MiceWeb/zites/$SNAP >/dev/null; then
-			echo $SNAP
-			present --no-warnings "$SNAP" 1>&2
+			_echo_existing_zite_snapshot $SNAP
+			#present --no-warnings "$SNAP" 1>&2
 		fi
 		>&2 printf "\n"
 		return 0
 	fi
 	URL="$SOMETHING"
 	if _check_url "$URL"; then
-		_save_and_present "$URL"
+		#_save_and_present "$URL"
+		snapshots "$URL" |
+			while IFS= read -r I
+			do
+				_echo_existing_page_snapshot $I
+			done
+		save "$URL" |
+			while IFS= read -r I
+			do
+				_echo_existing_page_snapshot $I
+			done
 	else
 		_exit_1 printf "Unknown command: %s\\n" "${_SUBCOMMAND}"
 	fi
@@ -650,6 +712,55 @@ _check_url() {
 		return 1
 	else
 		return 0
+	fi
+}
+
+#_echo_saved_snapshot() {
+#	local GATEWAY=$(_ipfs_gateway)
+#	if [[ "$GATEWAY" != "" ]]; then
+#		_print_hyperlink "$GATEWAY/ipfs/$1" "$SAVE_HASH/$SUBDIR"
+#		echo ""
+#	else
+#		echo "$SAVE_HASH/$SUBDIR"
+#	fi
+#}
+
+_echo_existing_page_snapshot() {
+	local GATEWAY=$(_ipfs_gateway)
+	local SNAP="$1"
+	if [[ "$GATEWAY" != "" ]]; then
+		#local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
+		#local CID="$(_safe_w ipfs files stat --hash /$MFS_SNAP_ADDR 2>/dev/null)"
+		#local ing=0
+		#if [ "$CID" == "" ]; then
+		#	if [[ "$SNAP" == *-import ]]; then
+		#		ing=1
+		#		CID="$(_safe_w ipfs files stat --hash "/$MFS_SNAP_ADDR"ing 2>/dev/null)"
+		#	fi
+		#fi
+		#_print_hyperlink "$GATEWAY/ipfs/$CID" "$SNAP"
+		#echo ""
+		local ADDR=$(present --no-warnings "$SNAP")
+		if [[ "$ADDR" != "" ]]; then
+			_print_hyperlink $GATEWAY"$ADDR" "$SNAP"
+			echo ""
+		else
+			echo "$SNAP"
+		fi
+	else
+		echo "$SNAP"
+	fi
+}
+
+_echo_existing_zite_snapshot() {
+	local GATEWAY=$(_ipfs_gateway)
+	local SNAP="$1"
+	if [[ "$GATEWAY" != "" ]]; then
+		local CID="$(_safe_w ipfs files stat --hash //MiceWeb/zites/$SNAP 2>/dev/null)"
+		_print_hyperlink "$GATEWAY/ipfs/$CID" "$SNAP"
+		echo ""
+	else
+		echo "$SNAP"
 	fi
 }
 
@@ -1029,7 +1140,7 @@ _safe_w() {
 	return $RET
 }
 
-_save_and_present() {
+_save_and_present() {	#TODO: remove the function
 	local URL="$1"
 	_reproviding_warning
 #	local URL0=$(_url_but_fragment "$URL")
@@ -2880,8 +2991,9 @@ present() {
 						>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID$suffix" ""
 						>&2 echo " in a browser on the local machine"
 					else
-						_print_hyperlink "$GATEWAY/ipfs/$CID$suffix" "/ipfs/$CID$suffix"
-						echo ""
+						#_print_hyperlink "$GATEWAY/ipfs/$CID$suffix" "/ipfs/$CID$suffix"
+						#echo ""
+						echo "/ipfs/$CID$suffix"
 					fi
 				else
 					echo "/ipfs/$CID$suffix"
@@ -2929,8 +3041,9 @@ present() {
 					>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID$suffix" ""
 					>&2 echo " in a browser on the local machine"
 				else
-					_print_hyperlink "$GATEWAY/ipfs/$CID$suffix" "/ipfs/$CID$suffix"
-					echo ""
+					#_print_hyperlink "$GATEWAY/ipfs/$CID$suffix" "/ipfs/$CID$suffix"
+					#echo ""
+					echo "/ipfs/$CID$suffix"
 				fi
 			else
 				echo "/ipfs/$CID$suffix"
