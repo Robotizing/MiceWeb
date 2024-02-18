@@ -2152,13 +2152,16 @@ check() {
 		local SNAP="$SOMETHING"
 		if [[ "$SNAP" != *.* ]]; then
 			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
-			local CID="$(_safe_w ipfs files stat --hash /$MFS_SNAP_ADDR)"
+			local CID=""
 			local ing=0
-			if [ "$CID" == "" ]; then
-				if [[ "$SNAP" == *-import ]]; then
+			if [[ "$SNAP" == *-import ]]; then
+				CID="$(_safe_w ipfs files stat --hash /$MFS_SNAP_ADDR 2>/dev/null)"
+				if [ "$CID" == "" ]; then
 					ing=1
 					CID="$(_safe_w ipfs files stat --hash "/$MFS_SNAP_ADDR"ing)"
 				fi
+			else
+				CID="$(_safe_w ipfs files stat --hash /$MFS_SNAP_ADDR)"
 			fi
 			if [ "$CID" != "" ]; then
 				if [ $_warnings -eq 1 ]; then
