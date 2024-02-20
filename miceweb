@@ -2435,25 +2435,6 @@ miceweb version		Display the current program version
 miceweb zites		List zites from the MiceWeb library"
 }
 
-# talks #######################################################################
-
-describe "talks" <<HEREDOC
-Usage:
-  ${_ME} talks
-
-Description:
-  Welcome to MiceWeb Talks in ZeroNet
-HEREDOC
-talks() {
-	if ! wget "http://127.0.0.1:43110/1HeLLo4uzjaLetFx6NH3PMwFP3qbRbTf3D/uimedia/all.css?rev=1270494604" --timeout=1 --tries=1 --output-document=- &>/dev/null; then
-		>&2 echo "Run a local ZeroNet node,"
-		>&2 _print_with_hyperlink " seeing " "https://github.com/ZeroNetX/ZeroNet#user-content-how-to-join"
-		>&2 _print_with_hyperlink " or " "https://github.com/zeronet-conservancy/zeronet-conservancy#how-to-join"
-		>&2 echo ""
-	fi
-	_print_with_hyperlink "" "http://127.0.0.1:43110/$_SITE_ADDRESS/?Main"
-}
-
 # find ########################################################################
 
 describe "find" <<HEREDOC
@@ -3878,6 +3859,25 @@ snapshots() {
 		_echo_supported_url_prefixes
 		return 1
 	fi
+}
+
+# talks #######################################################################
+
+describe "talks" <<HEREDOC
+Usage:
+  ${_ME} talks
+
+Description:
+  Welcome to MiceWeb Talks in ZeroNet
+HEREDOC
+talks() {
+	if ! wget "http://127.0.0.1:43110/1HeLLo4uzjaLetFx6NH3PMwFP3qbRbTf3D/uimedia/all.css?rev=1270494604" --timeout=1 --tries=1 --output-document=- &>/dev/null; then
+		>&2 echo "Run a local ZeroNet node,"
+		>&2 _print_with_hyperlink " seeing " "https://github.com/ZeroNetX/ZeroNet#user-content-how-to-join"
+		>&2 _print_with_hyperlink " or " "https://github.com/zeronet-conservancy/zeronet-conservancy#how-to-join"
+		>&2 echo ""
+	fi
+	_print_with_hyperlink "" "http://127.0.0.1:43110/$_SITE_ADDRESS/?Main"
 }
 
 # url #########################################################################
