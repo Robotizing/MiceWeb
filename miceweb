@@ -547,7 +547,7 @@ _main() {
 		#	echo $SNAP
 		#	present --no-warnings "$SNAP" 1>&2
 		#fi
-		if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-archive ]]; then
+		if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-archive$ ]]; then
 			#local HASH=${SNAP:0:40}
 			#URL=$(url "$HASH" 2>/dev/null)
 			#if [[ "$URL" != "" ]]; then
@@ -561,7 +561,11 @@ _main() {
 			if save "$SNAP" >/dev/null; then
 				_echo_existing_page_snapshot $SNAP
 			fi
-		elif [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-import ]]; then
+		elif [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-importing$ ]]; then
+			_echo_existing_page_snapshot $SNAP
+			>&2 echo "Resuming getting content from IPFS Network"
+			check $SNAP 1>&2
+		elif [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-import$ ]]; then
 			if _safe_w ipfs files ls //MiceWeb/pages/$SNAP &>/dev/null; then
 				_echo_existing_page_snapshot $SNAP
 			elif _safe_w ipfs files ls "//MiceWeb/pages/$SNAP"ing >/dev/null; then
@@ -1860,7 +1864,8 @@ _versions() {
 		for I in $(_safe ipfs files ls //MiceWeb/pages/$HASH | sed 's/^/'"$HASH"'\//')
 		do
 			if [[ $I != *.* ]]; then
-				echo "${I%ing}"
+				#echo "${I%ing}"
+				echo $I
 			fi
 		done
 	fi
@@ -2206,6 +2211,10 @@ check() {
 				fi
 			else
 				CID="$(_safe_w ipfs files stat --hash /$MFS_SNAP_ADDR)"
+				if [[ "$SNAP" == *-importing ]]; then
+					ing=1
+					MFS_SNAP_ADDR="${MFS_SNAP_ADDR%ing}"
+				fi
 			fi
 			if [ "$CID" != "" ]; then
 				if [ $_warnings -eq 1 ]; then
@@ -2981,14 +2990,28 @@ present() {
 		local SNAP="$SOMETHING"
 		if [[ "$SNAP" != *.* ]]; then
 			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
-			local CID="$(_safe_w ipfs files stat --hash /$MFS_SNAP_ADDR)"
+			
+			local CID=""
 			local ing=0
-			if [ "$CID" == "" ]; then
-				if [[ "$SNAP" == *-import ]]; then
+			if [[ "$SNAP" == *-import ]]; then
+				CID="$(_safe_w ipfs files stat --hash /$MFS_SNAP_ADDR 2>/dev/null)"
+				if [ "$CID" == "" ]; then
 					ing=1
 					CID="$(_safe_w ipfs files stat --hash "/$MFS_SNAP_ADDR"ing)"
 				fi
+			else
+				CID="$(_safe_w ipfs files stat --hash /$MFS_SNAP_ADDR)"
 			fi
+			
+			#local CID="$(_safe_w ipfs files stat --hash /$MFS_SNAP_ADDR)"
+			#local ing=0
+			#if [ "$CID" == "" ]; then
+			#	if [[ "$SNAP" == *-import ]]; then
+			#		ing=1
+			#		CID="$(_safe_w ipfs files stat --hash "/$MFS_SNAP_ADDR"ing)"
+			#	fi
+			#fi
+			
 			if [ "$CID" != "" ]; then
 				#echo -n "/ipfs/$CID"
 				local suffix=""
@@ -3593,7 +3616,7 @@ save() {
 	fi
 	local URL="$SOMETHING"
 	if [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
-		if [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-archive ]]; then
+		if [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-archive$ ]]; then
 			local SNAP="$SOMETHING"
 			local HASH=${SNAP:0:40}
 			URL=$(url "$HASH")
