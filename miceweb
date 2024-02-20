@@ -2174,14 +2174,14 @@ check() {
 	
 	local SOMETHING=""
 	local _arguments=()
-	local _warnings=1
+	#local _warnings=1
 	local _val=
 	for __arg in "${@:-}"
 	do
 	case ${__arg} in
-	  --no-warnings)
-		_warnings=0
-		;;
+	#  --no-warnings)
+	#	_warnings=0
+	#	;;
 	  -*)
 		_exit_1 printf "Unexpected option: %s\\n" "${__arg}"
 		;;
@@ -2217,18 +2217,17 @@ check() {
 				fi
 			fi
 			if [ "$CID" != "" ]; then
-				if [ $_warnings -eq 1 ]; then
-					if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-						if ipfs dag stat $CID; then
-							if [ $ing -eq 1 ]; then
-								_safe_w ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
-							fi
+				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
+					if ipfs dag stat $CID; then
+						if [ $ing -eq 1 ]; then
+							_safe_w ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
+							return $?
 						fi
-					else
-						>&2 echo "Can't check $CID,"
-						>&2 echo " consider to run 'ipfs update'"
-						return 1
 					fi
+				else
+					>&2 echo "Can't check $CID,"
+					>&2 echo " consider to run 'ipfs update'"
+					return 1
 				fi
 				return 0
 			fi
@@ -2240,15 +2239,13 @@ check() {
 		local SNAP="$SOMETHING"
 		local MFS_SNAP_ADDR="/MiceWeb/zites/$SNAP"
 		local CID="$(_safe_w ipfs files stat --hash /$MFS_SNAP_ADDR)"
-		if [ "$CID" != "" ]; then
-			if [ $_warnings -eq 1 ]; then
-				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-					ipfs dag stat $CID
-				else
-					>&2 echo "Can't check $CID,"
-					>&2 echo " consider to run 'ipfs update'"
-					return 1
-				fi
+		if [ "$CID" != "" ]; then			
+			if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
+				ipfs dag stat $CID
+			else
+				>&2 echo "Can't check $CID,"
+				>&2 echo " consider to run 'ipfs update'"
+				return 1
 			fi
 			return 0
 		fi
