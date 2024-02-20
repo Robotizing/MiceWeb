@@ -1046,6 +1046,11 @@ _reproviding_warning() {
 
 _resolve_ipns() {
 	local DOMAIN=$(echo "$1" | awk -F/ '{print $1}')
+	#local TIMEOUT="60s"
+	#if [[ "$2" != "" ]]; then
+	#	TIMEOUT="$2"
+	#fi
+	#local ADDR=$(_safe ipfs name resolve --recursive=true --timeout=$TIMEOUT $DOMAIN)
 	local ADDR=$(_safe ipfs name resolve --recursive=true --timeout=60s $DOMAIN)
 	local CID="${ADDR#/ipfs/}"
 	if [[ $CID != "" ]]; then
