@@ -1311,8 +1311,8 @@ _save_curl() {
 		fi
 		return 1
 	else
-		>&2 echo "$SUBDIR exists"
-		return 0
+		>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+		return 1
 	fi
 }
 _save_curl_tor() {
@@ -1335,8 +1335,8 @@ _save_curl_tor() {
 		fi
 		return 1
 	else
-		>&2 echo "$SUBDIR exists"
-		return 0
+		>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+		return 1
 	fi
 }
 _save_gemget() {
@@ -1358,8 +1358,8 @@ _save_gemget() {
 		fi
 		return 1
 	else
-		>&2 echo "$SUBDIR exists"
-		return 0
+		>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+		return 1
 	fi
 }
 _save_git() {
@@ -1376,8 +1376,8 @@ _save_git() {
 					>&2 echo "Error: git is required to save git repositories"
 				fi
 			else
-				>&2 echo "$SUBDIR exists"
-				return 0
+				>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+				return 1
 			fi
 		fi
 	fi
@@ -1400,8 +1400,8 @@ _save_wget_ipfs() {
 				>&2 echo "Error: local IPFS gateway is not set"
 			fi
 		else
-			>&2 echo "$SUBDIR exists"
-			return 0
+			>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+			return 1
 		fi
 	fi
 	return 1
@@ -1422,8 +1422,8 @@ _save_wget_ipns() {
 				>&2 echo "Error: local IPFS gateway is not set"
 			fi
 		else
-			>&2 echo "$SUBDIR exists"
-			return 0
+			>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+			return 1
 		fi
 	fi
 	return 1
@@ -1436,8 +1436,8 @@ _save_wget() {
 		_wget $1
 		return $?
 	else
-		>&2 echo "$SUBDIR exists"
-		return 0
+		>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+		return 1
 	fi
 }
 _save_wget_tor() {
@@ -1448,8 +1448,8 @@ _save_wget_tor() {
 		_wget $1 --torsocks
 		return $?
 	else
-		>&2 echo "$SUBDIR exists"
-		return 0
+		>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+		return 1
 	fi
 }
 _save_media() {
@@ -1469,8 +1469,8 @@ _save_media() {
 				>&2 echo "Error: yt-dlp is required to save media"
 			fi
 		else
-			>&2 echo "$SUBDIR exists"
-			return 0
+			>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+			return 1
 		fi
 	elif [[ $1 == https://www.twitch.tv/* || $1 == https://m.twitch.tv/* || $1 == https://rutube.ru/video/* || $1 == https://www.dailymotion.com/video/* || $1 == https://zen.yandex.ru/video/watch/* || $1 == https://dzen.ru/video/watch/* ]]; then
 		>&2 echo "Warning: skipped downloading 'media', promised to be very slow"	#TODO: download just audio?
@@ -1490,8 +1490,8 @@ _save_media() {
 	#			>&2 echo "Error: yt-dlp is required to save audio"
 	#		fi
 	#	else
-	#		>&2 echo "$SUBDIR exists"
-	#		return 0
+	#		>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+	#		return 1
 	#	fi
 	fi
 	return 1
@@ -1522,8 +1522,8 @@ Description: %(description)s
 			fi
 			return 1
 		else
-			>&2 echo "$SUBDIR exists"
-			return 0
+			>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+			return 1
 		fi
 	fi
 }
@@ -1560,8 +1560,8 @@ _save_zite() {
 			#TODO: try to load zite: "try later" and wget if zeronet node is running, "run ZeroNet node" if not
 			>&2 echo "Error: $MAIN is not loaded"
 		else
-			>&2 echo "$SUBDIR exists"
-			return 0
+			>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+			return 1
 		fi
 	#fi
 	return 1
@@ -2661,105 +2661,111 @@ import() {
 		local SUBDIR0="$SUBDIR"ing
 		SAVE_HASH=$HASH
 		SAVE_MFS_ADDR=$MFS_ADDR
-		local CID=""
-		if [[ "$IMPPATH" == /ipfs/* || "$IMPPATH" == /ipns/* ]]; then
-			local ADDR=""
-			local RESOLVED=""
-			if [[ "$IMPPATH" == /ipns/* ]]; then
-				ADDR="/ipfs/$(_resolve_ipns "${IMPPATH#/ipns/}")"
-				>&2 echo "Resolved to $ADDR"
-				RESOLVED=", which resolved to $ADDR"
-			else
-				ADDR="$IMPPATH"
-			fi
-			if [[ "$ADDR" != "" ]]; then
-				local ADDR2=$(_safe_w ipfs resolve --timeout=60s "${ADDR#/ipfs/}")
-				if [[ "$ADDR2" != "" ]]; then
-					if _safe_w ipfs files cp /$ADDR2 /$MFS_ADDR/$SUBDIR0; then
-						if [[ "${ADDR%/}" != "$ADDR2" ]]; then
-							>&2 echo "Resolved to $ADDR2"
-							if [[ "$RESOLVED" == "" ]]; then
-								RESOLVED=", which resolved to $ADDR2"
-							else
-								RESOLVED="$RESOLVED, then to $ADDR2"
-							fi
-						fi
-						CID="${ADDR2#/ipfs/}"
-						#_echo_saved_snapshot $CID
-						echo "$SAVE_HASH/$SUBDIR"
-						printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
-						if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-							>&2 echo "Getting content from IPFS Network..."
-							if ipfs dag stat $CID; then
-								if _safe_w ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
-									>&2 echo "Done"
-								else
-									>&2 echo "Done, but could not confirm it"
-								fi
-								return 0
-							else
-								>&2 echo "Incompleted"
-							fi
-						fi
-						if [[ "$(_safe_w ipfs files stat --format="<type>" /$MFS_ADDR/$SUBDIR0)" == "file" ]]; then
-							>&2 echo "Run 'ipfs get $CID --output=/dev/null' to ensure availability"
-						else
-							>&2 echo "Run 'ipfs get $CID' to ensure availability"
-						fi
-						return 0
-					fi
+		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
+		if [ $? -ne 0 ]; then
+			local CID=""
+			if [[ "$IMPPATH" == /ipfs/* || "$IMPPATH" == /ipns/* ]]; then
+				local ADDR=""
+				local RESOLVED=""
+				if [[ "$IMPPATH" == /ipns/* ]]; then
+					ADDR="/ipfs/$(_resolve_ipns "${IMPPATH#/ipns/}")"
+					>&2 echo "Resolved to $ADDR"
+					RESOLVED=", which resolved to $ADDR"
+				else
+					ADDR="$IMPPATH"
 				fi
-			fi
-		elif [[ "$IMPPATH" == /zeronet/* ]]; then
-			ADDR=$(_resolve_zeronet "${IMPPATH#/zeronet/}")
-			if [[ $ADDR != "" ]]; then
-				local datadir="$(_zeronet_data)"
-				if [ -d "$datadir" ]; then
-					local path="$datadir/$ADDR"
-					if [ -e "$path" ]; then
-						if [ -d "$path" ]; then
-							CID="$(_ipfs_add_directory_to_mfs "$path" $SAVE_MFS_ADDR/$SUBDIR)"
-						else
-							CID="$(_ipfs_add_file_to_mfs "$path" $SAVE_MFS_ADDR/$SUBDIR)"
-						fi
-						if [[ "$CID" != "" ]]; then
+				if [[ "$ADDR" != "" ]]; then
+					local ADDR2=$(_safe_w ipfs resolve --timeout=60s "${ADDR#/ipfs/}")
+					if [[ "$ADDR2" != "" ]]; then
+						if _safe_w ipfs files cp /$ADDR2 /$MFS_ADDR/$SUBDIR0; then
+							if [[ "${ADDR%/}" != "$ADDR2" ]]; then
+								>&2 echo "Resolved to $ADDR2"
+								if [[ "$RESOLVED" == "" ]]; then
+									RESOLVED=", which resolved to $ADDR2"
+								else
+									RESOLVED="$RESOLVED, then to $ADDR2"
+								fi
+							fi
+							CID="${ADDR2#/ipfs/}"
 							#_echo_saved_snapshot $CID
 							echo "$SAVE_HASH/$SUBDIR"
-							printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
+							printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
+							if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
+								>&2 echo "Getting content from IPFS Network..."
+								if ipfs dag stat $CID; then
+									if _safe_w ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
+										>&2 echo "Done"
+									else
+										>&2 echo "Done, but could not confirm it"
+									fi
+									return 0
+								else
+									>&2 echo "Incompleted"
+								fi
+							fi
+							if [[ "$(_safe_w ipfs files stat --format="<type>" /$MFS_ADDR/$SUBDIR0)" == "file" ]]; then
+								>&2 echo "Run 'ipfs get $CID --output=/dev/null' to ensure availability"
+							else
+								>&2 echo "Run 'ipfs get $CID' to ensure availability"
+							fi
 							return 0
 						fi
+					fi
+				fi
+			elif [[ "$IMPPATH" == /zeronet/* ]]; then
+				ADDR=$(_resolve_zeronet "${IMPPATH#/zeronet/}")
+				if [[ $ADDR != "" ]]; then
+					local datadir="$(_zeronet_data)"
+					if [ -d "$datadir" ]; then
+						local path="$datadir/$ADDR"
+						if [ -e "$path" ]; then
+							if [ -d "$path" ]; then
+								CID="$(_ipfs_add_directory_to_mfs "$path" $SAVE_MFS_ADDR/$SUBDIR)"
+							else
+								CID="$(_ipfs_add_file_to_mfs "$path" $SAVE_MFS_ADDR/$SUBDIR)"
+							fi
+							if [[ "$CID" != "" ]]; then
+								#_echo_saved_snapshot $CID
+								echo "$SAVE_HASH/$SUBDIR"
+								printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
+								return 0
+							fi
+						else
+							>&2 echo "Error: path not found, visit http://127.0.0.1:43110/$ADDR in a browser and try again"
+							return 1
+						fi
 					else
-						>&2 echo "Error: path not found, visit http://127.0.0.1:43110/$ADDR in a browser and try again"
+						>&2 echo "Error: '$datadir' not found,"
+						>&2 echo " check ZERONET_PATH environment variable"
 						return 1
 					fi
 				else
-					>&2 echo "Error: '$datadir' not found,"
-					>&2 echo " check ZERONET_PATH environment variable"
 					return 1
 				fi
+			elif [ -e "$IMPPATH" ]; then
+				if [ -d "$IMPPATH" ]; then
+					CID="$(_ipfs_add_directory_to_mfs "$IMPPATH" $SAVE_MFS_ADDR/$SUBDIR)"
+				else
+					CID="$(_ipfs_add_file_to_mfs "$IMPPATH" $SAVE_MFS_ADDR/$SUBDIR)"
+				fi
+				if [[ "$CID" != "" ]]; then
+					#_echo_saved_snapshot $CID
+					echo "$SAVE_HASH/$SUBDIR"
+					local IMPPATH0=${IMPPATH%/}
+					local IMPBASE=${IMPPATH0%/*}
+					local IMPBASEDIR=${IMPBASE##*/}
+					local IMPNAME=${IMPPATH0##*/}
+					printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
+					#>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
+					#>&2 echo "Run 'miceweb $HASH/$SUBDIR' to present"
+					return 0
+				fi
 			else
-				return 1
-			fi
-		elif [ -e "$IMPPATH" ]; then
-			if [ -d "$IMPPATH" ]; then
-				CID="$(_ipfs_add_directory_to_mfs "$IMPPATH" $SAVE_MFS_ADDR/$SUBDIR)"
-			else
-				CID="$(_ipfs_add_file_to_mfs "$IMPPATH" $SAVE_MFS_ADDR/$SUBDIR)"
-			fi
-			if [[ "$CID" != "" ]]; then
-				#_echo_saved_snapshot $CID
-				echo "$SAVE_HASH/$SUBDIR"
-				local IMPPATH0=${IMPPATH%/}
-				local IMPBASE=${IMPPATH0%/*}
-				local IMPBASEDIR=${IMPBASE##*/}
-				local IMPNAME=${IMPPATH0##*/}
-				printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
-				#>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
-				#>&2 echo "Run 'miceweb $HASH/$SUBDIR' to present"
-				return 0
+				>&2 echo "Error: $IMPPATH not found"
 			fi
 		else
-			>&2 echo "Error: $IMPPATH not found"
+			>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+			return 1
 		fi
 	fi
 	return 1
