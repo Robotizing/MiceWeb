@@ -719,6 +719,10 @@ _check_url() {
 	fi
 }
 
+_current_timestamp() {
+	export TZ=GMT ; date '+%Y%m%dGMT%H%M%S'
+}
+
 #_echo_saved_snapshot() {
 #	local GATEWAY=$(_ipfs_gateway)
 #	if [[ "$GATEWAY" != "" ]]; then
@@ -783,7 +787,7 @@ _git() {
 	# no checkout, no recursive, no LFS (https://stackoverflow.com/questions/42019529/how-to-clone-pull-a-git-repository-ignoring-lfs)
 	# use snapshot with 'git push --mirror <path>' as described in https://blog.plataformatec.com.br/2013/05/how-to-properly-mirror-a-git-repository/
 	local URL="$1"
-	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	local MYTMPDIR=$(_temp_directory)
 	cd $MYTMPDIR
 	GIT_LFS_SKIP_SMUDGE=1 GIT_ASKPASS=false GIT_TERMINAL_PROMPT=0 git clone --quiet --m "$URL" . &>/dev/null
 	local GITERR=$?
@@ -1055,7 +1059,7 @@ _resolve_ipns() {
 	local CID="${ADDR#/ipfs/}"
 	if [[ $CID != "" ]]; then
 		echo "$CID${1#$DOMAIN}"
-		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local DT=$(_current_timestamp)
 		local LOGTXTADDR=""
 		for I in $(_safe ipfs files ls //MiceWeb/resolves/ipns/$DOMAIN | sort --reverse); do
 			local PREVCID=$(_safe_w ipfs files read //MiceWeb/resolves/ipns/$DOMAIN/$I | sed -n 2p)
@@ -1142,7 +1146,7 @@ _safe() {
 #        echo "out=$out"
 #}
 
-	local tmpFN=$(_temp_file)
+	local tmpFN=$(_temp_file_maybe_in_ram)
 	local RET=
 	if [[ "$tmpFN" != "" ]]; then
 		while true; do
@@ -1167,7 +1171,7 @@ _safe() {
 }
 
 _safe_w() {
-	local tmpFN=$(_temp_file)
+	local tmpFN=$(_temp_file_maybe_in_ram)
 	local RET=
 	if [[ "$tmpFN" != "" ]]; then
 		while true; do
@@ -1281,7 +1285,7 @@ _save_archived_snapshot() {
 	return $RET
 }
 _save_curl() {
-	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	local DT=$(_current_timestamp)
 	SUBDIR="$DT-curl"
 	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 	if [ $? -ne 0 ]; then
@@ -1316,7 +1320,7 @@ _save_curl() {
 	fi
 }
 _save_curl_tor() {
-	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	local DT=$(_current_timestamp)
 	SUBDIR="$DT-curl-tor"
 	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 	if [ $? -ne 0 ]; then
@@ -1340,7 +1344,7 @@ _save_curl_tor() {
 	fi
 }
 _save_gemget() {
-	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	local DT=$(_current_timestamp)
 	SUBDIR="$DT-gemget"
 	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 	if [ $? -ne 0 ]; then
@@ -1365,7 +1369,7 @@ _save_gemget() {
 _save_git() {
 	if [[ $1 == git://* || $1 == *.git || $1 == https://github.com/*/* ]]; then
 		if [[ $1 != https://github.com/*/*/?* ]]; then
-			local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+			local DT=$(_current_timestamp)
 			SUBDIR="$DT-git"
 			_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 			if [ $? -ne 0 ]; then
@@ -1387,7 +1391,7 @@ _save_wget_ipfs() {
 	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
 	local ADDR=$(_safe_w ipfs resolve --timeout=60s $MAIN)
 	if [[ "$ADDR" != "" ]]; then
-		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local DT=$(_current_timestamp)
 		SUBDIR="$DT-wget-ipfs"
 		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 		if [ $? -ne 0 ]; then
@@ -1409,7 +1413,7 @@ _save_wget_ipfs() {
 _save_wget_ipns() {
 	local ADDR=$(_resolve_ipns "$1")
 	if [[ "$ADDR" != "" ]]; then
-		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local DT=$(_current_timestamp)
 		SUBDIR="$DT-wget-ipns"
 		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 		if [ $? -ne 0 ]; then
@@ -1429,7 +1433,7 @@ _save_wget_ipns() {
 	return 1
 }
 _save_wget() {
-	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	local DT=$(_current_timestamp)
 	SUBDIR="$DT-wget"
 	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 	if [ $? -ne 0 ]; then
@@ -1441,7 +1445,7 @@ _save_wget() {
 	fi
 }
 _save_wget_tor() {
-	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	local DT=$(_current_timestamp)
 	SUBDIR="$DT-wget-tor"
 	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 	if [ $? -ne 0 ]; then
@@ -1454,7 +1458,7 @@ _save_wget_tor() {
 }
 _save_media() {
 	if [[ $1 == https://www.youtube.com/watch?v=* || $1 == https://m.youtube.com/watch?v=* || $1 == https://youtu.be/* || $1 == https://vk.com/video* || $1 == https://ok.ru/video/* || $1 == https://m.ok.ru/video/* || $1 == https://vimeo.com/* || $1 == https://coub.com/view/* || $1 ==  https://www.instagram.com/p/* || $1 == https://www.tiktok.com/@*/video/* || $1 == https://twitter.com/*/status/* || $1 == https://fb.watch/* || $1 == https://www.facebook.com/reel/* || $1 == https://my.mail.ru/mail/*/video/* || $1 == https://music.yandex.ru/album/*/track/* || $1 == https://www.youtube.com/shorts/* || $1 == https://m.youtube.com/shorts/* ]]; then	#TODO: support share.tube?
-		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local DT=$(_current_timestamp)
 		SUBDIR="$DT-media"
 		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 		if [ $? -ne 0 ]; then
@@ -1474,7 +1478,7 @@ _save_media() {
 		fi
 	elif [[ $1 == https://www.twitch.tv/* || $1 == https://m.twitch.tv/* || $1 == https://rutube.ru/video/* || $1 == https://www.dailymotion.com/video/* || $1 == https://zen.yandex.ru/video/watch/* || $1 == https://dzen.ru/video/watch/* ]]; then
 		>&2 echo "Warning: skipped downloading 'media', promised to be very slow"	#TODO: download just audio?
-	#	local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+	#	local DT=$(_current_timestamp)
 	#	SUBDIR="$DT-audio"
 	#	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 	#	if [ $? -ne 0 ]; then
@@ -1498,7 +1502,7 @@ _save_media() {
 }
 _save_playlist() {
 	if [[ $1 == https://www.youtube.com/channel/* || $1 == https://www.youtube.com/c/* || $1 == https://www.youtube.com/user/* || $1 == https://www.youtube.com/@* || $1 == https://www.youtube.com/*?list=* || $1 == https://m.youtube.com/channel/* || $1 == https://m.youtube.com/c/* || $1 == https://m.youtube.com/user/* || $1 == https://m.youtube.com/@* || $1 == https://m.youtube.com/*?list=* || $1 == https://rutube.ru/channel/*/videos/ || $1 == https://rutube.ru/channel/*/videos || $1 == https://vimeo.com/* || $1 == https://www.dailymotion.com/* || $1 == https://music.yandex.ru/album/* ]]; then
-		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local DT=$(_current_timestamp)
 		SUBDIR="$DT-playlist"
 		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 		if [ $? -ne 0 ]; then
@@ -1539,7 +1543,7 @@ _save_zite() {
 	#fi
 	local MAIN=$1
 	#if [[ $MAIN == 1* ]]; then
-		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local DT=$(_current_timestamp)
 		SUBDIR="$DT-zite"
 		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
 		if [ $? -ne 0 ]; then
@@ -1722,7 +1726,15 @@ _subcommands() {
   fi
 }
 
+_temp_directory() {
+	mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir'
+}
+
 _temp_file() {
+	mktemp 2>/dev/null || mktemp -t 'mytmpfile' 2>/dev/null
+}
+
+_temp_file_maybe_in_ram() {
 	# https://stackoverflow.com/questions/39230353/creating-a-temporary-file-in-memory-and-using-it-as-input-file-of-a-command
 	#local ramTempFN="$(mktemp -p /dev/shm/)"
 	#if [[ "$ramTempFN" != "" ]]; then
@@ -1736,7 +1748,7 @@ _temp_file() {
 	#	fi
 	#fi
 	#return 1
-	mktemp -p /dev/shm/ 2>/dev/null || mktemp 2>/dev/null || mktemp -t 'mytmpfile' 2>/dev/null
+	mktemp -p /dev/shm/ 2>/dev/null || _temp_file
 }
 
 _upgrade() {
@@ -1886,8 +1898,8 @@ _wget() {
 	local URL="$1"
 	local options="$2"
 	local comment="$3"
-	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
-	local MYTMPFILE=$(_temp_file)
+	local MYTMPDIR=$(_temp_directory)
+	local MYTMPFILE=$(_temp_file_maybe_in_ram)
 	cd $MYTMPDIR
 	local RAND="$(_random_value)"
 	echo "Log $RAND" > $MYTMPFILE
@@ -1928,7 +1940,7 @@ _wget() {
 
 _ytdlp() {
 	local URL="$1"
-	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	local MYTMPDIR=$(_temp_directory)
 	cd $MYTMPDIR
 	yt-dlp --no-playlist --format "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4] / bv*+ba/b" --format-sort "res~360" --sleep-requests 1 --sleep-interval 5 --max-sleep-interval 10 --embed-chapters --no-write-info-json --no-cookies-from-browser --no-cache-dir --write-description --write-annotations --no-embed-thumbnail --write-all-thumbnails --write-playlist-metafiles --live-from-start --merge-output-format "mp4" --socket-timeout 10 --throttled-rate 50K --output "%(title).144s [%(id)s] - %(channel).48s [%(channel_id)s] - %(upload_date)s.%(ext)s" --output "description:media.%(ext)s" --output "thumbnail:thumbnails/image.%(ext)s" --no-progress "$URL" &>/dev/null
 	local YTDLPERR=$?
@@ -1951,7 +1963,7 @@ _ytdlp() {
 
 _ytdlp_audio() {
 	local URL="$1"
-	local MYTMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	local MYTMPDIR=$(_temp_directory)
 	cd $MYTMPDIR
 	yt-dlp --no-playlist --format "(bestaudio[acodec^=opus]/bestaudio)/best" --sleep-requests 1 --sleep-interval 5 --max-sleep-interval 10 --add-metadata --add-chapters --no-write-info-json --no-cookies-from-browser --no-cache-dir --write-description --write-annotations --no-embed-thumbnail --write-all-thumbnails --write-playlist-metafiles --live-from-start --extract-audio --audio-quality 0 --socket-timeout 10 --throttled-rate 50K --output "%(title)s [%(id)s] - %(channel)s [%(channel_id)s] - %(upload_date)s.%(ext)s" --output "description:media.%(ext)s" --output "thumbnail:thumbnails/image.%(ext)s" --no-progress "$URL" &>/dev/null
 	local YTDLPERR=$?
@@ -2087,7 +2099,7 @@ check() {
 		if [[ "$2" != "" ]]; then
 			_safe ipfs files mkdir //MiceWeb
 			_safe ipfs files mkdir //MiceWeb/presents
-			local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+			local DT=$(_current_timestamp)
 			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
 			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
 			local COUNT=0
@@ -2136,7 +2148,7 @@ check() {
 		if [[ "$2" != "" ]]; then
 			_safe ipfs files mkdir //MiceWeb
 			_safe ipfs files mkdir //MiceWeb/presents
-			local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+			local DT=$(_current_timestamp)
 			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
 			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
 			local COUNT=0
@@ -2327,7 +2339,7 @@ check() {
 		fi
 		_safe ipfs files mkdir //MiceWeb
 		_safe ipfs files mkdir //MiceWeb/presents
-		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local DT=$(_current_timestamp)
 		local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
 		_safe ipfs files mkdir /$MFS_PRESENT_ADDR
 		for I in $(_similar "$URL" 2>/dev/null)
@@ -2656,7 +2668,7 @@ import() {
 	local HASH=$(hash "$URL")
 	if [[ "$HASH" != "" ]]; then
 		local MFS_ADDR="/MiceWeb/pages/$HASH"
-		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local DT=$(_current_timestamp)
 		SUBDIR="$DT-$SNAPTYPE"
 		local SUBDIR0="$SUBDIR"ing
 		SAVE_HASH=$HASH
@@ -2825,7 +2837,7 @@ present() {
 		if [[ "$2" != "" ]]; then
 			_safe ipfs files mkdir //MiceWeb
 			_safe ipfs files mkdir //MiceWeb/presents
-			local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+			local DT=$(_current_timestamp)
 			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
 			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
 			local COUNT=0
@@ -2894,7 +2906,7 @@ present() {
 		if [[ "$2" != "" ]]; then
 			_safe ipfs files mkdir //MiceWeb
 			_safe ipfs files mkdir //MiceWeb/presents
-			local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+			local DT=$(_current_timestamp)
 			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
 			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
 			local COUNT=0
@@ -3258,7 +3270,7 @@ present() {
 		fi
 		_safe ipfs files mkdir //MiceWeb
 		_safe ipfs files mkdir //MiceWeb/presents
-		local DT=$(export TZ=GMT ; date '+%Y%m%dGMT%H%M%S')
+		local DT=$(_current_timestamp)
 		local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
 		_safe ipfs files mkdir /$MFS_PRESENT_ADDR
 		for I in $(_similar "$URL" 2>/dev/null)
