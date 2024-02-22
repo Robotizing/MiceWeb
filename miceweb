@@ -886,16 +886,25 @@ _ipfs_add_file_to_mfs() {
 	local path="$1"
 	local addr="$2"
 	if [[ "$addr" != "" ]]; then
-		if _safe_with_warnings ipfs add --quieter --pin=false $path --to-files /$addr; then
-			return 0
-		else
-			local CID="$(_safe_with_warnings ipfs add --quieter --pin=false $path)"
-			if [[ "$CID" != "" ]]; then
+		local CID="$(_safe ipfs add --quieter --pin=false $path --to-files /$addr)"
+		if [[ "$CID" != "" ]]; then
+			if [[ "$CID" == "$(_safe ipfs files stat --hash /$addr)" ]]; then
 				echo "$CID"
-				_safe_with_warnings ipfs files cp //ipfs/$CID /$addr
-				return $?
+				return 0
+			fi
+		else
+			CID="$(_safe ipfs add --quieter --pin=false $path)"
+			if [[ "$CID" != "" ]]; then
+				if _safe ipfs files cp //ipfs/$CID /$addr; then
+					echo "$CID"
+					return 0
+				elif [[ "$CID" == "$(_safe ipfs files stat --hash /$addr)" ]]; then
+					echo "$CID"
+					return 0
+				fi
 			fi
 		fi
+		>&2 echo "Error: can't add file to MFS"
 	fi
 	return 1
 }
