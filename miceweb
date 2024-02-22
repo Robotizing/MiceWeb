@@ -1324,8 +1324,9 @@ _save_curl() {
 		fi
 		return 1
 	else
-		>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
-		return 1
+		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+		echo "$SAVE_HASH/$SUBDIR"
+		return 0
 	fi
 }
 _save_curl_tor() {
@@ -1348,8 +1349,9 @@ _save_curl_tor() {
 		fi
 		return 1
 	else
-		>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
-		return 1
+		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+		echo "$SAVE_HASH/$SUBDIR"
+		return 0
 	fi
 }
 _save_gemget() {
@@ -1371,8 +1373,9 @@ _save_gemget() {
 		fi
 		return 1
 	else
-		>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
-		return 1
+		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+		echo "$SAVE_HASH/$SUBDIR"
+		return 0
 	fi
 }
 _save_git() {
@@ -1389,8 +1392,9 @@ _save_git() {
 					>&2 echo "Error: git is required to save git repositories"
 				fi
 			else
-				>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
-				return 1
+				>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+				echo "$SAVE_HASH/$SUBDIR"
+				return 0
 			fi
 		fi
 	fi
@@ -1413,8 +1417,9 @@ _save_wget_ipfs() {
 				>&2 echo "Error: local IPFS gateway is not set"
 			fi
 		else
-			>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
-			return 1
+			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+			echo "$SAVE_HASH/$SUBDIR"
+			return 0
 		fi
 	fi
 	return 1
@@ -1435,8 +1440,9 @@ _save_wget_ipns() {
 				>&2 echo "Error: local IPFS gateway is not set"
 			fi
 		else
-			>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
-			return 1
+			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+			echo "$SAVE_HASH/$SUBDIR"
+			return 0
 		fi
 	fi
 	return 1
@@ -1449,8 +1455,9 @@ _save_wget() {
 		_wget $1
 		return $?
 	else
-		>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
-		return 1
+		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+		echo "$SAVE_HASH/$SUBDIR"
+		return 0
 	fi
 }
 _save_wget_tor() {
@@ -1461,8 +1468,9 @@ _save_wget_tor() {
 		_wget $1 --torsocks
 		return $?
 	else
-		>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
-		return 1
+		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+		echo "$SAVE_HASH/$SUBDIR"
+		return 0
 	fi
 }
 _save_media() {
@@ -1482,8 +1490,9 @@ _save_media() {
 				>&2 echo "Error: yt-dlp is required to save media"
 			fi
 		else
-			>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
-			return 1
+			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+			echo "$SAVE_HASH/$SUBDIR"
+			return 0
 		fi
 	elif [[ $1 == https://www.twitch.tv/* || $1 == https://m.twitch.tv/* || $1 == https://rutube.ru/video/* || $1 == https://www.dailymotion.com/video/* || $1 == https://zen.yandex.ru/video/watch/* || $1 == https://dzen.ru/video/watch/* ]]; then
 		>&2 echo "Warning: skipped downloading 'media', promised to be very slow"	#TODO: download just audio?
@@ -1503,8 +1512,9 @@ _save_media() {
 	#			>&2 echo "Error: yt-dlp is required to save audio"
 	#		fi
 	#	else
-	#		>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
-	#		return 1
+	#		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+	#		echo "$SAVE_HASH/$SUBDIR"
+	#		return 0
 	#	fi
 	fi
 	return 1
@@ -1535,8 +1545,9 @@ Description: %(description)s
 			fi
 			return 1
 		else
-			>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
-			return 1
+			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+			echo "$SAVE_HASH/$SUBDIR"
+			return 0
 		fi
 	fi
 }
@@ -1579,8 +1590,9 @@ _save_zite() {
 			#TODO: try to load zite: "try later" and wget if zeronet node is running, "run ZeroNet node" if not
 			>&2 echo "Error: $MAIN is not loaded"
 		else
-			>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
-			return 1
+			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+			echo "$SAVE_HASH/$SUBDIR"
+			return 0
 		fi
 	#fi
 	return 1
@@ -2794,7 +2806,7 @@ import() {
 				>&2 echo "Error: $IMPPATH not found"
 			fi
 		else
-			>&2 echo "Error: $SAVE_HASH/$SUBDIR exists"
+			>&2 echo "Error: $SAVE_HASH/$SUBDIR is already exist"
 			return 1
 		fi
 	fi
