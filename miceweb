@@ -2000,8 +2000,6 @@ Description:
 HEREDOC
 check() {
 	_upgrade
-	local REPROVIDING=$(_reprovider_strategy)
-	local GATEWAY=$(_ipfs_gateway)
 	if [[ "$1" == "urls" ]]; then
 		if [[ "$2" != "" ]]; then
 			_safe ipfs files mkdir //MiceWeb
