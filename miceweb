@@ -944,7 +944,7 @@ _random_value() {
 
 _remove_dir() {
 	local DIRPATH="$1"
-	local CID="$(_safe_with_warnings ipfs files stat --hash /$DIRPATH)"
+	local CID="$(_safe ipfs files stat --hash /$DIRPATH)"
 	if [[ "$CID" != "" ]]; then
 		if _safe ipfs files rm -r /$DIRPATH >/dev/null; then
 			echo "Removed $DIRPATH, you can try to undo that right now by running 'ipfs files cp /ipfs/$CID $DIRPATH'"
@@ -955,7 +955,7 @@ _remove_dir() {
 }
 _remove_file() {
 	local FILEPATH="$1"
-	local CID="$(_safe_with_warnings ipfs files stat --hash /$FILEPATH)"
+	local CID="$(_safe ipfs files stat --hash /$FILEPATH)"
 	if [[ "$CID" != "" ]]; then
 		if _safe ipfs files rm /$FILEPATH >/dev/null; then
 			echo "Removed $FILEPATH, you can try to undo that right now by running 'ipfs files cp /ipfs/$CID $FILEPATH'"
@@ -1470,7 +1470,7 @@ _save_zite() {
 	#	MAIN=$DOMAIN
 	#fi
 	local MAIN=$1
-	#if [[ $MAIN == 1* ]]; then
+	if [[ $MAIN =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
 		local DT=$(_current_timestamp)
 		SUBDIR="$DT-zite"
 		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
@@ -1489,7 +1489,7 @@ _save_zite() {
 			echo "$SAVE_HASH/$SUBDIR"
 			return 0
 		fi
-	#fi
+	fi
 	return 1
 }
 
@@ -2124,7 +2124,7 @@ check() {
 			local CID=""
 			local ing=0
 			if [[ "$SNAP" == *-import ]]; then
-				CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_SNAP_ADDR 2>/dev/null)"
+				CID="$(_safe ipfs files stat --hash /$MFS_SNAP_ADDR)"
 				if [ "$CID" == "" ]; then
 					ing=1
 					CID="$(_safe_with_warnings ipfs files stat --hash "/$MFS_SNAP_ADDR"ing)"
@@ -2902,7 +2902,7 @@ present() {
 			local CID=""
 			local ing=0
 			if [[ "$SNAP" == *-import ]]; then
-				CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_SNAP_ADDR 2>/dev/null)"
+				CID="$(_safe ipfs files stat --hash /$MFS_SNAP_ADDR)"
 				if [ "$CID" == "" ]; then
 					ing=1
 					CID="$(_safe_with_warnings ipfs files stat --hash "/$MFS_SNAP_ADDR"ing)"
@@ -3251,23 +3251,23 @@ remove() {
 	if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		if [[ "$SNAP" != *.* ]]; then
 			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
-			if ! _remove_file $MFS_SNAP_ADDR 2>/dev/null; then
-				_remove_dir $MFS_SNAP_ADDR 2>/dev/null
+			if ! _remove_file $MFS_SNAP_ADDR; then
+				_remove_dir $MFS_SNAP_ADDR
 			fi
 			if [[ "$SNAP" == *-import ]]; then
-				if ! _remove_file "$MFS_SNAP_ADDR"ing 2>/dev/null; then
-					_remove_dir "$MFS_SNAP_ADDR"ing 2>/dev/null
+				if ! _remove_file "$MFS_SNAP_ADDR"ing; then
+					_remove_dir "$MFS_SNAP_ADDR"ing
 				fi
 			fi
-			_remove_file "$MFS_SNAP_ADDR.log" 2>/dev/null
+			_remove_file "$MFS_SNAP_ADDR.log"
 			return 0
 		fi
 	elif [[ "$SNAP" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
 		local MFS_SNAP_ADDR="/MiceWeb/zites/$SNAP"
-		if ! _remove_file $MFS_SNAP_ADDR 2>/dev/null; then
-			_remove_dir $MFS_SNAP_ADDR 2>/dev/null
+		if ! _remove_file $MFS_SNAP_ADDR; then
+			_remove_dir $MFS_SNAP_ADDR
 		fi
-		_remove_file "$MFS_SNAP_ADDR.log" 2>/dev/null
+		_remove_file "$MFS_SNAP_ADDR.log"
 		return 0
 	fi
 	>&2 echo "This command requires snapshot as a parameter"
