@@ -1667,6 +1667,10 @@ _temp_file_maybe_in_ram() {
 	mktemp -p /dev/shm/ 2>/dev/null || _temp_file
 }
 
+_tip_run_ipfs_daemon() {
+	>&2 echo "Tip: run 'ipfs daemon' using Kubo v.0.15 or newer"
+}
+
 _upgrade() {
 	local TESTHASH1=$(_hash "test")
 	if [[ "$TESTHASH1" != "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3" ]]; then
@@ -2767,24 +2771,26 @@ present() {
 			local CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_PRESENT_ADDR)"
 			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
 				echo "/ipfs/$CID"
+				>&2 echo ""
 				if [ "$GATEWAY" != "" ]; then
-					>&2 echo ""
 					>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 					>&2 echo " in a browser on the local machine"
-				fi
-				if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
-					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
-					if [[ "$converted" != "" ]]; then
-						>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
-						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+					if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+						local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
+						if [[ "$converted" != "" ]]; then
+							>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
+							>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+						fi
+					else
+						>&2 echo ""
+						>&2 echo "If you need to publish or view from an other machine,"
+						>&2 echo " run 'ipfs pin add $CID'"
+						#if [[ "$REPROVIDING" == "roots" ]]; then
+						#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+						#fi
 					fi
 				else
-					>&2 echo ""
-					>&2 echo "If you need to publish or view from an other machine,"
-					>&2 echo " run 'ipfs pin add $CID'"
-					#if [[ "$REPROVIDING" == "roots" ]]; then
-					#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
-					#fi
+					_tip_run_ipfs_daemon
 				fi
 				local STAT="NumURLs: $COUNT"
 				>&2 echo ""
@@ -2814,24 +2820,26 @@ present() {
 			local CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_PRESENT_ADDR)"
 			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
 				echo "/ipfs/$CID"
+				>&2 echo ""
 				if [ "$GATEWAY" != "" ]; then
-					>&2 echo ""
 					>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 					>&2 echo " in a browser on the local machine"
-				fi
-				if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
-					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
-					if [[ "$converted" != "" ]]; then
-						>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
-						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+					if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+						local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
+						if [[ "$converted" != "" ]]; then
+							>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
+							>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+						fi
+					else
+						>&2 echo ""
+						>&2 echo "If you need to publish or view from an other machine,"
+						>&2 echo " run 'ipfs pin add $CID'"
+						#if [[ "$REPROVIDING" == "roots" ]]; then
+						#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+						#fi
 					fi
 				else
-					>&2 echo ""
-					>&2 echo "If you need to publish or view from an other machine,"
-					>&2 echo " run 'ipfs pin add $CID'"
-					#if [[ "$REPROVIDING" == "roots" ]]; then
-					#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
-					#fi
+					_tip_run_ipfs_daemon
 				fi
 				local STAT="NumZites: $COUNT"
 				>&2 echo ""
@@ -2853,10 +2861,12 @@ present() {
 				#if [[ "$REPROVIDING" == "roots" ]]; then
 				#	>&2 echo " and run 'ipfs config Reprovider.Strategy pinned'"
 				#fi
+				>&2 echo ""
 				if [ "$GATEWAY" != "" ]; then
-					>&2 echo ""
 					>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 					>&2 echo " in a browser on the local machine to view snapshots"
+				else
+					_tip_run_ipfs_daemon
 				fi
 				>&2 echo ""
 				>&2 echo "$STAT"
@@ -2935,32 +2945,28 @@ present() {
 						fi
 					fi
 				fi
-				if [ "$GATEWAY" != "" ]; then
-					if [ $_warnings -eq 1 ]; then
-						echo "$suffix" #echo "/ipfs/$CID$/suffix"
-						>&2 echo ""
+				echo "$suffix" #echo "/ipfs/$CID$/suffix"
+				if [ $_warnings -eq 1 ]; then
+					>&2 echo ""
+					if [ "$GATEWAY" != "" ]; then
 						>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID/$suffix" ""
 						>&2 echo " in a browser on the local machine"
-					else
-						echo "$suffix" #echo "/ipfs/$CID$/suffix"
-					fi
-				else
-					echo "$suffix" #echo "/ipfs/$CID$/suffix"
-				fi
-				if [ $_warnings -eq 1 ]; then
-					if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
-						local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
-						if [[ "$converted" != "" ]]; then
-							>&2 _print_with_hyperlink " or " "ipfs://$converted/$suffix" ""
-							>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+						if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+							local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
+							if [[ "$converted" != "" ]]; then
+								>&2 _print_with_hyperlink " or " "ipfs://$converted/$suffix" ""
+								>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+							fi
+						else
+							>&2 echo ""
+							>&2 echo "If you need to publish or view from an other machine,"
+							>&2 echo " run 'ipfs pin add $CID'"
+							#if [[ "$REPROVIDING" == "roots" ]]; then
+							#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+							#fi
 						fi
 					else
-						>&2 echo ""
-						>&2 echo "If you need to publish or view from an other machine,"
-						>&2 echo " run 'ipfs pin add $CID'"
-						#if [[ "$REPROVIDING" == "roots" ]]; then
-						#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
-						#fi
+						_tip_run_ipfs_daemon
 					fi
 				fi
 				return 0
@@ -2975,32 +2981,28 @@ present() {
 		local CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_SNAP_ADDR)"
 		if [ "$CID" != "" ]; then
 			local suffix=""
-			if [ "$GATEWAY" != "" ]; then
-				if [ $_warnings -eq 1 ]; then
-					echo "/ipfs/$CID$suffix"
-					>&2 echo ""
+			echo "/ipfs/$CID$suffix"
+			if [ $_warnings -eq 1 ]; then
+				>&2 echo ""
+				if [ "$GATEWAY" != "" ]; then
 					>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID$suffix" ""
 					>&2 echo " in a browser on the local machine"
-				else
-					echo "/ipfs/$CID$suffix"
-				fi
-			else
-				echo "/ipfs/$CID$suffix"
-			fi
-			if [ $_warnings -eq 1 ]; then
-				if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
-					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
-					if [[ "$converted" != "" ]]; then
-						>&2 _print_with_hyperlink " or " "ipfs://$converted$suffix" ""
-						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+					if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+						local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
+						if [[ "$converted" != "" ]]; then
+							>&2 _print_with_hyperlink " or " "ipfs://$converted$suffix" ""
+							>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+						fi
+					else
+						>&2 echo ""
+						>&2 echo "If you need to publish or view from an other machine,"
+						>&2 echo " run 'ipfs pin add $CID'"
+						#if [[ "$REPROVIDING" == "roots" ]]; then
+						#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+						#fi
 					fi
 				else
-					>&2 echo ""
-					>&2 echo "If you need to publish or view from an other machine,"
-					>&2 echo " run 'ipfs pin add $CID'"
-					#if [[ "$REPROVIDING" == "roots" ]]; then
-					#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
-					#fi
+					_tip_run_ipfs_daemon
 				fi
 			fi
 			return 0
@@ -3031,10 +3033,12 @@ present() {
 				fi
 			done
 			local STAT="NumVersions: $COUNT"
+			>&2 echo ""
 			if [ "$GATEWAY" != "" ]; then
-				>&2 echo ""
 				>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 				>&2 echo " in a browser on the local machine"
+			else
+				_tip_run_ipfs_daemon
 			fi
 			if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
 				local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
@@ -3069,24 +3073,26 @@ present() {
 				fi
 			done
 			local STAT="NumVersions: $COUNT"
+			>&2 echo ""
 			if [ "$GATEWAY" != "" ]; then
-				>&2 echo ""
 				>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 				>&2 echo " in a browser on the local machine"
-			fi
-			if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
-				local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
-				if [[ "$converted" != "" ]]; then
-					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
-					>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+				if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
+					if [[ "$converted" != "" ]]; then
+						>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
+						>&2 echo " in an IPFS friendly browser - out of box (Brave, Opera) or with IPFS Companion"
+					fi
+				else
+					>&2 echo ""
+					>&2 echo "If you need to publish or view from an other machine,"
+					>&2 echo " run 'ipfs pin add $CID'"
+					#if [[ "$REPROVIDING" == "roots" ]]; then
+					#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+					#fi
 				fi
 			else
-				>&2 echo ""
-				>&2 echo "If you need to publish or view from an other machine,"
-				>&2 echo " run 'ipfs pin add $CID'"
-				#if [[ "$REPROVIDING" == "roots" ]]; then
-				#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
-				#fi
+				_tip_run_ipfs_daemon
 			fi
 			>&2 echo ""
 			>&2 echo "$STAT"
@@ -3159,43 +3165,42 @@ present() {
 		echo "/ipfs/$CID"
 		local STAT=""
 		local COUNT=0
-		if [[ "$HASH" == "" ]]; then
-			COUNT=$(_safe_with_warnings ipfs files ls //MiceWeb/pages | grep ^[0-9a-f] | wc -l)
-			STAT="NumURLs: $COUNT"
-		else
+		if [ "$HASH" != "" ]; then
 			for I in $(_safe_with_warnings ipfs files ls //MiceWeb/pages/$HASH); do
 				if [[ $I != *.* ]]; then
 					((COUNT++))
 				fi
 			done
 			STAT="NumVersions: $COUNT"
-		fi
-		if [ "$HASH" != "" ]; then
 			if [[ $CNT -eq 0 && $COUNT -eq 0 ]]; then
 				>&2 echo ""
 				>&2 echo "There are no snapshots to view"
 				return 0
 			fi
+			>&2 echo ""
 			if [ "$GATEWAY" != "" ]; then
-				>&2 echo ""
 				>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" " in a browser on the local machine"
-			fi
-			if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
-				local converted="$(_safe ipfs cid format -v 1 -b base32 $CID0)"
-				if [[ "$converted" != "" ]]; then
-					>&2 _print_with_hyperlink " or " "ipfs://$converted/$HASH" " in an IPFS friendly browser"
+				if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID0)"
+					if [[ "$converted" != "" ]]; then
+						>&2 _print_with_hyperlink " or " "ipfs://$converted/$HASH" " in an IPFS friendly browser"
+					fi
+					>&2 _print_with_hyperlink " to view " "$URL0" " snapshots"
+				else
+					>&2 _print_with_hyperlink " to view " "$URL0" " snapshots"
+					>&2 echo ""
+					>&2 echo "If you need to publish or view from an other machine,"
+					>&2 echo " run 'ipfs pin add $CID0'"
+					#if [[ "$REPROVIDING" == "roots" ]]; then
+					#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
+					#fi
 				fi
-				>&2 _print_with_hyperlink " to view " "$URL0" " snapshots"
 			else
-				>&2 _print_with_hyperlink " to view " "$URL0" " snapshots"
-				>&2 echo ""
-				>&2 echo "If you need to publish or view from an other machine,"
-				>&2 echo " run 'ipfs pin add $CID0'"
-				#if [[ "$REPROVIDING" == "roots" ]]; then
-				#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
-				#fi
+				_tip_run_ipfs_daemon
 			fi
 		else
+			COUNT=$(_safe_with_warnings ipfs files ls //MiceWeb/pages | grep ^[0-9a-f] | wc -l)
+			STAT="NumURLs: $COUNT"
 			>&2 echo ""
 			>&2 echo "There is a content identifier of current pages of all the MiceWeb library"
 			>&2 echo "It's not recommended to share it because security and other reasons,"
@@ -3203,10 +3208,12 @@ present() {
 			#if [[ "$REPROVIDING" == "roots" ]]; then
 			#	>&2 echo " and run 'ipfs config Reprovider.Strategy pinned'"
 			#fi
+			>&2 echo ""
 			if [ "$GATEWAY" != "" ]; then
-				>&2 echo ""
 				>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 				>&2 echo " in a browser on the local machine to view snapshots"
+			else
+				_tip_run_ipfs_daemon
 			fi
 		fi
 		>&2 echo ""
