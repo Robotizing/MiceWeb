@@ -501,12 +501,7 @@ _main() {
 			>&2 printf "\n"
 			return 1
 		fi
-		snapshots "$SOMETHING" |
-			while IFS= read -r I
-			do
-				_echo_existing_page_snapshot $I
-			done
-		save "$SOMETHING" |
+		_snapshots_and_save "$SOMETHING" | awk '!a[$0]++; fflush()' |
 			while IFS= read -r I
 			do
 				_echo_existing_page_snapshot $I
@@ -543,12 +538,7 @@ _main() {
 		>&2 printf "\n"
 		return 0
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
-		snapshots "$SOMETHING" |
-			while IFS= read -r I
-			do
-				_echo_existing_zite_snapshot $I
-			done
-		save "$SOMETHING" |
+		_snapshots_and_save "$SOMETHING" |
 			while IFS= read -r I
 			do
 				_echo_existing_zite_snapshot $I
@@ -565,12 +555,7 @@ _main() {
 	fi
 	URL="$SOMETHING"
 	if _check_url "$URL"; then
-		snapshots "$URL" |
-			while IFS= read -r I
-			do
-				_echo_existing_page_snapshot $I
-			done
-		save "$URL" |
+		_snapshots_and_save "$URL" | awk '!a[$0]++; fflush()' |
 			while IFS= read -r I
 			do
 				_echo_existing_page_snapshot $I
@@ -1652,6 +1637,12 @@ _similar_concrete() {
 #similar() {
 #	_similar "$1"
 #}
+
+_snapshots_and_save() {
+	local SOMETHING="$1"
+	snapshots "$SOMETHING"
+	save "$SOMETHING"
+}
 
 _subcommands() {
   if [[ "${1:-}" == "--raw" ]]
