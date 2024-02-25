@@ -3860,7 +3860,7 @@ urls() {
 		if [[ "$CID" != "" ]]; then
 			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
 			mkdir -p "$CACHE_DIR"
-			if declare -A URLs; then
+			if declare -A URLs 2>/dev/null; then
 				if [ $_warnings -eq 1 ]; then
 					>&2 echo "There are URLs already in the MiceWeb library (see also 'miceweb history'):"
 				fi
