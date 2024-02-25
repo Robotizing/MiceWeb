@@ -3199,8 +3199,6 @@ present() {
 				_tip_run_ipfs_daemon
 			fi
 		else
-			COUNT=$(_safe_with_warnings ipfs files ls //MiceWeb/pages | grep ^[0-9a-f] | wc -l)
-			STAT="NumURLs: $COUNT"
 			>&2 echo ""
 			>&2 echo "There is a content identifier of current pages of all the MiceWeb library"
 			>&2 echo "It's not recommended to share it because security and other reasons,"
@@ -3215,6 +3213,8 @@ present() {
 			else
 				_tip_run_ipfs_daemon
 			fi
+			COUNT=$(_safe_with_warnings ipfs files ls //MiceWeb/pages | grep ^[0-9a-f] | wc -l)
+			STAT="NumURLs: $COUNT"
 		fi
 		>&2 echo ""
 		>&2 echo "$STAT"
