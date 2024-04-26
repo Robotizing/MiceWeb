@@ -3618,32 +3618,34 @@ save() {
 								fi
 							fi
 						fi
-						if [[ $URL == http*://* ]]; then
-							if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
-								local wos=""
-								local SIMILAR_HASH=""
-								if [[ $URL == https://* ]]; then
-									wos=${URL#https://}
-									#SIMILAR_HASH=$(hash "http://$wos")
-									#if [[ "$SIMILAR_HASH" != "" ]]; then
-									#	"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) | awk '!a[$0]++; fflush()'
-									#fi
-								elif [[ $URL == http://* ]]; then
-									wos=${URL#http://}
-								fi
-								local DOMAIN=$(echo "$wos" | awk -F/ '{print $1}')
-								if _safe ipfs name resolve --recursive=false --timeout=5s $DOMAIN >/dev/null; then	#TODO: use fast version of _resolve_ipns (timeout=5s, recursive=false)
-									SIMILAR_HASH=$(hash "ipns://$wos")
-									if [[ "$SIMILAR_HASH" != "" ]]; then
-										"$0" save --no-warnings $SIMILAR_HASH #2> >(grep .)
+						if [ $WGETERR -lt 3 ]; then
+							if [[ $URL == http*://* ]]; then
+								if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
+									local wos=""
+									local SIMILAR_HASH=""
+									if [[ $URL == https://* ]]; then
+										wos=${URL#https://}
+										#SIMILAR_HASH=$(hash "http://$wos")
+										#if [[ "$SIMILAR_HASH" != "" ]]; then
+										#	"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) | awk '!a[$0]++; fflush()'
+										#fi
+									elif [[ $URL == http://* ]]; then
+										wos=${URL#http://}
 									fi
-								fi
-								if [ $ININET -eq 0 ]; then
-									_save_archived $URL
-								fi
-							else
-								if [ $ININET -eq 0 ]; then
-									_save_archived $URL
+									local DOMAIN=$(echo "$wos" | awk -F/ '{print $1}')
+									if _safe ipfs name resolve --recursive=false --timeout=5s $DOMAIN >/dev/null; then	#TODO: use fast version of _resolve_ipns (timeout=5s, recursive=false)
+										SIMILAR_HASH=$(hash "ipns://$wos")
+										if [[ "$SIMILAR_HASH" != "" ]]; then
+											"$0" save --no-warnings $SIMILAR_HASH #2> >(grep .)
+										fi
+									fi
+									if [ $ININET -eq 0 ]; then
+										_save_archived $URL
+									fi
+								else
+									if [ $ININET -eq 0 ]; then
+										_save_archived $URL
+									fi
 								fi
 							fi
 						fi
