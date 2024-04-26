@@ -67,7 +67,7 @@ _ME="$(basename "${0}")"
 # Manually set this to to current version of the program. Adhere to the
 # semantic versioning specification: http://semver.org
 _VERSION="0.3"	#WARNING: affects _upgrade()
-_SUB_VERSION="${_VERSION}.1"
+_SUB_VERSION="${_VERSION}.2"
 
 # MiceWeb Talks
 _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
@@ -496,6 +496,7 @@ _main() {
 	local SOMETHING="${_SUBCOMMAND}"
 	local URL=""
 	if [[ "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
+		#TODO: implement import
 		URL=$(url "$SOMETHING")
 		if [ "$URL" == "" ]; then
 			>&2 printf "\n"
