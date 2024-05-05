@@ -1384,7 +1384,9 @@ _save_wget_tor() {
 	fi
 }
 _save_media() {
-	if [[ $1 == https://www.youtube.com/watch?v=* || $1 == https://m.youtube.com/watch?v=* || $1 == https://youtu.be/* || $1 == https://vk.com/video* || $1 == https://ok.ru/video/* || $1 == https://m.ok.ru/video/* || $1 == https://vimeo.com/* || $1 == https://coub.com/view/* || $1 ==  https://www.instagram.com/p/* || $1 == https://www.tiktok.com/@*/video/* || $1 == https://twitter.com/*/status/* || $1 == https://fb.watch/* || $1 == https://www.facebook.com/reel/* || $1 == https://my.mail.ru/mail/*/video/* || $1 == https://music.yandex.ru/album/*/track/* || $1 == https://www.youtube.com/shorts/* || $1 == https://m.youtube.com/shorts/* ]]; then	#TODO: support share.tube?
+	if [[ $1 == http*://vk.com/video/@* ]]; then
+		return 1
+	elif [[ $1 == http*://www.youtube.com/*watch?v=* || $1 == http*://m.youtube.com/*watch?v=* || $1 == http*://youtu.be/* || $1 == http*://vk.com/video* || $1 == http*://vk.com/clip* || $1 == http*://ok.ru/video/* || $1 == http*://m.ok.ru/video/* || $1 == http*://vimeo.com/* || $1 == http*://coub.com/view/* || $1 ==  http*://www.instagram.com/p/* || $1 == http*://www.tiktok.com/@*/video/* || $1 == http*://twitter.com/*/status/* || $1 == http*://fb.watch/* || $1 == http*://www.facebook.com/reel/* || $1 == http*://my.mail.ru/mail/*/video/* || $1 == http*://music.yandex.ru/album/*/track/* || $1 == http*://www.youtube.com/shorts/* || $1 == http*://m.youtube.com/shorts/* || $1 == http*://www.youtube.com/clip/* || $1 == http*://m.youtube.com/clip/* ]]; then	#TODO: support share.tube?
 		local DT=$(_current_timestamp)
 		SUBDIR="$DT-media"
 		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
@@ -1404,7 +1406,7 @@ _save_media() {
 			echo "$SAVE_HASH/$SUBDIR"
 			return 0
 		fi
-	elif [[ $1 == https://www.twitch.tv/* || $1 == https://m.twitch.tv/* || $1 == https://rutube.ru/video/* || $1 == https://www.dailymotion.com/video/* || $1 == https://zen.yandex.ru/video/watch/* || $1 == https://dzen.ru/video/watch/* ]]; then
+	elif [[ $1 == http*://www.twitch.tv/* || $1 == http*://m.twitch.tv/* || $1 == http*://rutube.ru/video/* || $1 == http*://www.dailymotion.com/video/* || $1 == http*://zen.yandex.ru/video/watch/* || $1 == http*://dzen.ru/video/watch/* ]]; then
 		>&2 echo "Warning: skipped downloading 'media', promised to be very slow"	#TODO: download just audio?
 	#	local DT=$(_current_timestamp)
 	#	SUBDIR="$DT-audio"
@@ -1430,7 +1432,7 @@ _save_media() {
 	return 1
 }
 _save_playlist() {
-	if [[ $1 == https://www.youtube.com/channel/* || $1 == https://www.youtube.com/c/* || $1 == https://www.youtube.com/user/* || $1 == https://www.youtube.com/@* || $1 == https://www.youtube.com/*?list=* || $1 == https://m.youtube.com/channel/* || $1 == https://m.youtube.com/c/* || $1 == https://m.youtube.com/user/* || $1 == https://m.youtube.com/@* || $1 == https://m.youtube.com/*?list=* || $1 == https://rutube.ru/channel/*/videos/ || $1 == https://rutube.ru/channel/*/videos || $1 == https://vimeo.com/* || $1 == https://www.dailymotion.com/* || $1 == https://music.yandex.ru/album/* ]]; then
+	if [[ $1 == http*://www.youtube.com/channel/* || $1 == http*://www.youtube.com/c/* || $1 == http*://www.youtube.com/user/* || $1 == http*://www.youtube.com/@* || $1 == http*://www.youtube.com/*list=* || $1 == http*://m.youtube.com/channel/* || $1 == http*://m.youtube.com/c/* || $1 == http*://m.youtube.com/user/* || $1 == http*://m.youtube.com/@* || $1 == http*://m.youtube.com/*list=* || $1 == http*://rutube.ru/channel/*/videos/ || $1 == http*://rutube.ru/channel/*/videos || $1 == http*://vimeo.com/* || $1 == http*://www.dailymotion.com/* || $1 == http*://music.yandex.ru/album/* || $1 == http*://vk.com/video/@* ]]; then
 		local DT=$(_current_timestamp)
 		SUBDIR="$DT-playlist"
 		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
