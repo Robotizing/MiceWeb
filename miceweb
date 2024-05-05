@@ -3858,7 +3858,7 @@ urls() {
 			>&2 echo " txt - contain URLs in separate lines"
 			>&2 echo " json - contain URLs in text fields"
 			>&2 echo " xml - contain URLs in text fields"
-			>&2 echo " htm(l) - contain URLs in the 'href' attribute"
+			>&2 echo " htm, html - contain URLs in the 'href' attribute"
 			>&2 echo ""
 		fi
 		local CID="$(_safe ipfs files stat --hash //MiceWeb/pages/)"
@@ -3940,7 +3940,7 @@ urls() {
 		if [[ "$BASE" != "" ]]; then
 			_cat_file "$FIL" | htmlq --base="$BASE" --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
 		else
-			>&2 echo "Warning: use '--base' attribute to handle relative links"
+			>&2 echo "Tip: use '--base' attribute to handle relative links"
 			_cat_file "$FIL" | htmlq --detect-base --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
 		fi
 	elif [[ $FORMAT == json ]]; then
