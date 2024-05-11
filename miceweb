@@ -1319,79 +1319,6 @@ _save_git() {
 	fi
 	return 1
 }
-_save_wget_ipfs() {
-	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
-	local ADDR=$(_safe_with_warnings ipfs resolve --timeout=60s $MAIN)
-	if [[ "$ADDR" != "" ]]; then
-		local DT=$(_current_timestamp)
-		SUBDIR="$DT-wget-ipfs"
-		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
-		if [ $? -ne 0 ]; then
-			#TODO: check _ipfs_gateway first
-			local GATEWAY=$(_safe_with_warnings ipfs config Addresses.Gateway)
-			if [ "$GATEWAY" != "" ]; then
-				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$1" --cut-dirs=2
-				return $?
-			else
-				>&2 echo "Error: local IPFS gateway is not set"
-			fi
-		else
-			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-			echo "$SAVE_HASH/$SUBDIR"
-			return 0
-		fi
-	fi
-	return 1
-}
-_save_wget_ipns() {
-	local ADDR=$(_resolve_ipns "$1")
-	if [[ "$ADDR" != "" ]]; then
-		local DT=$(_current_timestamp)
-		SUBDIR="$DT-wget-ipns"
-		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
-		if [ $? -ne 0 ]; then
-			#TODO: check _ipfs_gateway first
-			local GATEWAY=$(_safe_with_warnings ipfs config Addresses.Gateway)
-			if [ "$GATEWAY" != "" ]; then
-				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$ADDR" --cut-dirs=2 "Resolved /ipns/$1 to /ipfs/$ADDR"
-				return $?
-			else
-				>&2 echo "Error: local IPFS gateway is not set"
-			fi
-		else
-			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-			echo "$SAVE_HASH/$SUBDIR"
-			return 0
-		fi
-	fi
-	return 1
-}
-_save_wget() {
-	local DT=$(_current_timestamp)
-	SUBDIR="$DT-wget"
-	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
-	if [ $? -ne 0 ]; then
-		_wget $1
-		return $?
-	else
-		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-		echo "$SAVE_HASH/$SUBDIR"
-		return 0
-	fi
-}
-_save_wget_tor() {
-	local DT=$(_current_timestamp)
-	SUBDIR="$DT-wget-tor"
-	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
-	if [ $? -ne 0 ]; then
-		_wget $1 --torsocks
-		return $?
-	else
-		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-		echo "$SAVE_HASH/$SUBDIR"
-		return 0
-	fi
-}
 _save_media() {
 	if [[ $1 == http*://vk.com/video/@* || $1 == http*://vk.com/video/playlist/* ]]; then
 		return 1
@@ -1469,6 +1396,79 @@ Description: %(description)s
 			echo "$SAVE_HASH/$SUBDIR"
 			return 0
 		fi
+	fi
+}
+_save_wget_ipfs() {
+	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
+	local ADDR=$(_safe_with_warnings ipfs resolve --timeout=60s $MAIN)
+	if [[ "$ADDR" != "" ]]; then
+		local DT=$(_current_timestamp)
+		SUBDIR="$DT-wget-ipfs"
+		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
+		if [ $? -ne 0 ]; then
+			#TODO: check _ipfs_gateway first
+			local GATEWAY=$(_safe_with_warnings ipfs config Addresses.Gateway)
+			if [ "$GATEWAY" != "" ]; then
+				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$1" --cut-dirs=2
+				return $?
+			else
+				>&2 echo "Error: local IPFS gateway is not set"
+			fi
+		else
+			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+			echo "$SAVE_HASH/$SUBDIR"
+			return 0
+		fi
+	fi
+	return 1
+}
+_save_wget_ipns() {
+	local ADDR=$(_resolve_ipns "$1")
+	if [[ "$ADDR" != "" ]]; then
+		local DT=$(_current_timestamp)
+		SUBDIR="$DT-wget-ipns"
+		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
+		if [ $? -ne 0 ]; then
+			#TODO: check _ipfs_gateway first
+			local GATEWAY=$(_safe_with_warnings ipfs config Addresses.Gateway)
+			if [ "$GATEWAY" != "" ]; then
+				_wget "http://127.0.0.1:${GATEWAY##*/}/ipfs/$ADDR" --cut-dirs=2 "Resolved /ipns/$1 to /ipfs/$ADDR"
+				return $?
+			else
+				>&2 echo "Error: local IPFS gateway is not set"
+			fi
+		else
+			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+			echo "$SAVE_HASH/$SUBDIR"
+			return 0
+		fi
+	fi
+	return 1
+}
+_save_wget() {
+	local DT=$(_current_timestamp)
+	SUBDIR="$DT-wget"
+	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
+	if [ $? -ne 0 ]; then
+		_wget $1
+		return $?
+	else
+		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+		echo "$SAVE_HASH/$SUBDIR"
+		return 0
+	fi
+}
+_save_wget_tor() {
+	local DT=$(_current_timestamp)
+	SUBDIR="$DT-wget-tor"
+	_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
+	if [ $? -ne 0 ]; then
+		_wget $1 --torsocks
+		return $?
+	else
+		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
+		echo "$SAVE_HASH/$SUBDIR"
+		return 0
 	fi
 }
 _save_zite() {
