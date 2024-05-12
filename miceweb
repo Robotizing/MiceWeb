@@ -1274,6 +1274,12 @@ _save_curl_tor() {
 		return 0
 	fi
 }
+_save_files() {
+	if [[ $1 == http*://drive.google.com/file/d/* || $1 == http*://drive.google.com/drive/* || $1 == http*://disk.yandex.ru/d/* || $1 == http*://vk.com/doc* ]]; then
+		>&2 echo "Warning: skipped downloading 'files', consider to download manually and import"
+	fi
+	return 1
+}
 _save_gemget() {
 	local DT=$(_current_timestamp)
 	SUBDIR="$DT-gemget"
@@ -3605,6 +3611,7 @@ save() {
 					URL=$(_url_but_query "$URL")
 				fi
 				if [[ $URL == http*://* ]]; then
+					_save_files $URL
 					_save_media $URL
 					_save_playlist $URL
 				fi
