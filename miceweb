@@ -495,6 +495,7 @@ _main() {
   else
 	local SOMETHING="${_SUBCOMMAND}"
 	local URL=""
+	local SECOND_ARG="${_SUBCOMMAND_ARGUMENTS[0]}"
 	if [[ "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
 		#TODO: implement import
 		URL=$(url "$SOMETHING")
@@ -502,7 +503,7 @@ _main() {
 			>&2 printf "\n"
 			return 1
 		fi
-		_snapshots_and_save "$SOMETHING" | awk '!a[$0]++; fflush()' |
+		_snapshots_and_save_or_import "$SOMETHING" "$SECOND_ARG" | awk '!a[$0]++; fflush()' |
 			while IFS= read -r I
 			do
 				_echo_existing_page_snapshot $I
@@ -539,7 +540,7 @@ _main() {
 		>&2 printf "\n"
 		return 0
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
-		_snapshots_and_save "$SOMETHING" |
+		_snapshots_and_save_or_import "$SOMETHING" |
 			while IFS= read -r I
 			do
 				_echo_existing_zite_snapshot $I
@@ -556,7 +557,7 @@ _main() {
 	fi
 	URL="$SOMETHING"
 	if _check_url "$URL"; then
-		_snapshots_and_save "$URL" | awk '!a[$0]++; fflush()' |
+		_snapshots_and_save_or_import "$URL" "$SECOND_ARG" | awk '!a[$0]++; fflush()' |
 			while IFS= read -r I
 			do
 				_echo_existing_page_snapshot $I
@@ -1656,10 +1657,15 @@ _similar_concrete() {
 #	_similar "$1"
 #}
 
-_snapshots_and_save() {
+_snapshots_and_save_or_import() {
 	local SOMETHING="$1"
+	local SRC="$2"
 	snapshots "$SOMETHING"
-	save "$SOMETHING"
+	if [[ "$SRC" == "" ]]; then
+		save "$SOMETHING"
+	else
+		import "$SOMETHING" "$SRC"
+	fi
 }
 
 _subcommands() {
