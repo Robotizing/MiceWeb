@@ -3436,7 +3436,7 @@ save() {
 		#TODO: add "urls ..." to history.txt?
 		_reproviding_warning
 		if ! _command_exists torsocks; then
-			>&2 echo "Error: torsocks is not installed, some web pages might be inaccessible"
+			>&2 echo "Tip: install 'torsocks' to access more web pages"
 		fi
 		#TODO: hash all valid urls, sort the list, then download?
 		local URLs=$(urls --no-warnings "$2" "$3" "$4" "$5" "$6" "$7") #$("$0" "$@" 2>/dev/null)
@@ -3642,7 +3642,7 @@ save() {
 								fi
 							else
 								if [ $_warnings -eq 1 ]; then
-									>&2 echo "Error: torsocks is not installed"
+									>&2 echo "Tip: install 'torsocks' to access more web pages"
 								fi
 							fi
 						fi
