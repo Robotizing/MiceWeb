@@ -983,7 +983,7 @@ _reprovider_strategy() {
 }
 
 _reproviding_warning() {
-	#>&2 echo "Tip: run 'miceweb tune' to control"
+	#_tip "run 'miceweb tune' to control"
 	local REPROVIDING=$(_reprovider_strategy)
 	if [[ "$REPROVIDING" == "" ]]; then
 		>&2 printf '%s' "Warning: "
@@ -1695,8 +1695,12 @@ _temp_file_maybe_in_ram() {
 	mktemp -p /dev/shm/ 2>/dev/null || _temp_file
 }
 
+_tip() {
+	>&2 echo "Tip: $1"
+}
+
 _tip_run_ipfs_daemon() {
-	>&2 echo "Tip: run 'ipfs daemon' using Kubo v.0.15 or newer"
+	_tip "run 'ipfs daemon' using Kubo v.0.15 or newer"
 }
 
 _upgrade() {
@@ -3440,7 +3444,7 @@ save() {
 		#TODO: add "urls ..." to history.txt?
 		_reproviding_warning
 		if ! _command_exists torsocks; then
-			>&2 echo "Tip: install 'torsocks' to access more web pages"
+			_tip "install 'torsocks' to access more web pages"
 		fi
 		#TODO: hash all valid urls, sort the list, then download?
 		local URLs=$(urls --no-warnings "$2" "$3" "$4" "$5" "$6" "$7") #$("$0" "$@" 2>/dev/null)
@@ -3646,7 +3650,7 @@ save() {
 								fi
 							else
 								if [ $_warnings -eq 1 ]; then
-									>&2 echo "Tip: install 'torsocks' to access more web pages"
+									_tip "install 'torsocks' to access more web pages"
 								fi
 							fi
 						fi
@@ -3735,7 +3739,7 @@ save() {
 						#TODO: look into http://127.0.0.1:43110/1LtvsjbtQ2tY7SCtCZzC4KhErqEK3bXD4n/ (working with .db)
 						local ZITE=$(_zite_address $URL)
 						if [[ "$ZITE" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
-							>&2 echo "Tip: run 'miceweb save $ZITE'"
+							_tip "run 'miceweb save $ZITE'"
 						fi
 					fi
 				fi
@@ -3979,7 +3983,7 @@ urls() {
 		if [[ "$BASE" != "" ]]; then
 			_cat_file "$FIL" | htmlq --base="$BASE" --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
 		else
-			>&2 echo "Tip: use '--base' attribute to handle relative links"
+			_tip "use '--base' attribute to handle relative links"
 			_cat_file "$FIL" | htmlq --detect-base --attribute href a | grep "$GREP" | awk '!a[$0]++; fflush()'
 		fi
 	elif [[ $FORMAT == json ]]; then
