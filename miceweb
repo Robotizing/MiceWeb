@@ -513,9 +513,11 @@ _main() {
 	elif [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		local SNAP="$SOMETHING"
 		if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-archive$ ]]; then
-			if save "$SNAP" >/dev/null; then
-				_echo_existing_page_snapshot $SNAP
-			fi
+			save "$SNAP" |
+				while IFS= read -r I
+				do
+					_echo_existing_page_snapshot $I
+				done
 		elif [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-importing$ ]]; then
 			_echo_existing_page_snapshot $SNAP
 			>&2 echo "Resuming getting content from IPFS Network"
