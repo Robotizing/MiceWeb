@@ -2084,7 +2084,7 @@ check() {
 			local CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_PRESENT_ADDR)"
 			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
 				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-					ipfs dag stat $CID
+					ipfs dag stat $CID 1>&2
 				else
 					>&2 echo "Can't check $CID,"
 					>&2 echo " consider to run 'ipfs update'"
@@ -2115,7 +2115,7 @@ check() {
 			local CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_PRESENT_ADDR)"
 			if [[ "$CID" != "" && $COUNT -ne 0 ]]; then
 				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-					ipfs dag stat $CID
+					ipfs dag stat $CID 1>&2
 				else
 					>&2 echo "Can't check $CID,"
 					>&2 echo " consider to run 'ipfs update'"
@@ -2129,7 +2129,7 @@ check() {
 			local CID="$(_safe ipfs files stat --hash /$MFS_PRESENT_ADDR)"
 			if [[ "$CID" != "" ]]; then
 				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-					ipfs dag stat $CID
+					ipfs dag stat $CID 1>&2
 				else
 					>&2 echo "Can't check $CID,"
 					>&2 echo " consider to run 'ipfs update'"
@@ -2184,7 +2184,7 @@ check() {
 			fi
 			if [ "$CID" != "" ]; then
 				if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-					if ipfs dag stat $CID; then
+					if ipfs dag stat $CID 1>&2; then
 						if [ $ing -eq 1 ]; then
 							_safe_with_warnings ipfs files mv "/$MFS_SNAP_ADDR"ing /$MFS_SNAP_ADDR
 							return $?
@@ -2207,7 +2207,7 @@ check() {
 		local CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_SNAP_ADDR)"
 		if [ "$CID" != "" ]; then			
 			if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-				ipfs dag stat $CID
+				ipfs dag stat $CID 1>&2
 			else
 				>&2 echo "Can't check $CID,"
 				>&2 echo " consider to run 'ipfs update'"
@@ -2234,7 +2234,7 @@ check() {
 		CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_PAGE_ADDR)"
 		if [ "$CID" != "" ]; then
 			if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-				ipfs dag stat $CID
+				ipfs dag stat $CID 1>&2
 			else
 				>&2 echo "Can't check $CID,"
 				>&2 echo " consider to run 'ipfs update'"
@@ -2250,7 +2250,7 @@ check() {
 		CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_PAGE_ADDR)"
 		if [ "$CID" != "" ]; then
 			if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-				ipfs dag stat $CID
+				ipfs dag stat $CID 1>&2
 			else
 				>&2 echo "Can't check $CID,"
 				>&2 echo " consider to run 'ipfs update'"
@@ -2322,7 +2322,7 @@ check() {
 	
 	if [[ "$CID0" != "" ]]; then
 		if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-			ipfs dag stat $CID0
+			ipfs dag stat $CID0 1>&2
 		else
 			>&2 echo "Can't check $CID0,"
 			>&2 echo " consider to run 'ipfs update'"
@@ -2652,7 +2652,7 @@ import() {
 							printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
 							if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
 								>&2 echo "Getting content from IPFS Network..."
-								if ipfs dag stat $CID; then
+								if ipfs dag stat $CID 1>&2; then
 									if _safe_with_warnings ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
 										>&2 echo "Done"
 									else
