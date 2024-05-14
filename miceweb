@@ -1381,7 +1381,7 @@ _save_media() {
 _save_playlist() {
 	if [[ $1 == http*://www.youtube.com/*/community ]]; then
 		return 1
-	elif [[ $1 == http*://www.youtube.com/channel/* || $1 == http*://www.youtube.com/c/* || $1 == http*://www.youtube.com/user/* || $1 == http*://www.youtube.com/@* || $1 == http*://www.youtube.com/*list=* || $1 == http*://m.youtube.com/channel/* || $1 == http*://m.youtube.com/c/* || $1 == http*://m.youtube.com/user/* || $1 == http*://m.youtube.com/@* || $1 == http*://m.youtube.com/*list=* || $1 == http*://rutube.ru/channel/*/videos/ || $1 == http*://rutube.ru/channel/*/videos || $1 == http*://vimeo.com/* || $1 == http*://www.dailymotion.com/* || $1 == http*://music.yandex.ru/album/* || $1 == http*://vk.com/video/@* || $1 == http*://vk.com/video/playlist/* ]]; then
+	elif [[ $1 == http*://www.youtube.com/channel/* || $1 == http*://www.youtube.com/c/* || $1 == http*://www.youtube.com/user/* || $1 == http*://www.youtube.com/@* || $1 == http*://www.youtube.com/*list=* || $1 == http*://m.youtube.com/channel/* || $1 == http*://m.youtube.com/c/* || $1 == http*://m.youtube.com/user/* || $1 == http*://m.youtube.com/@* || $1 == http*://m.youtube.com/*list=* || $1 == http*://www.twitch.tv/*/videos* || $1 == http*://m.twitch.tv/*/videos* || $1 == http*://rutube.ru/channel/*/videos/ || $1 == http*://rutube.ru/channel/*/videos || $1 == http*://vimeo.com/* || $1 == http*://www.dailymotion.com/* || $1 == http*://music.yandex.ru/album/* || $1 == http*://vk.com/video/@* || $1 == http*://vk.com/video/playlist/* || $1 == http://dzen.ru/* ]]; then
 		local DT=$(_current_timestamp)
 		SUBDIR="$DT-playlist"
 		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
