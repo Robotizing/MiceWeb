@@ -503,7 +503,7 @@ _main() {
 			>&2 printf "\n"
 			return 1
 		fi
-		_snapshots_and_save_or_import "$SOMETHING" "$SECOND_ARG" | _echo_with_no_duplicates | _echo_existing_page_snapshots
+		_snapshots_and_save_or_import "$SOMETHING" "$SECOND_ARG" | _skip_duplicates | _echo_existing_page_snapshots
 		>&2 printf "\n"
 		return 0
 	elif [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
@@ -547,7 +547,7 @@ _main() {
 	fi
 	URL="$SOMETHING"
 	if _check_url "$URL"; then
-		_snapshots_and_save_or_import "$URL" "$SECOND_ARG" | _echo_with_no_duplicates | _echo_existing_page_snapshots
+		_snapshots_and_save_or_import "$URL" "$SECOND_ARG" | _skip_duplicates | _echo_existing_page_snapshots
 	else
 		_exit_1 printf "Unknown command: %s\\n" "${_SUBCOMMAND}"
 	fi
@@ -703,7 +703,7 @@ _echo_supported_url_prefixes() {
 	>&2 echo " ftp://, ftps://, ipns://, ipfs://, git://"
 }
 
-_echo_with_no_duplicates() {
+_skip_duplicates() {
 	awk '!a[$0]++; fflush()'
 }
 
@@ -3602,7 +3602,7 @@ save() {
 					if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
 						local SIMILAR_HASH=$(hash "https://${URL#ipns://}")
 						if [[ "$SIMILAR_HASH" != "" ]]; then
-							"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) # | _echo_with_no_duplicates
+							"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) # | _skip_duplicates
 						fi
 					fi
 				fi
@@ -3674,7 +3674,7 @@ save() {
 										wos=${URL#https://}
 										#SIMILAR_HASH=$(hash "http://$wos")
 										#if [[ "$SIMILAR_HASH" != "" ]]; then
-										#	"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) | _echo_with_no_duplicates
+										#	"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) | _skip_duplicates
 										#fi
 									elif [[ $URL == http://* ]]; then
 										wos=${URL#http://}
@@ -3983,10 +3983,10 @@ urls() {
 			exit 127
 		fi
 		if [[ "$BASE" != "" ]]; then
-			_cat_file "$FIL" | htmlq --base="$BASE" --attribute href a | grep "$GREP" | _echo_with_no_duplicates
+			_cat_file "$FIL" | htmlq --base="$BASE" --attribute href a | grep "$GREP" | _skip_duplicates
 		else
 			_tip "use '--base' attribute to handle relative links"
-			_cat_file "$FIL" | htmlq --detect-base --attribute href a | grep "$GREP" | _echo_with_no_duplicates
+			_cat_file "$FIL" | htmlq --detect-base --attribute href a | grep "$GREP" | _skip_duplicates
 		fi
 	elif [[ $FORMAT == json ]]; then
 		if [[ "$BASE" != "" ]]; then
@@ -4000,7 +4000,7 @@ urls() {
 					echo "${J%.}"
 				fi
 			done
-		done | grep "$GREP" | _echo_with_no_duplicates
+		done | grep "$GREP" | _skip_duplicates
 	elif [[ $FORMAT == xml ]]; then
 		if [[ "$BASE" != "" ]]; then
 			>&2 echo "Attribute --base is only supported for html files"
@@ -4013,7 +4013,7 @@ urls() {
 					echo "${J%.}"
 				fi
 			done
-		done | grep "$GREP" | _echo_with_no_duplicates
+		done | grep "$GREP" | _skip_duplicates
 	else
 		if [[ "$BASE" != "" ]]; then
 			>&2 echo "Attribute --base is only supported for html files"
@@ -4059,7 +4059,7 @@ zites() {
 		if [[ "$K" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
 			echo $K
 		fi
-	done | _echo_with_no_duplicates
+	done | _skip_duplicates
 }
 
 
