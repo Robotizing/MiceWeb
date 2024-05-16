@@ -571,10 +571,18 @@ _cat_file() {
 	local ADDR=""
 	if [[ "$FIL" == /ipns/* ]]; then
 		ADDR=$(_resolve_ipns "${FIL#/ipns/}")
-		_safe_with_warnings ipfs cat "$ADDR" | grep -a "$GREP"
+		if [[ "$GREP" != "" ]]; then
+			_safe ipfs cat "$ADDR" | grep -a "$GREP"
+		else
+			_safe ipfs cat "$ADDR"
+		fi
 	elif [[ "$FIL" == /ipfs/* ]]; then
 		ADDR="${FIL#/ipfs/}"
-		_safe_with_warnings ipfs cat "$ADDR" | grep -a "$GREP"
+		if [[ "$GREP" != "" ]]; then
+			_safe ipfs cat "$ADDR" | grep -a "$GREP"
+		else
+			_safe ipfs cat "$ADDR"
+		fi
 	elif [[ "$FIL" == /zeronet/* ]]; then
 		ADDR=$(_resolve_zeronet "${FIL#/zeronet/}")
 		if [[ $ADDR != "" ]]; then
