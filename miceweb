@@ -2495,8 +2495,7 @@ hash() {
 			_safe ipfs files mkdir //MiceWeb/pages
 			_safe ipfs files mkdir /$MFS_ADDR
 			local URL0=$(_url_but_fragment "$URL")
-			local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | _safe_with_warnings ipfs add --quieter --pin=false)"
-			_safe_with_warnings ipfs files cp //ipfs/$URLTXTCID /$MFS_ADDR/URL.txt
+			printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | _ipfs_add_pipe_to_mfs $MFS_ADDR/URL.txt
 		fi
 		return 0
 	else
