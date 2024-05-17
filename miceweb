@@ -2044,7 +2044,7 @@ Usage:
   ${_ME} check <SHA-1>
   ${_ME} check urls [--grep=<expr.>] [<local/ipfs/ipns/zeronet file path>]
   ${_ME} check <zite>
-  ${_ME} check zites [<local/ipfs/ipns/zeronet file path>]
+  ${_ME} check zites [--grep=<expr.>] [<local/ipfs/ipns/zeronet file path>]
 
 Description:
   Check saved snapshot
@@ -2114,7 +2114,7 @@ check() {
 			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
 			local COUNT=0
 			local HASH=""
-			for ZITE in $(zites "$2")	#$("$0" "$@" 2>/dev/null)
+			for ZITE in $(zites "$2" "$3" "$4" "$5" "$6" "$7")	#$("$0" "$@" 2>/dev/null)
 			do
 				if _safe ipfs files cp //MiceWeb/zites/$ZITE /$MFS_PRESENT_ADDR/$ZITE; then
 					((COUNT++))
@@ -2771,7 +2771,7 @@ Usage:
   ${_ME} present <SHA-1>
   ${_ME} present urls [--grep=<expr.>] [<local/ipfs/ipns/zeronet file path>]
   ${_ME} present <zite>
-  ${_ME} present zites [<local/ipfs/ipns/zeronet file path>]
+  ${_ME} present zites [--grep=<expr.>] [<local/ipfs/ipns/zeronet file path>]
 
 Description:
   Present saved snapshot
@@ -2863,7 +2863,7 @@ present() {
 			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
 			local COUNT=0
 			local HASH=""
-			for ZITE in $(zites "$2")	#$("$0" "$@" 2>/dev/null)
+			for ZITE in $(zites "$2" "$3" "$4" "$5" "$6" "$7")	#$("$0" "$@" 2>/dev/null)
 			do
 				if _safe ipfs files cp //MiceWeb/zites/$ZITE /$MFS_PRESENT_ADDR/$ZITE; then
 					((COUNT++))
@@ -3439,7 +3439,7 @@ Usage:
   ${_ME} save <SHA-1>/<timestamp>-archive
   ${_ME} save urls [--grep=<expression>] [<local/ipfs/ipns/zeronet file path>]
   ${_ME} save <zite>
-  ${_ME} save zites [<local/ipfs/ipns/zeronet file path>]
+  ${_ME} save zites [--grep=<expression>] [<local/ipfs/ipns/zeronet file path>]
 
 Description:
   Save web page snapshot(s)
@@ -3499,7 +3499,7 @@ save() {
 					save --no-warnings $ZITE
 				done
 			else
-				for ZITE in $(zites "$2")	#$("$0" "$@" 2>/dev/null)
+				for ZITE in $(zites "$2" "$3" "$4" "$5" "$6" "$7")	#$("$0" "$@" 2>/dev/null)
 				do
 					save --no-warnings $ZITE
 				done
@@ -4051,17 +4051,37 @@ version() {
 describe "zites" <<HEREDOC
 Usage:
   ${_ME} zites
-  ${_ME} zites <local/ipfs/ipns/zeronet file path>
+  ${_ME} zites [--grep=<expression>] <local/ipfs/ipns/zeronet file path>
 
 Description:
   List zites from text file or from the MiceWeb library
 HEREDOC
 zites() {
+	_upgrade
+	local FIL=""
+	local PARAM=""
+	local GREP=""
+	local _warnings=1
+	for I in "$@"; do
+		if [[ $I == "--grep" ]]; then
+			PARAM="grep"
+		elif [[ $I == "--no-warnings" ]]; then
+			_warnings=0
+			PARAM=""
+		elif [[ $I != "" ]]; then
+			if [[ $PARAM == "grep" ]]; then
+				GREP=$I
+			else
+				FIL=$I
+			fi
+			PARAM=""
+		fi
+	done
 	if [[ "$1" == "" ]]; then
-		_safe ipfs files ls //MiceWeb/zites
+		_safe ipfs files ls //MiceWeb/zites | grep "$GREP"
 		return $?
 	fi
-	for I in $(_cat_file "$1" "^1"); do
+	for I in $(_cat_file "$1" "$GREP"); do
 		local J="${I%/}"
 		local K="${J%/}"
 		if [[ "$K" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
