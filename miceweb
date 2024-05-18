@@ -559,7 +559,7 @@ _main() {
 
 # --------------------------------------------------------------------- functions
 
-_addToHistory() {
+_add_to_history() {
 	mkdir -p "$HOME/.miceweb"
 	local DT=$(export TZ=GMT ; date '+%Y-%m-%d GMT %H:%M:%S')
 	printf "%s\t%s\n" "$DT" "$1" >> "$HOME/.miceweb/history.txt"
@@ -2552,18 +2552,18 @@ Usage:
   ${_ME} history
 
 Description:
-  List URLs which were attempted to be saved or imported
+  List items (URLs, sites, zites) which were attempted to be saved or imported
 HEREDOC
 history() {
 	FN="$HOME/.miceweb/history.txt"
 	COUNT=$(cat $FN 2>/dev/null | wc -l)
 	if [ $COUNT -ne 0 ]; then
-		>&2 echo "There is a list of URLs which was attempted to be saved or imported:"
+		>&2 echo "There is a list of items which was attempted to be saved or imported:"
 		cat $FN
 		>&2 echo ""
 		>&2 echo "NumEntries: $COUNT"
 	else
-		>&2 echo "There are no URLs which was attempted to be saved or imported"
+		>&2 echo "Save and import URLs, sites, zites, to create the history"
 	fi
 }
 
@@ -2624,7 +2624,7 @@ import() {
 		_echo_supported_url_prefixes
 		return 1
 	fi
-	_addToHistory "$URL"
+	_add_to_history "$URL"
 	local HASH=$(hash "$URL")
 	if [[ "$HASH" != "" ]]; then
 		local MFS_ADDR="/MiceWeb/pages/$HASH"
@@ -3568,6 +3568,7 @@ save() {
 			return 1
 		fi
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
+		_add_to_history "$SOMETHING"
 		local datadir="$(_zeronet_data)"
 		if [[ -d "$datadir" ]]; then
 			if [ $_warnings -eq 1 ]; then
@@ -3593,7 +3594,7 @@ save() {
 		_echo_supported_url_prefixes
 		return 1
 	fi
-	_addToHistory "$URL"
+	_add_to_history "$URL"
 	type -P wget &>/dev/null && ISINST=1 || ISINST=0
 	if [ $ISINST -eq 0 ]
 	then
