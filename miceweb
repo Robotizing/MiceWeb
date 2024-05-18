@@ -729,8 +729,7 @@ _git() {
 	local GITERR=$?
 	local RET=1
 	if [[ $GITERR -eq 0 ]]; then
-		local CID="$(_safe_with_warnings ipfs add --quieter --pin=false -r --hidden $MYTMPDIR)"
-		_safe_with_warnings ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
+		local CID="$(_ipfs_add_directory_to_mfs $MYTMPDIR $SAVE_MFS_ADDR/$SUBDIR --hidden)"
 		if [ $? -eq 0 ]; then
 			echo "$SAVE_HASH/$SUBDIR"
 			RET=$GITERR
@@ -803,15 +802,16 @@ _initiate_saving_url() {
 _ipfs_add_directory_to_mfs() {
 	local path="$1"
 	local addr="$2"
+	local flag="$3"
 	if [[ "$addr" != "" ]]; then
-		local CID="$(_safe ipfs add --quieter --pin=false -r $path --to-files /$addr)"
+		local CID="$(_safe ipfs add --quieter --pin=false -r $flag $path --to-files /$addr)"
 		if [[ "$CID" != "" ]]; then
 			if [[ "$CID" == "$(_safe ipfs files stat --hash /$addr)" ]]; then
 				echo "$CID"
 				return 0
 			fi
 		else
-			CID="$(_safe ipfs add --quieter --pin=false -r $path)"
+			CID="$(_safe ipfs add --quieter --pin=false -r $flag $path)"
 			if [[ "$CID" != "" ]]; then
 				if _safe ipfs files cp //ipfs/$CID /$addr; then
 					echo "$CID"
