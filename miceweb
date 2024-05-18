@@ -2291,8 +2291,7 @@ check() {
 				_safe ipfs files mkdir //MiceWeb
 				_safe ipfs files mkdir //MiceWeb/pages
 				_safe ipfs files mkdir /$MFS_PAGE_ADDR
-				local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | _safe_with_warnings ipfs add --quieter --pin=false)"
-				_safe_with_warnings ipfs files cp //ipfs/$URLTXTCID /$MFS_PAGE_ADDR/URL.txt
+				printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | _ipfs_add_pipe_to_mfs $MFS_PAGE_ADDR/URL.txt
 			else
 				_echo_supported_url_prefixes
 				return 1
@@ -3174,8 +3173,7 @@ present() {
 				_safe ipfs files mkdir //MiceWeb
 				_safe ipfs files mkdir //MiceWeb/pages
 				_safe ipfs files mkdir /$MFS_PAGE_ADDR
-				local URLTXTCID="$(printf "%s\n%s\n" "URL $(_random_value)" "$URL" | _safe_with_warnings ipfs add --quieter --pin=false)"
-				_safe_with_warnings ipfs files cp //ipfs/$URLTXTCID /$MFS_PAGE_ADDR/URL.txt
+				printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | _ipfs_add_pipe_to_mfs $MFS_PAGE_ADDR/URL.txt
 			else
 				_echo_supported_url_prefixes
 				return 1
