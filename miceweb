@@ -500,11 +500,11 @@ _main() {
 		#TODO: implement import
 		URL=$(url "$SOMETHING")
 		if [ "$URL" == "" ]; then
-			>&2 printf "\n"
+			_warn_empty_line
 			return 1
 		fi
 		_snapshots_and_save_or_import "$SOMETHING" "$SECOND_ARG" | _skip_duplicates | _echo_existing_page_snapshots
-		>&2 printf "\n"
+		_warn_empty_line
 		return 0
 	elif [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		local SNAP="$SOMETHING"
@@ -522,27 +522,27 @@ _main() {
 				>&2 echo "Resuming getting content from IPFS Network"
 				check $SNAP 1>&2
 			else
-				>&2 printf "\n"
+				_warn_empty_line
 				return 1
 			fi
 		elif _safe_with_warnings ipfs files ls //MiceWeb/pages/$SNAP >/dev/null; then
 			_echo_existing_page_snapshot $SNAP
 		else
-			>&2 printf "\n"
+			_warn_empty_line
 			return 1
 		fi
-		>&2 printf "\n"
+		_warn_empty_line
 		return 0
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
 		_snapshots_and_save_or_import "$SOMETHING" | _echo_existing_zite_snapshots
-		>&2 printf "\n"
+		_warn_empty_line
 		return 0
 	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
 		local SNAP="$SOMETHING"
 		if _safe_with_warnings ipfs files ls //MiceWeb/zites/$SNAP >/dev/null; then
 			_echo_existing_zite_snapshot $SNAP
 		fi
-		>&2 printf "\n"
+		_warn_empty_line
 		return 0
 	fi
 	URL="$SOMETHING"
@@ -553,7 +553,7 @@ _main() {
 	fi
   fi
   if [[ "${_SUBCOMMAND_ARGUMENTS[0]}" != "--no-warnings" ]]; then
-  	>&2 printf "\n"
+	_warn_empty_line
   fi
 }
 
@@ -1862,6 +1862,10 @@ _warn_about_version() {
 	#TODO: compare current and actual version numbers?
 	>&2 echo "Disclaimer: it's important to use an actual MiceWeb version for communication"
 	>&2 echo ""
+}
+
+_warn_empty_line() {
+	>&2 printf "\n"
 }
 
 _wget() {
