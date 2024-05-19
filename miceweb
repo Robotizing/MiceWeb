@@ -67,7 +67,7 @@ _ME="$(basename "${0}")"
 # Manually set this to to current version of the program. Adhere to the
 # semantic versioning specification: http://semver.org
 _VERSION="0.3"	#WARNING: affects _upgrade()
-_SUB_VERSION="${_VERSION}.2"
+_SUB_VERSION="${_VERSION}.3"
 
 # MiceWeb Talks
 _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"

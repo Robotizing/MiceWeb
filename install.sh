@@ -13,6 +13,8 @@ binpaths="/usr/local/bin /usr/bin"
 # because of missing write permissions.
 is_write_perm_missing=""
 
+cd "$INSTALL_DIR"
+
 current=$(git symbolic-ref -q --short HEAD || git describe --tags --exact-match)
 release=$(git describe --tags "$(git rev-list --tags --max-count=1)")
 
@@ -25,6 +27,8 @@ if [ ! "$current" = "$release" ]; then
 		echo "Error: can't checkout $release, use 'install_dev.sh' if developing"
 		exit 1
 	fi
+else
+	echo "Installing $release (as previous)..." 1>&2
 fi
 
 for binpath in $binpaths; do
