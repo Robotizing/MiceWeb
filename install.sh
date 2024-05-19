@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Installation script for MiceWeb (dev). It copies $bin to one of the directories stored in $binpaths.
+# Installation script for MiceWeb (release). It copies $bin to one of the directories stored in $binpaths.
 
 miceweb backup >/dev/null
 
@@ -12,6 +12,20 @@ binpaths="/usr/local/bin /usr/bin"
 # This variable contains a nonzero length string in case the script fails
 # because of missing write permissions.
 is_write_perm_missing=""
+
+current=$(git symbolic-ref -q --short HEAD || git describe --tags --exact-match)
+release=$(git describe --tags "$(git rev-list --tags --max-count=1)")
+
+if [ ! "$current" = "$release" ]; then
+	if git checkout --quiet "$release"; then
+		echo "Installing $release..." 1>&2
+	elif [ ! "$current" = "master" ]; then
+		echo "Installing $current..." 1>&2
+	else
+		echo "Error: can't checkout $release, use 'install_dev.sh' if developing"
+		exit 1
+	fi
+fi
 
 for binpath in $binpaths; do
 	cp --no-clobber "$binpath/miceweb" "$binpath/miceweb.bak" 2>/dev/null
