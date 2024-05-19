@@ -13,6 +13,13 @@ binpaths="/usr/local/bin /usr/bin"
 # because of missing write permissions.
 is_write_perm_missing=""
 
+cd "$INSTALL_DIR"
+
+if ! git symbolic-ref -q --short HEAD; then
+	echo "You are not currently on a branch, consider to use 'install.sh'" 1>&2
+	exit 1
+fi
+
 for binpath in $binpaths; do
 	cp --no-clobber "$binpath/miceweb" "$binpath/miceweb.bak" 2>/dev/null
 	if cp "$bin" "$binpath/miceweb" ; then
