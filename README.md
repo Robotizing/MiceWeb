@@ -11,7 +11,7 @@
 
 ## Installation (Linux, macOS):
 
-1. Install [Git](https://git-scm.com/downloads/), [IPFS CLI](https://docs.ipfs.io/install/command-line/).
+1. Install [Git](https://git-scm.com/downloads/), [IPFS CLI](https://docs.ipfs.tech/install/command-line/).
 
 2. Open a terminal and run `git clone https://github.com/Robotizing/MiceWeb && MiceWeb/install.sh` (also, there is `update.sh` available).
 
@@ -79,6 +79,6 @@ Run `miceweb talks`, and welcome to MiceWeb Talks.
 
 MiceWeb tries to do best to save web pages. However, you still have to check saved snapshots of important pages.
 
-Construct [RatBrowser](http://ratbrowser.com) to save browser-generated pages.
+Construct [RatBrowser](https://ratbrowser.com) to save browser-generated pages.
 
 Use [SaveSites](https://github.com/defder-su/SaveSites) to save web sites entirely.
