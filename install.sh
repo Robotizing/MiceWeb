@@ -15,13 +15,14 @@ is_write_perm_missing=""
 
 cd "$INSTALL_DIR"
 
+branch=$(git symbolic-ref -q --short HEAD)
 current=$(git symbolic-ref -q --short HEAD || git describe --tags --exact-match)
 release=$(git describe --tags "$(git rev-list --tags --max-count=1)")
 
 if [ ! "$current" = "$release" ]; then
 	if git checkout --quiet "$release"; then
 		echo "Installing $release..." 1>&2
-	elif [ ! "$current" = "master" ]; then
+	elif [ -z "$branch" ]; then
 		echo "Installing $current..." 1>&2
 	else
 		echo "Error: can't checkout $release, use 'install_dev.sh' if developing"

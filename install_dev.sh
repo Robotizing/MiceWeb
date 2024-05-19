@@ -15,7 +15,11 @@ is_write_perm_missing=""
 
 cd "$INSTALL_DIR"
 
-if ! git symbolic-ref -q --short HEAD; then
+branch=$(git symbolic-ref -q --short HEAD)
+
+if [ -n "$branch" ]; then
+	echo "Installing $branch..." 1>&2
+else
 	echo "You are not currently on a branch, consider to use 'install.sh'" 1>&2
 	exit 1
 fi
