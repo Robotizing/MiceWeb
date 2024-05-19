@@ -28,7 +28,7 @@ if [ $RET -ne 0 ]; then
 	echo "" 1>&2
 	exit 1
 fi
-"$INSTALL_DIR/install.sh"
+"$INSTALL_DIR/install_dev.sh"
 #NEWVER="$(miceweb version 2>/dev/null)"
 #if [ "$OLDVER" != "$NEWVER" ]; then
 #	echo "Updated from v.$OLDVER to v.$NEWVER"
