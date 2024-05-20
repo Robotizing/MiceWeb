@@ -2276,8 +2276,8 @@ check() {
 	
 	local URL0="$(_url_but_fragment "$URL")"
 	
-	local SIMURL="$URL0"
-	local SIMURLs=()
+	#local SIMURL="$URL0"
+	#local SIMURLs=()
 	
 	if [[ "$URL" != "urls" ]]; then
 		HASH=$(_hash "$URL" 2>/dev/null)
@@ -2307,8 +2307,8 @@ check() {
 			local SIMHASH=$(_hash "$I")
 			if _safe ipfs files cp //MiceWeb/pages/$SIMHASH /$MFS_PRESENT_ADDR/$SIMHASH; then
 				if [[ "$I" != "$URL0" ]]; then
-					SIMURL="$I"
-					SIMURLs+=("$I")
+					#SIMURL="$I"
+					#SIMURLs+=("$I")
 					((CNT++))
 				fi
 			fi
@@ -2316,7 +2316,7 @@ check() {
 		if _has_url_fragment "$URL"; then
 			local SIMHASH=$(_hash_string "$URL")
 			if _safe ipfs files cp //MiceWeb/pages/$SIMHASH /$MFS_PRESENT_ADDR/$SIMHASH; then
-				SIMURLs+=("$URL")
+				#SIMURLs+=("$URL")
 				((CNT++))
 			fi
 		fi
