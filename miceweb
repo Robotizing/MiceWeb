@@ -3997,10 +3997,10 @@ urls() {
 			exit 127
 		fi
 		if [[ "$BASE" != "" ]]; then
-			_cat_file "$FIL" | htmlq --base="$BASE" --attribute href a | grep "$GREP" | _skip_duplicates
+			_cat_file "$FIL" | htmlq --base="$BASE" --attribute href a | grep "$GREP" | _grep_supported_urls | _skip_duplicates
 		else
 			_tip "use '--base' attribute to handle relative links"
-			_cat_file "$FIL" | htmlq --detect-base --attribute href a | grep "$GREP" | _skip_duplicates
+			_cat_file "$FIL" | htmlq --detect-base --attribute href a | grep "$GREP" | _grep_supported_urls | _skip_duplicates
 		fi
 	else
 		if [[ "$BASE" != "" ]]; then
@@ -4035,7 +4035,7 @@ urls() {
 				done
 			done | grep "$GREP" | _skip_duplicates
 		else
-			_cat_file "$FIL" "$GREP" | _skip_duplicates | _grep_supported_urls
+			_cat_file "$FIL" "$GREP" | _grep_supported_urls | _skip_duplicates
 		fi
 	fi
 }
