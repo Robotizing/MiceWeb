@@ -3978,7 +3978,7 @@ urls() {
 			fi
 		else
 			if [ $_warnings -eq 1 ]; then
-				>&2 echo "The MiceWeb library has no pages"
+				>&2 echo "Error: no pages found, check disk space and restart IPFS daemon"
 			fi
 		fi
 		return
