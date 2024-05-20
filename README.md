@@ -78,7 +78,7 @@ It's possible to have several libraries on a single machine by running [several 
 
 Run `miceweb commands` to see list of commands.
 
-Run `miceweb talks`, and welcome to MiceWeb Talks.
+Run `miceweb talks`, and welcome to [MiceWeb Talks](https://proxy.zeronet.dev/1MiceWebdn35s6pUd3EM54uNveUJNSHsMr/?Main).
 
 ---
 
