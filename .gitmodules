@@ -10,3 +10,6 @@
 [submodule "submodules/gemget"]
 	path = submodules/gemget
 	url = https://github.com/makeworld-the-better-one/gemget
+[submodule "submodules/yq"]
+	path = submodules/yq
+	url = https://github.com/kislyuk/yq
