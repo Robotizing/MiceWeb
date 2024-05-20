@@ -30,7 +30,7 @@
 
 ## Usage:
 
-Open a terminal and run `miceweb` with arguments.
+Open a terminal and run `miceweb help` to get acquainted.
 
 ### List snapshots (clickable), and save:
 `miceweb http://example.com`
@@ -74,9 +74,7 @@ It's possible to have several libraries on a single machine by running [several 
 
 ---
 
-## Help:
-
-Run `miceweb commands` to see list of commands.
+## Community:
 
 Run `miceweb talks`, and welcome to [MiceWeb Talks](https://proxy.zeronet.dev/1MiceWebdn35s6pUd3EM54uNveUJNSHsMr/?Main).
 
