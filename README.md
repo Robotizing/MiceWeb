@@ -44,7 +44,7 @@ Open a terminal and run `miceweb help` to get acquainted.
 
 Run `miceweb commands` to see the possibilities.
 
-### Save:
+### Save pages:
 `miceweb save http://www.example.com/page.htm`
 
 `miceweb save urls collection.txt`
