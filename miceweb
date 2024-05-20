@@ -2532,6 +2532,7 @@ Version: ${_SUB_VERSION}
 
 Usage:
   ${_ME} <URL|SHA-1|zite|snapshot>
+  ${_ME} <URL|SHA-1> <local/ipfs/ipns/zeronet path>
   ${_ME} <command> [--<command-options>] [<arguments>]
 
 Help:
