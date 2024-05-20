@@ -4,7 +4,7 @@
 
 ## Features:
 
-- Save web page by URL to the MiceWeb Library, stored in IPFS [MFS](https://docs.ipfs.tech/concepts/file-systems/#mutable-file-system-mfs).
+- Save web page by URL to local MiceWeb library, stored in IPFS [MFS](https://docs.ipfs.tech/concepts/file-systems/#mutable-file-system-mfs).
 - Support following URL schemes: `http`, `https`, `gopher`, `gemini`, `ftp`, `ftps`, `ipfs`, `ipns`, `git`.
 - Share saved versions.
 
@@ -32,8 +32,17 @@
 
 Open a terminal and run `miceweb` with arguments.
 
-### Save, then present:
+### List snapshots (clickable), and save:
 `miceweb http://example.com`
+
+### List URLs, stored in the MiceWeb library:
+`miceweb urls`
+
+---
+
+## Advanced:
+
+Run `miceweb commands` to see the possibilities.
 
 ### Save:
 `miceweb save http://www.example.com/page.htm`
@@ -46,9 +55,6 @@ Open a terminal and run `miceweb` with arguments.
 `miceweb present http://www.example.com/page.htm`
 
 `miceweb present urls collection.txt --grep=stackoverflow.com`
-
-### List URLs, stored in the MiceWeb Library:
-`miceweb urls`
 
 ---
 
