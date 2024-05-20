@@ -3081,13 +3081,13 @@ present() {
 		CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_PAGE_ADDR)"
 		if [ "$CID" != "" ]; then
 			echo "/ipfs/$CID"
-			local COUNT=0
-			for I in $(_safe_with_warnings ipfs files ls /$MFS_PAGE_ADDR); do
-				if [[ $I != *.* ]]; then
-					((COUNT++))
-				fi
-			done
-			local STAT="NumVersions: $COUNT"
+			#local COUNT=0
+			#for I in $(_safe_with_warnings ipfs files ls /$MFS_PAGE_ADDR); do
+			#	if [[ $I != *.* ]]; then
+			#		((COUNT++))
+			#	fi
+			#done
+			#local STAT="NumVersions: $COUNT"
 			>&2 echo ""
 			if [ "$GATEWAY" != "" ]; then
 				>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
@@ -3109,8 +3109,8 @@ present() {
 				#	>&2 echo " and 'ipfs config Reprovider.Strategy pinned'"
 				#fi
 			fi
-			>&2 echo ""
-			>&2 echo "$STAT"
+			#>&2 echo ""
+			#>&2 echo "$STAT"
 			return 0
 		else
 			return 1
@@ -3220,17 +3220,17 @@ present() {
 		local STAT=""
 		local COUNT=0
 		if [ "$HASH" != "" ]; then
-			for I in $(_safe_with_warnings ipfs files ls //MiceWeb/pages/$HASH); do
-				if [[ $I != *.* ]]; then
-					((COUNT++))
-				fi
-			done
-			STAT="NumVersions: $COUNT"
-			if [[ $CNT -eq 0 && $COUNT -eq 0 ]]; then
-				>&2 echo ""
-				>&2 echo "There are no snapshots to view"
-				return 0
-			fi
+			#for I in $(_safe_with_warnings ipfs files ls //MiceWeb/pages/$HASH); do
+			#	if [[ $I != *.* ]]; then
+			#		((COUNT++))
+			#	fi
+			#done
+			#STAT="NumVersions: $COUNT"
+			#if [[ $CNT -eq 0 && $COUNT -eq 0 ]]; then
+			#	>&2 echo ""
+			#	>&2 echo "There are no snapshots to view"
+			#	return 0
+			#fi
 			>&2 echo ""
 			if [ "$GATEWAY" != "" ]; then
 				>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" " in a browser on the local machine"
@@ -3252,6 +3252,8 @@ present() {
 			else
 				_tip_run_ipfs_daemon
 			fi
+			#>&2 echo ""
+			#>&2 echo "$STAT"
 		else
 			>&2 echo ""
 			>&2 echo "There is a content identifier of current pages of all the MiceWeb library"
@@ -3269,9 +3271,9 @@ present() {
 			fi
 			COUNT=$(_safe_with_warnings ipfs files ls //MiceWeb/pages | grep ^[0-9a-f] | wc -l)
 			STAT="NumURLs: $COUNT"
+			>&2 echo ""
+			>&2 echo "$STAT"
 		fi
-		>&2 echo ""
-		>&2 echo "$STAT"
 		if [ "$HASH" != "" ]; then
 			local PAYATT=""
 			if [ $CNT -ge 2 ]; then
