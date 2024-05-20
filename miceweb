@@ -451,7 +451,7 @@ done
 ###############################################################################
 
 # Declare the $_DEFINED_SUBCOMMANDS array.
-_DEFINED_SUBCOMMANDS=()
+_DEFINED_SUBCOMMANDS=(backup check cleanup commands daemon find hash help history import log present remove request resolve respond save snapshots talks url urls version zites)
 
 # _main()
 #
@@ -469,23 +469,24 @@ _main() {
     _SUBCOMMAND="${DEFAULT_SUBCOMMAND}"
   fi
 
-  for __name in $(declare -F)
-  do
+  #for __name in $(declare -F)
+  #do
     # Each element has the format `declare -f function_name`, so set the name
     # to only the 'function_name' part of the string.
-    local _function_name
-    _function_name=$(printf "%s" "${__name}" | awk '{ print $3 }')
+  #  local _function_name
+  #  _function_name=$(printf "%s" "${__name}" | awk '{ print $3 }')
 
-    if ! { [[ -z "${_function_name:-}"                      ]] ||
-           [[ "${_function_name}" =~ ^_(.*)                 ]] ||
-           [[ "${_function_name}" == "bats_readlinkf"       ]] ||
-           [[ "${_function_name}" == "describe"             ]] ||
-           [[ "${_function_name}" == "shell_session_update" ]]
-    }
-    then
-      _DEFINED_SUBCOMMANDS+=("${_function_name}")
-    fi
-  done
+  #  if ! { [[ -z "${_function_name:-}"                      ]] ||
+  #         [[ "${_function_name}" =~ ^_(.*)                 ]] ||
+  #         [[ "${_function_name}" == "bats_readlinkf"       ]] ||
+  #         [[ "${_function_name}" == "describe"             ]] ||
+  #         [[ "${_function_name}" == "shell_session_update" ]]
+  #  }
+  #  then
+  #    _DEFINED_SUBCOMMANDS+=("${_function_name}")
+  #  echo -n "${_function_name} "
+  #  fi
+  #done
 
   # If the subcommand is defined, run it, otherwise return an error.
   if _contains "${_SUBCOMMAND}" "${_DEFINED_SUBCOMMANDS[@]:-}"
