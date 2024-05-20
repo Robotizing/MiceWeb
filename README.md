@@ -5,6 +5,7 @@
 ## Features:
 
 - Save web page by URL to the MiceWeb Library, stored in IPFS [MFS](https://docs.ipfs.tech/concepts/file-systems/#mutable-file-system-mfs).
+- Support following URL schemes: `http`, `https`, `gopher`, `gemini`, `ftp`, `ftps`, `ipfs`, `ipns`, `git`.
 - Share saved versions.
 
 ---
@@ -61,12 +62,6 @@ It's possible to have several libraries on a single machine by running [several 
 
 ---
 
-## Supported URLs:
-
-MiceWeb supports following URL schemes: `http`, `https`, `gopher`, `gemini`, `ftp`, `ftps`, `ipfs`, `ipns`, `git`.
-
----
-
 ## Help:
 
 Run `miceweb commands` to see list of commands.
@@ -79,6 +74,4 @@ Run `miceweb talks`, and welcome to MiceWeb Talks.
 
 MiceWeb tries to do best to save web pages. However, you still have to check saved snapshots of important pages.
 
-Construct [RatBrowser](https://ratbrowser.com) to save browser-generated pages.
-
-Use [SaveSites](https://github.com/defder-su/SaveSites) to save web sites entirely.
+Construct [RatBrowser](https://ratbrowser.com) to save browser-generated pages. Use [SaveSites](https://github.com/defder-su/SaveSites) to save web sites entirely.
