@@ -4002,38 +4002,41 @@ urls() {
 			_tip "use '--base' attribute to handle relative links"
 			_cat_file "$FIL" | htmlq --detect-base --attribute href a | grep "$GREP" | _skip_duplicates
 		fi
-	elif [[ $FORMAT == json ]]; then
-		if [[ "$BASE" != "" ]]; then
-			>&2 echo "Attribute --base is only supported for html files"
-			exit 1
-		fi
-		for I in $(_cat_json_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
-			IFS=' ' read -ra IARR <<< "$I"
-			for J in "${IARR[@]}"; do
-				if _check_url "$J"; then
-					echo "${J%.}"
-				fi
-			done
-		done | grep "$GREP" | _skip_duplicates
-	elif [[ $FORMAT == xml ]]; then
-		if [[ "$BASE" != "" ]]; then
-			>&2 echo "Attribute --base is only supported for html files"
-			exit 1
-		fi
-		for I in $(_cat_xml_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
-			IFS=' ' read -ra IARR <<< "$I"
-			for J in "${IARR[@]}"; do
-				if _check_url "$J"; then
-					echo "${J%.}"
-				fi
-			done
-		done | grep "$GREP" | _skip_duplicates
 	else
 		if [[ "$BASE" != "" ]]; then
 			>&2 echo "Attribute --base is only supported for html files"
 			exit 1
 		fi
-		_cat_file "$FIL" "$GREP" | awk '!a[$0]++; fflush()'
+		if [[ $FORMAT == json ]]; then
+			for I in $(_cat_json_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
+				IFS=' ' read -ra IARR <<< "$I"
+				for J in "${IARR[@]}"; do
+					if _check_url "$J"; then
+						echo "${J%.}"
+					fi
+				done
+			done | grep "$GREP" | _skip_duplicates
+		elif [[ $FORMAT == xml ]]; then
+			for I in $(_cat_xml_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
+				IFS=' ' read -ra IARR <<< "$I"
+				for J in "${IARR[@]}"; do
+					if _check_url "$J"; then
+						echo "${J%.}"
+					fi
+				done
+			done | grep "$GREP" | _skip_duplicates
+		elif [[ $FORMAT == md ]]; then
+			for I in $(_cat_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
+				IFS=' ' read -ra IARR <<< "$I"
+				for J in "${IARR[@]}"; do
+					if _check_url "$J"; then
+						echo "${J%.}"
+					fi
+				done
+			done | grep "$GREP" | _skip_duplicates
+		else
+			_cat_file "$FIL" "$GREP" | _skip_duplicates | _grep_supported_urls
+		fi
 	fi
 }
 
