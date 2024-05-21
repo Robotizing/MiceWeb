@@ -10,7 +10,7 @@
 
 ---
 
-## Installation (Linux, macOS):
+## Installation (macOS, Linux, BSD):
 
 1. Install [Git](https://git-scm.com/downloads/), [IPFS CLI](https://docs.ipfs.tech/install/command-line/).
 
