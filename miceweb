@@ -1784,7 +1784,7 @@ _upgrade() {
 				fi
 				_exit_1 printf "Can't upgrade the MiceWeb library\n"
 			else
-				_exit_1 printf "MiceWeb $VER+ is required to work with the current MiceWeb Library\nThe current app version is $APPVER\nRun './update.sh' in the MiceWeb repository\n"
+				_exit_1 printf "MiceWeb $VER+ is required to work with the current MiceWeb library\nThe current app version is $APPVER\nRun './update.sh' in the MiceWeb repository\n"
 			fi
 		fi
 	fi
