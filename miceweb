@@ -67,7 +67,7 @@ _ME="$(basename "${0}")"
 # Manually set this to to current version of the program. Adhere to the
 # semantic versioning specification: http://semver.org
 _VERSION="0.3"	#WARNING: affects _upgrade()
-_SUB_VERSION="${_VERSION}.4"
+_SUB_VERSION="${_VERSION}.5"
 
 # MiceWeb Talks
 _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
@@ -731,7 +731,7 @@ _git() {
 	local RET=1
 	if [[ $GITERR -eq 0 ]]; then
 		local CID="$(_ipfs_add_directory_to_mfs $MYTMPDIR $SAVE_MFS_ADDR/$SUBDIR --hidden)"
-		if [ $? -eq 0 ]; then
+		if [[ "$CID" != "" ]]; then
 			echo "$SAVE_HASH/$SUBDIR"
 			RET=$GITERR
 		fi
