@@ -4031,7 +4031,8 @@ urls() {
 				done
 			done | grep "$GREP" | _skip_duplicates
 		elif [[ $FORMAT == md ]]; then
-			for I in $(_cat_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
+			#TODO: grab with titles sed -En '/\[/{s/[^[]*(\[[^)]*\))[^[]*/\1/g;/\[[^[]*\[/s/\[[^)]*\)/\n&/2g;p}' | grep -oE '\[.*\]\(.*\)'
+			for I in $(_cat_file "$FIL" | grep -Eo "(http|https|gopher|gemini|ftp|ftps|ipfs|ipns|git)://[a-zA-Z0-9./?=_%:-]*"); do
 				IFS=' ' read -ra IARR <<< "$I"
 				for J in "${IARR[@]}"; do
 					if _check_url "$J"; then
