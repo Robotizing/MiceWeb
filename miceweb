@@ -2976,9 +2976,7 @@ present() {
 			fi
 			
 			if [ "$CID" != "" ]; then
-				if [[ "$SNAP" =~ -curl$ || "$SNAP" =~ -git$ || "$SNAP" =~ -media$ || "$SNAP" =~ -playlist$ ]]; then
-					echo "/ipfs/$CID/"
-				else
+				if [[ "$SNAP" =~ -wget$ || "$SNAP" =~ -archive$ ]]; then
 					echo -n "/ipfs/$CID/"
 					local suffix=""
 					local HASH=$(echo "$SNAP" | awk -F/ '{print $1}')
@@ -3006,6 +3004,8 @@ present() {
 						fi
 					fi
 					echo "$suffix"
+				else
+					echo "/ipfs/$CID/"
 				fi
 				if [ $_warnings -eq 1 ]; then
 					>&2 echo ""
