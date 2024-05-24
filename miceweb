@@ -3642,9 +3642,9 @@ save() {
 			elif [[ $URL == git://* ]]; then
 				_save_git $URL
 			else
-				if [[ "$URL" =~ ^'https://vk.com/video'-*[0-9]*_[0-9]*'?list='[0-9a-f]*$ ]]; then
-					URL=$(_url_but_query "$URL")
-				fi
+				#if [[ "$URL" =~ ^'https://vk.com/video'-*[0-9]*_[0-9]*'?list='[0-9a-f]*$ ]]; then
+				#	URL=$(_url_but_query "$URL")
+				#fi
 				if [[ $URL == http*://* ]]; then
 					_save_files $URL
 					_save_media $URL
