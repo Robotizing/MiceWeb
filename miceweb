@@ -4093,7 +4093,7 @@ zites() {
 		fi
 	done
 	if [[ "$FIL" == "" ]]; then
-		_safe ipfs files ls //MiceWeb/zites | grep "$GREP"
+		_safe ipfs files ls //MiceWeb/zites | grep "$GREP" | grep ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$
 		return $?
 	fi
 	for I in $(_cat_file "$FIL" "$GREP"); do
