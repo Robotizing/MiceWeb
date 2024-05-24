@@ -3306,9 +3306,11 @@ present() {
 describe "remove" <<HEREDOC
 Usage:
   ${_ME} remove <snapshot>
+  ${_ME} remove <zite>
 
 Description:
   Remove saved snapshot
+  Remove zite from the MiceWeb library
 HEREDOC
 remove() {
 	_upgrade
@@ -3333,6 +3335,10 @@ remove() {
 			_remove_dir $MFS_SNAP_ADDR
 		fi
 		_remove_file "$MFS_SNAP_ADDR.log"
+		return 0
+	elif [[ "$SNAP" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
+		local MFS_SNAP_ADDR="/MiceWeb/zites/$SNAP"
+		_remove_dir $MFS_SNAP_ADDR
 		return 0
 	fi
 	>&2 echo "This command requires snapshot as a parameter"
