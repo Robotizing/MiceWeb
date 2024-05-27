@@ -538,7 +538,7 @@ _main() {
 		_snapshots_and_save_or_import "$SOMETHING" | _echo_existing_zite_snapshots
 		_warn_empty_line
 		return 0
-	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
+	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		local SNAP="$SOMETHING"
 		if _safe_with_warnings ipfs files ls //MiceWeb/zites/$SNAP >/dev/null; then
 			_echo_existing_zite_snapshot $SNAP
@@ -2214,7 +2214,7 @@ check() {
 		return 1
 	fi
 	
-	if [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
+	if [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		local SNAP="$SOMETHING"
 		local MFS_SNAP_ADDR="/MiceWeb/zites/$SNAP"
 		local CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_SNAP_ADDR)"
@@ -2758,7 +2758,7 @@ log() {
 			_safe_with_warnings ipfs files read //MiceWeb/pages/$SNAP.log
 			return $?
 		fi
-	elif [[ "$SNAP" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
+	elif [[ "$SNAP" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		_safe_with_warnings ipfs files read //MiceWeb/zites/$SNAP.log
 		return $?
 	fi
@@ -3036,7 +3036,7 @@ present() {
 		return 1
 	fi
 	
-	if [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
+	if [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		local SNAP="$SOMETHING"
 		local MFS_SNAP_ADDR="/MiceWeb/zites/$SNAP"
 		local CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_SNAP_ADDR)"
@@ -3314,31 +3314,33 @@ Description:
 HEREDOC
 remove() {
 	_upgrade
-	local SNAP="$1"
-	if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
+	local SOMETHING="$1"
+	local MFS_ADDR=
+	if [[ "$SOMETHING" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
+		local SNAP="$SOMETHING"
 		if [[ "$SNAP" != *.* ]]; then
-			local MFS_SNAP_ADDR="/MiceWeb/pages/$SNAP"
-			if ! _remove_file $MFS_SNAP_ADDR; then
-				_remove_dir $MFS_SNAP_ADDR
+			MFS_ADDR="/MiceWeb/pages/$SNAP"
+			if ! _remove_file $MFS_ADDR; then
+				_remove_dir $MFS_ADDR
 			fi
 			if [[ "$SNAP" == *-import ]]; then
-				if ! _remove_file "$MFS_SNAP_ADDR"ing; then
-					_remove_dir "$MFS_SNAP_ADDR"ing
+				if ! _remove_file "$MFS_ADDR"ing; then
+					_remove_dir "$MFS_ADDR"ing
 				fi
 			fi
-			_remove_file "$MFS_SNAP_ADDR.log"
+			_remove_file "$MFS_ADDR.log"
 			return 0
 		fi
-	elif [[ "$SNAP" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-zite$ ]]; then
-		local MFS_SNAP_ADDR="/MiceWeb/zites/$SNAP"
-		if ! _remove_file $MFS_SNAP_ADDR; then
-			_remove_dir $MFS_SNAP_ADDR
+	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-. ]]; then
+		MFS_ADDR="/MiceWeb/zites/$SOMETHING"
+		if ! _remove_file $MFS_ADDR; then
+			_remove_dir $MFS_ADDR
 		fi
-		_remove_file "$MFS_SNAP_ADDR.log"
+		_remove_file "$MFS_ADDR.log"
 		return 0
-	elif [[ "$SNAP" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
-		local MFS_SNAP_ADDR="/MiceWeb/zites/$SNAP"
-		_remove_dir $MFS_SNAP_ADDR
+	elif [[ "$SOMETHING" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
+		MFS_ADDR="/MiceWeb/zites/$SOMETHING"
+		_remove_dir $MFS_ADDR
 		return 0
 	fi
 	>&2 echo "This command requires snapshot as a parameter"
