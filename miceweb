@@ -2755,11 +2755,11 @@ log() {
 	local SNAP="$1"
 	if [[ "$SNAP" =~ ^[0-9a-f]{40}/[0-9]{8}GMT[0-9]{6}-. ]]; then
 		if [[ "$SNAP" != *.* ]]; then
-			_safe_with_warnings ipfs files read //MiceWeb/pages/$SNAP.log
+			_safe_with_warnings ipfs files read //MiceWeb/pages/$SNAP.log | tail -n +2
 			return $?
 		fi
 	elif [[ "$SNAP" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}/[0-9]{8}GMT[0-9]{6}-. ]]; then
-		_safe_with_warnings ipfs files read //MiceWeb/zites/$SNAP.log
+		_safe_with_warnings ipfs files read //MiceWeb/zites/$SNAP.log | tail -n +2
 		return $?
 	fi
 	>&2 echo "This command requires snapshot as a parameter"
