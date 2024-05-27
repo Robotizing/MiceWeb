@@ -2634,108 +2634,111 @@ import() {
 		local SUBDIR0="$SUBDIR"ing
 		SAVE_HASH=$HASH
 		SAVE_MFS_ADDR=$MFS_ADDR
-		_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
-		if [ $? -ne 0 ]; then
-			local CID=""
-			if [[ "$IMPPATH" == /ipfs/* || "$IMPPATH" == /ipns/* ]]; then
-				local ADDR=""
-				local RESOLVED=""
-				if [[ "$IMPPATH" == /ipns/* ]]; then
-					ADDR="/ipfs/$(_resolve_ipns "${IMPPATH#/ipns/}")"
-					>&2 echo "Resolved to $ADDR"
-					RESOLVED=", which resolved to $ADDR"
-				else
-					ADDR="$IMPPATH"
-				fi
-				if [[ "$ADDR" != "" ]]; then
-					local ADDR2=$(_safe_with_warnings ipfs resolve --timeout=60s "${ADDR#/ipfs/}")
-					if [[ "$ADDR2" != "" ]]; then
-						if _safe_with_warnings ipfs files cp /$ADDR2 /$MFS_ADDR/$SUBDIR0; then
-							if [[ "${ADDR%/}" != "$ADDR2" ]]; then
-								>&2 echo "Resolved to $ADDR2"
-								if [[ "$RESOLVED" == "" ]]; then
-									RESOLVED=", which resolved to $ADDR2"
-								else
-									RESOLVED="$RESOLVED, then to $ADDR2"
-								fi
-							fi
-							CID="${ADDR2#/ipfs/}"
-							echo "$SAVE_HASH/$SUBDIR"
-							printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
-							if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
-								>&2 echo "Getting content from IPFS Network..."
-								if ipfs dag stat $CID 1>&2; then
-									if _safe_with_warnings ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
-										>&2 echo "Done"
-									else
-										>&2 echo "Done, but could not confirm it"
-									fi
-									return 0
-								else
-									>&2 echo "Incompleted"
-								fi
-							fi
-							if [[ "$(_safe_with_warnings ipfs files stat --format="<type>" /$MFS_ADDR/$SUBDIR0)" == "file" ]]; then
-								>&2 echo "Run 'ipfs get $CID --output=/dev/null' to ensure availability"
+		while _safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
+		do
+			DT=$(_current_timestamp)
+			SUBDIR="$DT-$SNAPTYPE"
+		done
+		local CID=""
+		if [[ "$IMPPATH" == /ipfs/* || "$IMPPATH" == /ipns/* ]]; then
+			local ADDR=""
+			local RESOLVED=""
+			if [[ "$IMPPATH" == /ipns/* ]]; then
+				ADDR="/ipfs/$(_resolve_ipns "${IMPPATH#/ipns/}")"
+				>&2 echo "Resolved to $ADDR"
+				RESOLVED=", which resolved to $ADDR"
+			else
+				ADDR="$IMPPATH"
+			fi
+			if [[ "$ADDR" != "" ]]; then
+				local ADDR2=$(_safe_with_warnings ipfs resolve --timeout=60s "${ADDR#/ipfs/}")
+				if [[ "$ADDR2" != "" ]]; then
+					if _safe_with_warnings ipfs files cp /$ADDR2 /$MFS_ADDR/$SUBDIR0; then
+						if [[ "${ADDR%/}" != "$ADDR2" ]]; then
+							>&2 echo "Resolved to $ADDR2"
+							if [[ "$RESOLVED" == "" ]]; then
+								RESOLVED=", which resolved to $ADDR2"
 							else
-								>&2 echo "Run 'ipfs get $CID' to ensure availability"
+								RESOLVED="$RESOLVED, then to $ADDR2"
 							fi
-							return 0
 						fi
+						CID="${ADDR2#/ipfs/}"
+						echo "$SAVE_HASH/$SUBDIR"
+						printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
+						_update_base_for_added_url "$URL"
+						if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
+							>&2 echo "Getting content from IPFS Network..."
+							if ipfs dag stat $CID 1>&2; then
+								if _safe_with_warnings ipfs files mv /$MFS_ADDR/$SUBDIR0 /$MFS_ADDR/$SUBDIR; then
+									_update_base_for_added_url "$URL"
+									>&2 echo "Done"
+								else
+									>&2 echo "Done, but could not confirm it"
+								fi
+								return 0
+							else
+								>&2 echo "Incompleted"
+							fi
+						fi
+						if [[ "$(_safe_with_warnings ipfs files stat --format="<type>" /$MFS_ADDR/$SUBDIR0)" == "file" ]]; then
+							>&2 echo "Run 'ipfs get $CID --output=/dev/null' to ensure availability"
+						else
+							>&2 echo "Run 'ipfs get $CID' to ensure availability"
+						fi
+						return 0
 					fi
 				fi
-			elif [[ "$IMPPATH" == /zeronet/* ]]; then
-				ADDR=$(_resolve_zeronet "${IMPPATH#/zeronet/}")
-				if [[ $ADDR != "" ]]; then
-					local datadir="$(_zeronet_data)"
-					if [ -d "$datadir" ]; then
-						local path="$datadir/$ADDR"
-						if [ -e "$path" ]; then
-							if [ -d "$path" ]; then
-								CID="$(_ipfs_add_directory_to_mfs "$path" $SAVE_MFS_ADDR/$SUBDIR)"
-							else
-								CID="$(_ipfs_add_file_to_mfs "$path" $SAVE_MFS_ADDR/$SUBDIR)"
-							fi
-							if [[ "$CID" != "" ]]; then
-								echo "$SAVE_HASH/$SUBDIR"
-								printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
-								return 0
-							fi
+			fi
+		elif [[ "$IMPPATH" == /zeronet/* ]]; then
+			ADDR=$(_resolve_zeronet "${IMPPATH#/zeronet/}")
+			if [[ $ADDR != "" ]]; then
+				local datadir="$(_zeronet_data)"
+				if [ -d "$datadir" ]; then
+					local path="$datadir/$ADDR"
+					if [ -e "$path" ]; then
+						if [ -d "$path" ]; then
+							CID="$(_ipfs_add_directory_to_mfs "$path" $SAVE_MFS_ADDR/$SUBDIR)"
 						else
-							>&2 echo "Error: path not found, visit http://127.0.0.1:43110/$ADDR in a browser and try again"
-							return 1
+							CID="$(_ipfs_add_file_to_mfs "$path" $SAVE_MFS_ADDR/$SUBDIR)"
+						fi
+						if [[ "$CID" != "" ]]; then
+							echo "$SAVE_HASH/$SUBDIR"
+							printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
+							_update_base_for_added_url "$URL"
+							return 0
 						fi
 					else
-						>&2 echo "Error: '$datadir' not found,"
-						>&2 echo " check ZERONET_PATH environment variable"
+						>&2 echo "Error: path not found, visit http://127.0.0.1:43110/$ADDR in a browser and try again"
 						return 1
 					fi
 				else
+					>&2 echo "Error: '$datadir' not found,"
+					>&2 echo " check ZERONET_PATH environment variable"
 					return 1
 				fi
-			elif [ -e "$IMPPATH" ]; then
-				if [ -d "$IMPPATH" ]; then
-					CID="$(_ipfs_add_directory_to_mfs "$IMPPATH" $SAVE_MFS_ADDR/$SUBDIR)"
-				else
-					CID="$(_ipfs_add_file_to_mfs "$IMPPATH" $SAVE_MFS_ADDR/$SUBDIR)"
-				fi
-				if [[ "$CID" != "" ]]; then
-					echo "$SAVE_HASH/$SUBDIR"
-					local IMPPATH0=${IMPPATH%/}
-					local IMPBASE=${IMPPATH0%/*}
-					local IMPBASEDIR=${IMPBASE##*/}
-					local IMPNAME=${IMPPATH0##*/}
-					printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
-					#>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
-					#>&2 echo "Run 'miceweb $HASH/$SUBDIR' to present"
-					return 0
-				fi
 			else
-				>&2 echo "Error: $IMPPATH not found"
+				return 1
+			fi
+		elif [ -e "$IMPPATH" ]; then
+			if [ -d "$IMPPATH" ]; then
+				CID="$(_ipfs_add_directory_to_mfs "$IMPPATH" $SAVE_MFS_ADDR/$SUBDIR)"
+			else
+				CID="$(_ipfs_add_file_to_mfs "$IMPPATH" $SAVE_MFS_ADDR/$SUBDIR)"
+			fi
+			if [[ "$CID" != "" ]]; then
+				echo "$SAVE_HASH/$SUBDIR"
+				local IMPPATH0=${IMPPATH%/}
+				local IMPBASE=${IMPPATH0%/*}
+				local IMPBASEDIR=${IMPBASE##*/}
+				local IMPNAME=${IMPPATH0##*/}
+				printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPBASEDIR/$IMPNAME" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
+				_update_base_for_added_url "$URL"
+				#>&2 echo "Run 'miceweb present \"$URL\"' to view saved snapshots"
+				#>&2 echo "Run 'miceweb $HASH/$SUBDIR' to present"
+				return 0
 			fi
 		else
-			>&2 echo "Error: $SAVE_HASH/$SUBDIR is already exist"
-			return 1
+			>&2 echo "Error: $IMPPATH not found"
 		fi
 	fi
 	return 1
