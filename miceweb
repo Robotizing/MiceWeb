@@ -2396,6 +2396,8 @@ miceweb check urls
 miceweb check zites
 miceweb cleanup		Cleanup service data
 miceweb commands	Display the list of available commands
+miceweb count urls
+miceweb count zites
 miceweb find		Find saved web pages on the local machine
 miceweb hash		Calculate SHA-1 hash for URL (but fragment)
 miceweb help		Display help information
@@ -2416,7 +2418,7 @@ miceweb talks		Welcome to MiceWeb Talks in ZeroNet
 miceweb url		Return URL by SHA-1 hash
 miceweb urls		List URLs from file, or from the MiceWeb library
 miceweb version		Display the current program version
-miceweb zites		List zites from the MiceWeb library"
+miceweb zites		List zites from file, or from the MiceWeb library"
 }
 
 # count #####################################################################
