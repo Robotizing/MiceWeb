@@ -451,7 +451,7 @@ done
 ###############################################################################
 
 # Declare the $_DEFINED_SUBCOMMANDS array.
-_DEFINED_SUBCOMMANDS=(backup check cleanup commands daemon find hash help history import log present remove request resolve respond save snapshots talks url urls version zites)
+_DEFINED_SUBCOMMANDS=(backup check cleanup commands count daemon find hash help history import log present remove request resolve respond save snapshots talks url urls version zites)
 
 # _main()
 #
@@ -2417,6 +2417,34 @@ miceweb url		Return URL by SHA-1 hash
 miceweb urls		List URLs from file, or from the MiceWeb library
 miceweb version		Display the current program version
 miceweb zites		List zites from the MiceWeb library"
+}
+
+# count #####################################################################
+
+describe "count" <<HEREDOC
+Usage:
+  ${_ME} count urls [--grep=<expr.>] [<local/ipfs/ipns/zeronet file path>]
+  ${_ME} count zites [--grep=<expr.>] [<local/ipfs/ipns/zeronet file path>]
+
+Description:
+  Count URLs in file, or in the MiceWeb library
+  Count zites in file, or in the MiceWeb library
+HEREDOC
+count() {
+	if [[ "$1" == "urls" ]]; then
+		if [[ "$2" != "" ]]; then
+			urls --no-warnings "$2" "$3" "$4" "$5" "$6" "$7" | wc -l
+		else
+			_safe_with_warnings ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f] | wc -l
+		fi
+	elif [[ "$1" == "zites" ]]; then
+		zites "$2" "$3" "$4" "$5" "$6" "$7" | wc -l
+	else
+		>&2 _tip "run 'miceweb count urls' or 'miceweb count zites'"
+		>&2 echo ""
+		>&2 echo "NumURLs: $(count urls)"
+		>&2 echo "NumZites: $(count zites)"
+	fi
 }
 
 # find ########################################################################
