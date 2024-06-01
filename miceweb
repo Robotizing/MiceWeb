@@ -3956,21 +3956,27 @@ urls() {
 		fi
 	done
 	if [[ "$FIL" == "" ]]; then
-		if [ $_warnings -eq 1 ]; then
-			>&2 echo "This command takes file path as a parameter:"
-			>&2 echo " txt - contain URLs in separate lines"
-			>&2 echo " json - contain URLs in text fields"
-			>&2 echo " xml - contain URLs in text fields"
-			>&2 echo " htm, html - contain URLs in the 'href' attribute"
-			>&2 echo ""
+		if [[ "$GREP" == "" ]]; then
+			if [ $_warnings -eq 1 ]; then
+				>&2 echo "This command takes file path as a parameter:"
+				>&2 echo " txt - contain URLs in separate lines"
+				>&2 echo " json - contain URLs in text fields"
+				>&2 echo " xml - contain URLs in text fields"
+				>&2 echo " htm, html - contain URLs in the 'href' attribute"
+				>&2 echo ""
+			fi
 		fi
 		local CID="$(_safe ipfs files stat --hash //MiceWeb/pages/)"
 		if [[ "$CID" != "" ]]; then
 			local CACHE_DIR="$HOME/.miceweb/cache/urls/"
 			mkdir -p "$CACHE_DIR"
 			if declare -A URLs 2>/dev/null; then
-				if [ $_warnings -eq 1 ]; then
-					>&2 echo "There are URLs already in the MiceWeb library (see also 'miceweb history'):"
+				if [[ "$GREP" == "" ]]; then
+					if [ $_warnings -eq 1 ]; then
+						>&2 echo "There are URLs already in the MiceWeb library (see also 'miceweb history'):"
+					fi
+				else
+					_tip "be patient, it may take minutes"
 				fi
 				local HT="$HOME/.miceweb/cache/urls.hashtable"
 				if [ -e "$HT" ]; then
@@ -4024,9 +4030,7 @@ urls() {
 				done | grep "$GREP"
 			fi
 		else
-			if [ $_warnings -eq 1 ]; then
-				>&2 echo "Error: no pages found, check disk space and restart IPFS daemon"
-			fi
+			>&2 echo "Error: no pages found, check disk space and restart IPFS daemon"
 		fi
 		return
 	fi
