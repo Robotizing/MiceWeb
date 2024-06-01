@@ -1289,7 +1289,7 @@ _save_curl_tor() {
 	fi
 }
 _save_files() {
-	if [[ $1 == http*://drive.google.com/file/d/* || $1 == http*://drive.google.com/drive/* || $1 == http*://disk.yandex.ru/d/* || $1 == http*://vk.com/doc* ]]; then
+	if [[ $1 == http*://drive.google.com/file/d/* || $1 == http*://drive.google.com/drive/* || $1 == http*://disk.yandex.ru/d/* || $1 == http*://vk.com/doc* || $1 == http*://mega.nz/* ]]; then
 		>&2 echo "Warning: skipped downloading 'files', consider to download manually and import"
 	fi
 	return 1
