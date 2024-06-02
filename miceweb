@@ -1850,7 +1850,7 @@ _versions() {
 	fi
 	local HASH=$(_hash_string "$URL")
 	if [[ "$HASH" != "" ]]; then
-		for I in $(_safe ipfs files ls //MiceWeb/pages/$HASH | sed 's/^/'"$HASH"'\//')
+		for I in $(_safe ipfs files ls //MiceWeb/pages/$HASH | grep -E "^[0-9]{8}GMT[0-9]{6}\-" | sed 's/^/'"$HASH"'\//')
 		do
 			if [[ $I != *.* ]]; then
 				echo $I
