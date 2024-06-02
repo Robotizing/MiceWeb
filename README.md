@@ -16,7 +16,7 @@
 
 2. Open a terminal and run `git clone https://github.com/Robotizing/MiceWeb && MiceWeb/install.sh` (also, there is `update.sh` available).
 
-3. Optionally, install [wget](https://www.gnu.org/software/wget/), [curl](https://curl.se/), [gemget](https://github.com/makeworld-the-better-one/gemget/), [jq](https://stedolan.github.io/jq/download/), [yq](https://kislyuk.github.io/yq/#installation), [htmlq](https://github.com/mgdm/htmlq/), [torsocks](https://gitlab.torproject.org/tpo/core/torsocks), [Wayback Machine Downloader](https://github.com/ImportTaste/wayback-machine-downloader), [yt-dlp](https://github.com/yt-dlp/yt-dlp/), [ffmpeg and ffprobe](https://www.ffmpeg.org), and also [ZeroNet](https://en.wikipedia.org/wiki/ZeroNet).
+3. Optionally, install [wget](https://www.gnu.org/software/wget/), [curl](https://curl.se/), [gemget](https://github.com/makeworld-the-better-one/gemget/), [jq](https://stedolan.github.io/jq/download/), [yq](https://kislyuk.github.io/yq/#installation), [htmlq](https://github.com/mgdm/htmlq/), [torsocks](https://gitlab.torproject.org/tpo/core/torsocks), [Wayback Machine Downloader](https://github.com/ShiftaDeband/wayback-machine-downloader), [yt-dlp](https://github.com/yt-dlp/yt-dlp/), [ffmpeg and ffprobe](https://www.ffmpeg.org), and also [ZeroNet](https://en.wikipedia.org/wiki/ZeroNet).
 
 ---
 
