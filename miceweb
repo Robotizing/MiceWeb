@@ -619,6 +619,20 @@ _cat_json_file() {
 	fi
 }
 
+_cat_toml_file() {
+	if _command_exists tomlq; then
+		if _command_exists jq; then
+			_cat_file "$1" | tomlq | jq --raw-output '.. | strings'
+		else
+			>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
+			return 1
+		fi
+	else
+		>&2 _print_with_hyperlink "Error: tomlq is not installed (seeing " "https://kislyuk.github.io/yq/" ")"
+		return 1
+	fi
+}
+
 _cat_xml_file() {
 	if _command_exists xq; then
 		if _command_exists jq; then
@@ -629,6 +643,20 @@ _cat_xml_file() {
 		fi
 	else
 		>&2 _print_with_hyperlink "Error: xq is not installed (seeing " "https://kislyuk.github.io/yq/#installation" ")"
+		return 1
+	fi
+}
+
+_cat_yaml_file() {
+	if _command_exists yq; then
+		if _command_exists jq; then
+			_cat_file "$1" | yq | jq --raw-output '.. | strings'
+		else
+			>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
+			return 1
+		fi
+	else
+		>&2 _print_with_hyperlink "Error: yq is not installed (seeing " "https://kislyuk.github.io/yq/#installation" ")"
 		return 1
 	fi
 }
@@ -4066,8 +4094,26 @@ urls() {
 					fi
 				done
 			done | grep "$GREP" | _skip_duplicates
+		elif [[ $FORMAT == toml ]]; then
+			for I in $(_cat_toml_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
+				IFS=' ' read -ra IARR <<< "$I"
+				for J in "${IARR[@]}"; do
+					if _check_url "$J"; then
+						echo "${J%.}"
+					fi
+				done
+			done | grep "$GREP" | _skip_duplicates
 		elif [[ $FORMAT == xml ]]; then
 			for I in $(_cat_xml_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
+				IFS=' ' read -ra IARR <<< "$I"
+				for J in "${IARR[@]}"; do
+					if _check_url "$J"; then
+						echo "${J%.}"
+					fi
+				done
+			done | grep "$GREP" | _skip_duplicates
+		elif [[ $FORMAT == yml || $FORMAT == yaml ]]; then
+			for I in $(_cat_yaml_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
 				IFS=' ' read -ra IARR <<< "$I"
 				for J in "${IARR[@]}"; do
 					if _check_url "$J"; then
