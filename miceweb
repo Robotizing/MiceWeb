@@ -897,6 +897,19 @@ _ipfs_gateway() {	# Kubo v.0.15.0+
 	return $?
 }
 
+_mkdir_miceweb() {
+	_safe ipfs files mkdir --cid-version=0 //MiceWeb
+	if [[ "$1" != "" ]]; then
+		_safe ipfs files mkdir //MiceWeb/$1
+		if [[ "$2" != "" ]]; then
+			_safe ipfs files mkdir //MiceWeb/$1/$2
+			if [[ "$3" != "" ]]; then
+				_safe ipfs files mkdir //MiceWeb/$1/$2/$3
+			fi
+		fi
+	fi
+}
+
 _news() {
 	if cat "$(_zeronet_data)/$_SITE_ADDRESS/news.txt" 2>/dev/null; then
 		echo ""
@@ -1062,9 +1075,7 @@ _resolve_ipns() {
 			LOGTXTADDR="/ipfs/$(printf "%s\n%s\n" "CID $(_random_value)" "$CID" | _safe_with_warnings ipfs add --quieter --pin=false)"
 		fi
 		if [[ $LOGTXTADDR != "" ]]; then
-			_safe ipfs files mkdir //MiceWeb/resolves
-			_safe ipfs files mkdir //MiceWeb/resolves/ipns
-			_safe ipfs files mkdir //MiceWeb/resolves/ipns/$DOMAIN
+			_mkdir_miceweb resolves ipns $DOMAIN
 			_safe_with_warnings ipfs files cp /$LOGTXTADDR //MiceWeb/resolves/ipns/$DOMAIN/$DT.txt
 		fi
 		return 0
@@ -1760,7 +1771,7 @@ _upgrade() {
 	if [[ $APPVER != $VER ]]; then
 		if [[ $VER == "" ]]; then
 			if ! _safe ipfs files ls //MiceWeb >/dev/null; then
-				_safe ipfs files mkdir //MiceWeb
+				_mkdir_miceweb
 				local VERTXTCID="$(printf "%s\n%s\n" "Library $(_random_value)" "$APPVER" | _safe_with_warnings ipfs add --quieter --pin=false)"
 				if _safe_with_warnings ipfs files cp //ipfs/$VERTXTCID /$VERTXT; then
 					return 0
@@ -2091,8 +2102,7 @@ check() {
 	_upgrade
 	if [[ "$1" == "urls" ]]; then
 		if [[ "$2" != "" ]]; then
-			_safe ipfs files mkdir //MiceWeb
-			_safe ipfs files mkdir //MiceWeb/presents
+			_mkdir_miceweb presents
 			local DT=$(_current_timestamp)
 			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
 			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
@@ -2140,8 +2150,7 @@ check() {
 	if [[ "$1" == "zites" ]]; then
 		#TODO: support http://127.0.0.1:43110/ipfs/...
 		if [[ "$2" != "" ]]; then
-			_safe ipfs files mkdir //MiceWeb
-			_safe ipfs files mkdir //MiceWeb/presents
+			_mkdir_miceweb presents
 			local DT=$(_current_timestamp)
 			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
 			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
@@ -2317,8 +2326,7 @@ check() {
 		_safe ipfs files ls /$MFS_PAGE_ADDR/URL.txt >/dev/null
 		if [ $? -ne 0 ]; then
 			if _check_url "$URL"; then
-				_safe ipfs files mkdir //MiceWeb
-				_safe ipfs files mkdir //MiceWeb/pages
+				_mkdir_miceweb pages
 				_safe ipfs files mkdir /$MFS_PAGE_ADDR
 				printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | _ipfs_add_pipe_to_mfs $MFS_PAGE_ADDR/URL.txt
 			else
@@ -2326,8 +2334,7 @@ check() {
 				return 1
 			fi
 		fi
-		_safe ipfs files mkdir //MiceWeb
-		_safe ipfs files mkdir //MiceWeb/presents
+		_mkdir_miceweb presents
 		local DT=$(_current_timestamp)
 		local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
 		_safe ipfs files mkdir /$MFS_PRESENT_ADDR
@@ -2449,6 +2456,7 @@ miceweb url		Return URL by SHA-1 hash
 miceweb urls		List URLs from file, or from the MiceWeb library
 miceweb version		Display the current program version
 miceweb zites		List zites from file, or from the MiceWeb library"
+	fi
 }
 
 # count #####################################################################
@@ -2555,8 +2563,7 @@ hash() {
 		local MFS_ADDR="/MiceWeb/pages/$HASH"
 		_safe ipfs files ls /$MFS_ADDR/URL.txt >/dev/null
 		if [ $? -ne 0 ]; then
-			_safe ipfs files mkdir //MiceWeb
-			_safe ipfs files mkdir //MiceWeb/pages
+			_mkdir_miceweb pages
 			_safe ipfs files mkdir /$MFS_ADDR
 			local URL0=$(_url_but_fragment "$URL")
 			printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | _ipfs_add_pipe_to_mfs $MFS_ADDR/URL.txt
@@ -2856,8 +2863,7 @@ present() {
 	local GATEWAY=$(_ipfs_gateway)
 	if [[ "$1" == "urls" ]]; then
 		if [[ "$2" != "" ]]; then
-			_safe ipfs files mkdir //MiceWeb
-			_safe ipfs files mkdir //MiceWeb/presents
+			_mkdir_miceweb presents
 			local DT=$(_current_timestamp)
 			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
 			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
@@ -2923,8 +2929,7 @@ present() {
 	if [[ "$1" == "zites" ]]; then
 		#TODO: support http://127.0.0.1:43110/ipfs/...
 		if [[ "$2" != "" ]]; then
-			_safe ipfs files mkdir //MiceWeb
-			_safe ipfs files mkdir //MiceWeb/presents
+			_mkdir_miceweb presents
 			local DT=$(_current_timestamp)
 			local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
 			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
@@ -3240,8 +3245,7 @@ present() {
 		_safe ipfs files ls /$MFS_PAGE_ADDR/URL.txt >/dev/null
 		if [ $? -ne 0 ]; then
 			if _check_url "$URL"; then
-				_safe ipfs files mkdir //MiceWeb
-				_safe ipfs files mkdir //MiceWeb/pages
+				_mkdir_miceweb pages
 				_safe ipfs files mkdir /$MFS_PAGE_ADDR
 				printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | _ipfs_add_pipe_to_mfs $MFS_PAGE_ADDR/URL.txt
 			else
@@ -3249,8 +3253,7 @@ present() {
 				return 1
 			fi
 		fi
-		_safe ipfs files mkdir //MiceWeb
-		_safe ipfs files mkdir //MiceWeb/presents
+		_mkdir_miceweb presents
 		local DT=$(_current_timestamp)
 		local MFS_PRESENT_ADDR="/MiceWeb/presents/present-$DT"
 		_safe ipfs files mkdir /$MFS_PRESENT_ADDR
@@ -3654,8 +3657,7 @@ save() {
 			fi
 			#TODO: warn when ZeroNet node works?
 			SAVE_HASH=$SOMETHING
-			_safe ipfs files mkdir //MiceWeb
-			_safe ipfs files mkdir //MiceWeb/zites
+			_mkdir_miceweb zites
 			SAVE_MFS_ADDR="/MiceWeb/zites/$SAVE_HASH"
 			_safe ipfs files mkdir /$SAVE_MFS_ADDR
 			_save_zite $SAVE_HASH
