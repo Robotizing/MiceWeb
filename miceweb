@@ -662,7 +662,7 @@ _cat_yaml_file() {
 }
 
 _check_free_space_for_temp() {
-	if [ $(_free_space $(dirname $(mktemp -u 2>/dev/null || mktemp -u -t 'mytmpdir'))) -gt 102400 ]; then
+	if [ $(_free_space $(dirname $(mktemp -u 2>/dev/null || mktemp -u -t 'mytmpdir'))) -gt 1048576 ]; then
 		return 0
 	else
 		return 1
