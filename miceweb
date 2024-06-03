@@ -451,7 +451,7 @@ done
 ###############################################################################
 
 # Declare the $_DEFINED_SUBCOMMANDS array.
-_DEFINED_SUBCOMMANDS=(backup check cleanup commands count daemon find hash help history import log present remove request resolve respond save snapshots talks url urls version zites)
+_DEFINED_SUBCOMMANDS=(backup check cleanup commands count daemon find hash help history import log present remove request resolve save snapshots talks url urls version zites)
 
 # _main()
 #
@@ -2416,9 +2416,11 @@ Description:
   Display the list of available commands
 HEREDOC
 commands() {
-	echo "miceweb			Introduce MiceWeb"
-	#_subcommands --raw $1 | awk -v PREFIX="miceweb " '{print PREFIX $0}'
-	echo "miceweb backup		Backup CID of the MiceWeb library
+	if [[ "${1:-}" == "--raw" ]]; then
+		_subcommands --raw #$1 | awk -v PREFIX="miceweb " '{print PREFIX $0}'
+	else
+		echo "miceweb			Introduce MiceWeb"
+		echo "miceweb backup		Backup CID of the MiceWeb library
 miceweb check		Check saved snapshots data
 miceweb check urls
 miceweb check zites
