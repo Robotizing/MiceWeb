@@ -2475,7 +2475,7 @@ count() {
 		if [[ "$2" != "" ]]; then
 			urls --no-warnings "$2" "$3" "$4" "$5" "$6" "$7" | wc -l
 		else
-			_safe_with_warnings ipfs files ls //MiceWeb/pages/ | grep ^[0-9a-f] | wc -l
+			(_safe ipfs files ls -U //MiceWeb/pages/ || _safe_with_warnings ipfs files ls //MiceWeb/pages/) | grep ^[0-9a-f] | wc -l
 		fi
 	elif [[ "$1" == "zites" ]]; then
 		zites "$2" "$3" "$4" "$5" "$6" "$7" | wc -l
