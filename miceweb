@@ -2542,7 +2542,7 @@ find() {
 
 describe "hash" <<HEREDOC
 Usage:
-  ${_ME} hash <URL>
+  ${_ME} hash [--raw] <URL>
 
 Description:
   Add URL to the MiceWeb library calculating its SHA-1 hash (but fragment)
@@ -4200,8 +4200,7 @@ version() {
 
 describe "zites" <<HEREDOC
 Usage:
-  ${_ME} zites
-  ${_ME} zites [--grep=<expression>] <local/ipfs/ipns/zeronet file path>
+  ${_ME} zites [--raw] [--grep=<expr.>] [<local/ipfs/ipns/zeronet file path>]
 
 Description:
   List zites from text file or from the MiceWeb library
@@ -4212,11 +4211,15 @@ zites() {
 	local PARAM=""
 	local GREP=""
 	local _warnings=1
+	local _raw=0
 	for I in "$@"; do
 		if [[ $I == "--grep" ]]; then
 			PARAM="grep"
 		elif [[ $I == "--no-warnings" ]]; then
 			_warnings=0
+			PARAM=""
+		elif [[ $I == "--raw" ]]; then
+			_raw=1
 			PARAM=""
 		elif [[ $I != "" ]]; then
 			if [[ $PARAM == "grep" ]]; then
@@ -4228,7 +4231,50 @@ zites() {
 		fi
 	done
 	if [[ "$FIL" == "" ]]; then
+		if [ $_raw -eq 0 ]; then
+			local GATEWAY=$(_ipfs_gateway)
+			if [[ "$GATEWAY" != "" ]]; then
+				local LINE_ARR=
+				local ZITE=
+				local CID=
+				_safe ipfs files ls -l //MiceWeb/zites | while IFS= read -r I
+				do
+					LINE_ARR=($I)
+					ZITE=${LINE_ARR[0]}
+					ZITE="${ZITE%/}"
+					if [[ "$ZITE" =~ ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ ]]; then
+						if [[ "$GREP" != "" ]]; then
+							if echo "$ZITE" | grep "$GREP" &>/dev/null; then	#TODO: optimize
+								CID=${LINE_ARR[1]}
+								_print_hyperlink "$GATEWAY/ipfs/$CID" "$ZITE"
+								echo ""
+							fi
+						else
+							CID=${LINE_ARR[1]}
+							_print_hyperlink "$GATEWAY/ipfs/$CID" "$ZITE"
+							echo ""
+						fi
+					fi
+				done
+				return $?
+			fi
+		fi
 		_safe ipfs files ls //MiceWeb/zites | grep "$GREP" | grep -E "^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$"
+		return $?
+	fi
+	if [ $_raw -eq 0 ]; then
+		local GATEWAY=$(_ipfs_gateway)
+		if [[ "$GATEWAY" != "" ]]; then
+			local CID=
+			zites --raw "$1" "$2" "$3" "$4" "$5" "$6" "$7" | while IFS= read -r I
+			do
+				CID="$(_safe_with_warnings ipfs files stat --hash //MiceWeb/zites/$I 2>/dev/null)"
+				_print_hyperlink "$GATEWAY/ipfs/$CID" "$I"
+				echo ""
+			done
+		else
+			zites --raw "$1" "$2" "$3" "$4" "$5" "$6" "$7"
+		fi
 		return $?
 	fi
 	for I in $(_cat_file "$FIL" "$GREP"); do
