@@ -2665,7 +2665,7 @@ history() {
 		>&2 echo ""
 		>&2 echo "NumEntries: $COUNT"
 	else
-		>&2 echo "Save and import URLs, sites, zites, to create the history"
+		>&2 echo "Save URLs, sites, zites, to create the history"
 	fi
 }
 
