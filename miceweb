@@ -2417,7 +2417,7 @@ cleanup() {
 
 describe "commands" <<HEREDOC
 Usage:
-  ${_ME} commands
+  ${_ME} commands [--raw]
 
 Description:
   Display the list of available commands
@@ -2548,7 +2548,31 @@ Description:
   Add URL to the MiceWeb library calculating its SHA-1 hash (but fragment)
 HEREDOC
 hash() {
-	local URL="$1"
+	local SOMETHING=""
+	local _arguments=()
+	local _raw=0
+	local _val=
+	for __arg in "${@:-}"
+	do
+	case ${__arg} in
+	  --raw)
+		_raw=1
+		;;
+	  -*)
+		_exit_1 printf "Unexpected option: %s\\n" "${__arg}"
+		;;
+	  *)
+		if _blank "${SOMETHING}"
+		then
+		  _val="${__arg}"
+		  SOMETHING="$_val"
+		else
+		  _arguments+=("${__arg}")
+		fi
+		;;
+	esac
+	done
+	local URL="$SOMETHING"
 	if [[ "$URL" == "" ]]; then
 		>&2 echo "This command requires URL as a parameter"
 		return 1
@@ -2559,7 +2583,6 @@ hash() {
 	fi
 	local HASH=$(_hash "$URL")
 	if [[ "$HASH" != "" ]]; then
-		echo $HASH
 		local MFS_ADDR="/MiceWeb/pages/$HASH"
 		_safe ipfs files ls /$MFS_ADDR/URL.txt >/dev/null
 		if [ $? -ne 0 ]; then
@@ -2567,7 +2590,18 @@ hash() {
 			_safe ipfs files mkdir /$MFS_ADDR
 			local URL0=$(_url_but_fragment "$URL")
 			printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | _ipfs_add_pipe_to_mfs $MFS_ADDR/URL.txt
+			_update_base_for_added_url "$URL0"
 		fi
+		if [ $_raw -eq 0 ]; then
+			local GATEWAY=$(_ipfs_gateway)
+			if [[ "$GATEWAY" != "" ]]; then
+				local CID="$(_safe_with_warnings ipfs files stat --hash //MiceWeb/pages/$HASH 2>/dev/null)"
+				_print_hyperlink "$GATEWAY/ipfs/$CID" "$HASH"
+				echo ""
+				return 0
+			fi
+		fi
+		echo $HASH
 		return 0
 	else
 		return 1
