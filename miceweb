@@ -2156,7 +2156,7 @@ check() {
 			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
 			local COUNT=0
 			local HASH=""
-			for ZITE in $(zites "$2" "$3" "$4" "$5" "$6" "$7")	#$("$0" "$@" 2>/dev/null)
+			for ZITE in $(zites --raw "$2" "$3" "$4" "$5" "$6" "$7")	#$("$0" "$@" 2>/dev/null)
 			do
 				if _safe ipfs files cp //MiceWeb/zites/$ZITE /$MFS_PRESENT_ADDR/$ZITE; then
 					((COUNT++))
@@ -2478,7 +2478,7 @@ count() {
 			(_safe ipfs files ls -U //MiceWeb/pages/ || _safe_with_warnings ipfs files ls //MiceWeb/pages/) | grep ^[0-9a-f] | wc -l
 		fi
 	elif [[ "$1" == "zites" ]]; then
-		zites "$2" "$3" "$4" "$5" "$6" "$7" | wc -l
+		zites --raw "$2" "$3" "$4" "$5" "$6" "$7" | wc -l
 	else
 		>&2 _tip "run 'miceweb count urls' or 'miceweb count zites'"
 		>&2 echo ""
@@ -2969,7 +2969,7 @@ present() {
 			_safe ipfs files mkdir /$MFS_PRESENT_ADDR
 			local COUNT=0
 			local HASH=""
-			for ZITE in $(zites "$2" "$3" "$4" "$5" "$6" "$7")	#$("$0" "$@" 2>/dev/null)
+			for ZITE in $(zites --raw "$2" "$3" "$4" "$5" "$6" "$7")	#$("$0" "$@" 2>/dev/null)
 			do
 				if _safe ipfs files cp //MiceWeb/zites/$ZITE /$MFS_PRESENT_ADDR/$ZITE; then
 					((COUNT++))
@@ -3623,7 +3623,7 @@ save() {
 					save --no-warnings $ZITE
 				done
 			else
-				for ZITE in $(zites "$2" "$3" "$4" "$5" "$6" "$7")	#$("$0" "$@" 2>/dev/null)
+				for ZITE in $(zites --raw "$2" "$3" "$4" "$5" "$6" "$7")	#$("$0" "$@" 2>/dev/null)
 				do
 					save --no-warnings $ZITE
 				done
