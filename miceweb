@@ -1337,7 +1337,8 @@ _save_curl() {
 		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
 			_safe_with_warnings ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
-				echo "$SAVE_HASH/$SUBDIR"
+				_echo_saved_page_snapshot $CID
+				_update_base_for_added_url "$1"
 				#TODO: make it better
 				local sz=$(_safe_with_warnings ipfs files stat --size /$SAVE_MFS_ADDR/$SUBDIR)
 				if [ $sz -le 1024 ]; then
