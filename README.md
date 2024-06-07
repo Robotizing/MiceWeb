@@ -66,6 +66,8 @@ The target is to create portable tool, not spending many resources to support di
 
 ## Configuration:
 
+[IPFS Reprovider.Strategy](https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy) determines privacy level: run `ipfs config Reprovider.Strategy pinned` to make the MiceWeb library private, or run `ipfs config Reprovider.Strategy all` to open the MiceWeb library to the world.
+
 It's possible to have several libraries on a single machine by running [several ipfs nodes](https://stackoverflow.com/questions/40180171/how-to-run-several-ipfs-nodes-on-a-single-machine).
 
 MiceWeb uses `ZERONET_PATH` environment variable to work with [ZeroNet](https://en.wikipedia.org/wiki/ZeroNet).
