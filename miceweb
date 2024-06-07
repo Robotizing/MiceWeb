@@ -3366,6 +3366,7 @@ present() {
 				_mkdir_miceweb pages
 				_safe ipfs files mkdir /$MFS_PAGE_ADDR
 				printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | _ipfs_add_pipe_to_mfs $MFS_PAGE_ADDR/URL.txt
+				_update_base_for_added_url "$URL0"
 			else
 				_echo_supported_url_prefixes
 				return 1
