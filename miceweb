@@ -91,6 +91,7 @@ else
 fi
 
 SAVE_MFS_ADDR=""
+SAVE_HASH=""
 SUBDIR=""
 
 ###############################################################################
@@ -702,15 +703,13 @@ _current_timestamp() {
 	export TZ=GMT ; date '+%Y%m%dGMT%H%M%S'
 }
 
-#_echo_saved_snapshot() {
-#	local GATEWAY=$(_ipfs_gateway)
-#	if [[ "$GATEWAY" != "" ]]; then
-#		_print_hyperlink "$GATEWAY/ipfs/$1" "$SAVE_HASH/$SUBDIR"
-#		echo ""
-#	else
-#		echo "$SAVE_HASH/$SUBDIR"
-#	fi
-#}
+_echo_saved_page_snapshot() {
+	echo "$SAVE_HASH/$SUBDIR"
+}
+
+_echo_saved_zite_snapshot() {
+	echo "$SAVE_HASH/$SUBDIR"
+}
 
 _echo_existing_page_snapshot() {
 	local GATEWAY=$(_ipfs_gateway)
@@ -780,7 +779,8 @@ _git() {
 	if [[ $GITERR -eq 0 ]]; then
 		local CID="$(_ipfs_add_directory_to_mfs $MYTMPDIR $SAVE_MFS_ADDR/$SUBDIR --hidden)"
 		if [[ "$CID" != "" ]]; then
-			echo "$SAVE_HASH/$SUBDIR"
+			_echo_saved_page_snapshot $CID
+			_update_base_for_added_url "$URL"
 			RET=$GITERR
 		fi
 	else
@@ -867,6 +867,17 @@ _initiate_saving_url() {
 	fi
 }
 
+_ip_address_by_domain() {
+	local DOMAIN=$(echo $1 | cut -d "[" -f2 | cut -d "]" -f1)
+	if echo $DOMAIN | grep -E "(\b25[0-5]|\b2[0-4][0-9]|\b[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}" &>/dev/null; then
+		echo $DOMAIN	# IPv4
+	elif echo $DOMAIN | grep -E "(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))" &>/dev/null; then
+		echo $DOMAIN	# IPv6
+	else
+		ping -n 1 -i 1 $DOMAIN 2>&1 | grep -a $DOMAIN | cut -d "[" -f2 | cut -d "]" -f1 | cut -d "(" -f2 | cut -d ")" -f1
+	fi
+}
+
 # for data
 _ipfs_add_directory_to_mfs() {
 	local path="$1"
@@ -935,6 +946,14 @@ _ipfs_add_pipe_to_mfs() {
 _ipfs_gateway() {	# Kubo v.0.15.0+
 	cat "$_IPFS_REPO_PATH/gateway" 2>/dev/null
 	return $?
+}
+
+_is_cid_of_empty_file() {
+	if [[ "$1" == "QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH" || "$1" == "bafkreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku" ]]; then
+		return 0
+	else
+		return 1
+	fi
 }
 
 _mkdir_miceweb() {
@@ -1279,7 +1298,7 @@ _save_archived() {
 			RET=$?
 		else
 			>&2 echo "Warning: $SUBDIR is already downloaded, doing nothing"
-			echo "$SAVE_HASH/$SUBDIR"
+			_echo_saved_page_snapshot
 			RET=0
 		fi
 	done
@@ -1303,7 +1322,7 @@ _save_archived_snapshot() {
 		RET=$?
 	else
 		>&2 echo "Warning: $SUBDIR is already downloaded, doing nothing"
-		echo "$SAVE_HASH/$SUBDIR"
+		_echo_saved_page_snapshot
 		RET=0
 	fi
 	return $RET
@@ -1339,7 +1358,7 @@ _save_curl() {
 		return 1
 	else
 		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-		echo "$SAVE_HASH/$SUBDIR"
+		_echo_saved_page_snapshot
 		return 0
 	fi
 }
@@ -1353,7 +1372,8 @@ _save_curl_tor() {
 		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
 			_safe_with_warnings ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
-				echo "$SAVE_HASH/$SUBDIR"
+				_echo_saved_page_snapshot
+				_update_base_for_added_url "$1"
 				#TODO: handle redirections like in _save_curl
 				return 0
 			fi
@@ -1363,7 +1383,7 @@ _save_curl_tor() {
 		return 1
 	else
 		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-		echo "$SAVE_HASH/$SUBDIR"
+		_echo_saved_page_snapshot
 		return 0
 	fi
 }
@@ -1383,7 +1403,8 @@ _save_gemget() {
 		if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
 			_safe_with_warnings ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 			if [ $? -eq 0 ]; then
-				echo "$SAVE_HASH/$SUBDIR"
+				_echo_saved_page_snapshot
+				_update_base_for_added_url "$1"
 				return 0
 			fi
 		else
@@ -1392,7 +1413,7 @@ _save_gemget() {
 		return 1
 	else
 		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-		echo "$SAVE_HASH/$SUBDIR"
+		_echo_saved_page_snapshot
 		return 0
 	fi
 }
@@ -1411,7 +1432,7 @@ _save_git() {
 				fi
 			else
 				>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-				echo "$SAVE_HASH/$SUBDIR"
+				_echo_saved_page_snapshot
 				return 0
 			fi
 		fi
@@ -1438,7 +1459,7 @@ _save_media() {
 			fi
 		else
 			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-			echo "$SAVE_HASH/$SUBDIR"
+			_echo_saved_page_snapshot
 			return 0
 		fi
 	elif [[ $1 == http*://www.twitch.tv/videos/* || $1 == http*://m.twitch.tv/videos/* || $1 == http*://zen.yandex.ru/video/watch/* || $1 == http*://dzen.ru/video/watch/* ]]; then
@@ -1460,7 +1481,7 @@ _save_media() {
 	#		fi
 	#	else
 	#		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-	#		echo "$SAVE_HASH/$SUBDIR"
+	#		_echo_saved_page_snapshot
 	#		return 0
 	#	fi
 	fi
@@ -1485,7 +1506,8 @@ Description: %(description)s
 			if [[ "$CID" != "" && "$CID" != "$EMPTY" ]]; then
 				_safe_with_warnings ipfs files cp //ipfs/$CID /$SAVE_MFS_ADDR/$SUBDIR
 				if [ $? -eq 0 ]; then
-					echo "$SAVE_HASH/$SUBDIR"
+					_echo_saved_page_snapshot $CID
+					_update_base_for_added_url "$1"
 					return 0
 				fi
 			else
@@ -1494,7 +1516,7 @@ Description: %(description)s
 			return 1
 		else
 			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-			echo "$SAVE_HASH/$SUBDIR"
+			_echo_saved_page_snapshot
 			return 0
 		fi
 	fi
@@ -1517,7 +1539,7 @@ _save_wget_ipfs() {
 			fi
 		else
 			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-			echo "$SAVE_HASH/$SUBDIR"
+			_echo_saved_page_snapshot
 			return 0
 		fi
 	fi
@@ -1540,7 +1562,7 @@ _save_wget_ipns() {
 			fi
 		else
 			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-			echo "$SAVE_HASH/$SUBDIR"
+			_echo_saved_page_snapshot
 			return 0
 		fi
 	fi
@@ -1555,7 +1577,7 @@ _save_wget() {
 		return $?
 	else
 		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-		echo "$SAVE_HASH/$SUBDIR"
+		_echo_saved_page_snapshot
 		return 0
 	fi
 }
@@ -1568,7 +1590,7 @@ _save_wget_tor() {
 		return $?
 	else
 		>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-		echo "$SAVE_HASH/$SUBDIR"
+		_echo_saved_page_snapshot
 		return 0
 	fi
 }
@@ -1591,7 +1613,7 @@ _save_zite() {
 			local ZITEDATA="$(_zeronet_data)/$MAIN"
 			if [[ -f "$ZITEDATA"/content.json ]]; then
 				if _ipfs_add_directory_to_mfs "$ZITEDATA" $SAVE_MFS_ADDR/$SUBDIR >/dev/null; then
-					echo "$SAVE_HASH/$SUBDIR"
+					_echo_saved_zite_snapshot
 					return 0
 				fi
 			fi
@@ -1599,7 +1621,7 @@ _save_zite() {
 			>&2 echo "Error: $MAIN is not loaded"
 		else
 			>&2 echo "Warning: $SUBDIR is already exist, doing nothing"
-			echo "$SAVE_HASH/$SUBDIR"
+			_echo_saved_zite_snapshot
 			return 0
 		fi
 	fi
@@ -1870,6 +1892,33 @@ _upgrade() {
 	return 0
 }
 
+_update_base_for_added_url() {
+	local URL="$1"
+	if _has_url_query "$URL"; then
+		local BASE_URL="$(_url_but_query "$URL")"
+		local QUERY_URL_HASH=$(_hash "$URL")
+		local BASE_URL_HASH=$(_hash_raw "$BASE_URL")
+		if [[ "$QUERY_URL_HASH" != "$BASE_URL_HASH" ]]; then	# taking into account errors and hash collisions
+			local MFS_PAGES_ADDR="/MiceWeb/pages"
+			local NEED_CID="$(_safe_with_warnings ipfs files stat --hash /$MFS_PAGES_ADDR/$QUERY_URL_HASH)"
+			local CID="$(_safe ipfs files stat --hash /$MFS_PAGES_ADDR/$BASE_URL_HASH/$QUERY_URL_HASH)"
+			if [[ "$NEED_CID" != "$CID" ]]; then
+				if [[ "$NEED_CID" != "" ]]; then
+					if [[ "$CID" != "" ]]; then
+						_safe ipfs files rm -r /$MFS_PAGES_ADDR/$BASE_URL_HASH/$QUERY_URL_HASH
+					fi
+					if _safe_with_warnings ipfs files cp //ipfs/$NEED_CID /$MFS_PAGES_ADDR/$BASE_URL_HASH/$QUERY_URL_HASH; then
+						_update_base_for_added_url $BASE_URL
+					fi
+				fi
+			fi
+		fi
+	else
+		local DOMAIN=$(_parse_host "$URL")
+		
+	fi
+}
+
 _url_but_fragment() {
 	local URL="$1"
 	local fragment=$(_parse_fragment "$URL")
@@ -1978,8 +2027,9 @@ _wget() {
 		fi
 		local CID="$(_ipfs_add_directory_to_mfs $MYTMPDIR $SAVE_MFS_ADDR/$SUBDIR)"
 		if [[ "$CID" != "" ]]; then
-			echo "$SAVE_HASH/$SUBDIR"
+			_echo_saved_page_snapshot
 			local logCID="$(_ipfs_add_file_to_mfs $MYTMPFILE $SAVE_MFS_ADDR/$SUBDIR.log)"
+			_update_base_for_added_url "$URL"
 			RET=$WGETERR
 		fi
 	else
@@ -2000,7 +2050,8 @@ _ytdlp() {
 	local RET=1
 	if [[ $YTDLPERR -eq 0 ]]; then
 		if _ipfs_add_directory_to_mfs "$MYTMPDIR" $SAVE_MFS_ADDR/$SUBDIR >/dev/null; then
-			echo "$SAVE_HASH/$SUBDIR"
+			_echo_saved_page_snapshot
+			_update_base_for_added_url "$URL"
 			RET=$YTDLPERR
 		fi
 	else
@@ -2020,7 +2071,8 @@ _ytdlp_audio() {
 	local RET=1
 	if [[ $YTDLPERR -eq 0 ]]; then
 		if _ipfs_add_directory_to_mfs "$MYTMPDIR" $SAVE_MFS_ADDR/$SUBDIR >/dev/null; then
-			echo "$SAVE_HASH/$SUBDIR"
+			_echo_saved_page_snapshot
+			_update_base_for_added_url "$URL"
 			RET=$YTDLPERR
 		fi
 	else
@@ -2795,7 +2847,7 @@ import() {
 							fi
 						fi
 						CID="${ADDR2#/ipfs/}"
-						echo "$SAVE_HASH/$SUBDIR"
+						_echo_saved_page_snapshot $CID
 						printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH$RESOLVED" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
 						_update_base_for_added_url "$URL"
 						if _safe ipfs dag stat QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn --timeout=1s >/dev/null; then
@@ -2834,7 +2886,7 @@ import() {
 							CID="$(_ipfs_add_file_to_mfs "$path" $SAVE_MFS_ADDR/$SUBDIR)"
 						fi
 						if [[ "$CID" != "" ]]; then
-							echo "$SAVE_HASH/$SUBDIR"
+							_echo_saved_page_snapshot $CID
 							printf "%s\n%s\n%s\n" "Log $(_random_value)" "Imported from $IMPPATH" "$COMMENT" | _ipfs_add_pipe_to_mfs $SAVE_MFS_ADDR/$SUBDIR.log
 							_update_base_for_added_url "$URL"
 							return 0
@@ -2858,7 +2910,7 @@ import() {
 				CID="$(_ipfs_add_file_to_mfs "$IMPPATH" $SAVE_MFS_ADDR/$SUBDIR)"
 			fi
 			if [[ "$CID" != "" ]]; then
-				echo "$SAVE_HASH/$SUBDIR"
+				_echo_saved_page_snapshot $CID
 				local IMPPATH0=${IMPPATH%/}
 				local IMPBASE=${IMPPATH0%/*}
 				local IMPBASEDIR=${IMPBASE##*/}
