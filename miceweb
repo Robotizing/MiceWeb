@@ -817,6 +817,26 @@ _hash() {
 	_hash_string "$(_url_but_fragment "$1")"
 }
 
+_hash_raw() {
+	local URL="$1"
+	local HASH=$(_hash "$URL")
+	if [[ "$HASH" != "" ]]; then
+		local MFS_ADDR="/MiceWeb/pages/$HASH"
+		_safe ipfs files ls /$MFS_ADDR/URL.txt >/dev/null
+		if [ $? -ne 0 ]; then
+			_mkdir_miceweb pages
+			_safe ipfs files mkdir /$MFS_ADDR
+			local URL0=$(_url_but_fragment "$URL")
+			printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | _ipfs_add_pipe_to_mfs $MFS_ADDR/URL.txt
+			_update_base_for_added_url "$URL0"
+		fi
+		echo $HASH
+		return 0
+	else
+		return 1
+	fi
+}
+
 _hash_string() {
 	local HASH=$(printf '%s' "$1" | sha1sum 2>/dev/null | cut -d' ' -f1)
 	if [[ "$HASH" != "" ]]; then
@@ -2601,17 +2621,8 @@ hash() {
 		_echo_supported_url_prefixes
 		return 1
 	fi
-	local HASH=$(_hash "$URL")
+	local HASH=$(_hash_raw "$URL")
 	if [[ "$HASH" != "" ]]; then
-		local MFS_ADDR="/MiceWeb/pages/$HASH"
-		_safe ipfs files ls /$MFS_ADDR/URL.txt >/dev/null
-		if [ $? -ne 0 ]; then
-			_mkdir_miceweb pages
-			_safe ipfs files mkdir /$MFS_ADDR
-			local URL0=$(_url_but_fragment "$URL")
-			printf "%s\n%s\n" "URL $(_random_value)" "$URL0" | _ipfs_add_pipe_to_mfs $MFS_ADDR/URL.txt
-			_update_base_for_added_url "$URL0"
-		fi
 		if [ $_raw -eq 0 ]; then
 			local GATEWAY=$(_ipfs_gateway)
 			if [[ "$GATEWAY" != "" ]]; then
@@ -2747,7 +2758,7 @@ import() {
 		return 1
 	fi
 	_add_to_history "$URL"
-	local HASH=$(hash "$URL")
+	local HASH=$(_hash_raw "$URL")
 	if [[ "$HASH" != "" ]]; then
 		local MFS_ADDR="/MiceWeb/pages/$HASH"
 		local DT=$(_current_timestamp)
@@ -3521,7 +3532,7 @@ request() {
 								URL_concrete=$URL
 							fi
 						fi
-						local HASH=$(hash "$URL_concrete")
+						local HASH=$(_hash_raw "$URL_concrete")
 						for I in $(wayback_machine_downloader -s -e -l "$URL_concrete" 2>/dev/null | jq --raw-output '.. | .timestamp? | strings'); do
 							echo "miceweb save $HASH/${I:0:8}GMT${I:8:6}-archive"
 						done
@@ -3618,7 +3629,7 @@ save() {
 					>&2 echo "Free disk space for temporary files and run the command again"
 					return 1
 				fi
-				local PAGE_HASH=$(hash "$I")
+				local PAGE_HASH=$(_hash_raw "$I")
 				if [[ "$PAGE_HASH" != "" ]]; then
 					>&2 echo -n "Saving $I ($index of $count)"
 					local rnumber=$((RANDOM%11+5))
@@ -3752,7 +3763,7 @@ save() {
 			if [[ $URL == ipns://* ]]; then
 				if ! _save_wget_ipns "${URL#ipns://}"; then
 					if [[ ! "$SOMETHING" =~ ^[0-9a-f]{40}$ ]]; then
-						local SIMILAR_HASH=$(hash "https://${URL#ipns://}")
+						local SIMILAR_HASH=$(_hash_raw "https://${URL#ipns://}")
 						if [[ "$SIMILAR_HASH" != "" ]]; then
 							"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) # | _skip_duplicates
 						fi
@@ -3824,7 +3835,7 @@ save() {
 									local SIMILAR_HASH=""
 									if [[ $URL == https://* ]]; then
 										wos=${URL#https://}
-										#SIMILAR_HASH=$(hash "http://$wos")
+										#SIMILAR_HASH=$(_hash_raw "http://$wos")
 										#if [[ "$SIMILAR_HASH" != "" ]]; then
 										#	"$0" save --no-warnings $SIMILAR_HASH #2> >(grep --line-buffered .) | _skip_duplicates
 										#fi
@@ -3833,7 +3844,7 @@ save() {
 									fi
 									local DOMAIN=$(echo "$wos" | awk -F/ '{print $1}')
 									if _safe ipfs name resolve --recursive=false --timeout=5s $DOMAIN >/dev/null; then	#TODO: use fast version of _resolve_ipns (timeout=5s, recursive=false)
-										SIMILAR_HASH=$(hash "ipns://$wos")
+										SIMILAR_HASH=$(_hash_raw "ipns://$wos")
 										if [[ "$SIMILAR_HASH" != "" ]]; then
 											"$0" save --no-warnings $SIMILAR_HASH #2> >(grep .)
 										fi
@@ -3870,7 +3881,7 @@ save() {
 						if [[ $ext == htm || $ext == html || $URL == */ ]]; then
 							if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
 								wos=${URL#http://127.0.0.1:43110/}
-								SIMILAR_HASH=$(hash "http://127.0.0.1:43110/raw/$wos")
+								SIMILAR_HASH=$(_hash_raw "http://127.0.0.1:43110/raw/$wos")
 								if [[ "$SIMILAR_HASH" != "" ]]; then
 									"$0" save --no-warnings $SIMILAR_HASH
 								fi
@@ -3878,12 +3889,12 @@ save() {
 						elif [[ $ext == bit || $ext == yo || $ext == zn || $ext == inf || $ext == yu || $ext == of || $ext == list || "$ext" == "" ]]; then
 							if [[ $URL != http://127.0.0.1:43110/raw/* ]]; then
 								wos=${URL#http://127.0.0.1:43110/}
-								SIMILAR_HASH=$(hash "http://127.0.0.1:43110/raw/$wos/")
+								SIMILAR_HASH=$(_hash_raw "http://127.0.0.1:43110/raw/$wos/")
 								if [[ "$SIMILAR_HASH" != "" ]]; then
 									"$0" save --no-warnings $SIMILAR_HASH
 								fi
 							else
-								SIMILAR_HASH=$(hash "$URL/")
+								SIMILAR_HASH=$(_hash_raw "$URL/")
 								if [[ "$SIMILAR_HASH" != "" ]]; then
 									"$0" save --no-warnings $SIMILAR_HASH
 								fi
