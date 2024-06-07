@@ -84,4 +84,4 @@ Run `miceweb talks`, and welcome to [MiceWeb Talks](https://proxy.zeronet.dev/1M
 
 MiceWeb tries to do best to save web pages. However, you still have to check saved snapshots of important pages.
 
-Construct [RatBrowser](https://ratbrowser.com) to save browser-generated pages. Use [SaveSites](https://github.com/defder-su/SaveSites) to save web sites entirely.
+Construct [RatBrowser](https://ratbrowser.com) to save browser-generated pages.
