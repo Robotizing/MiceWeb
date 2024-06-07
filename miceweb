@@ -610,6 +610,25 @@ _cat_file() {
 	return $?
 }
 
+_cat_docx_file() {
+	if _command_exists unzip; then
+		local FIL="$1"
+		if [[ "$FIL" != /ipns/* && "$FIL" != /ipfs/* && "$FIL" != /zeronet/* ]]; then
+			unzip -p "$FIL" word/document.xml | _cat_xml_file --
+		else
+			local MYTMPFILE=$(_temp_file)
+			_cat_file "$FIL" >$MYTMPFILE
+			_cat_docx_file "$MYTMPFILE"
+			local RET=$?
+			rm "$MYTMPFILE"
+			return $RET
+		fi
+	else
+		>&2 echo "Error: unzip is not installed"
+		return 1
+	fi
+}
+
 _cat_json_file() {
 	if _command_exists jq; then
 		_cat_file "$1" | jq --raw-output '.. | strings'
@@ -637,14 +656,15 @@ _cat_xml_file() {
 	if _command_exists xq; then
 		if _command_exists jq; then
 			_cat_file "$1" | xq | jq --raw-output '.. | strings'
+			return 0
 		else
 			>&2 _print_with_hyperlink "Error: jq is not installed (seeing " "https://stedolan.github.io/jq/download/" ")"
-			return 1
 		fi
 	else
 		>&2 _print_with_hyperlink "Error: xq is not installed (seeing " "https://kislyuk.github.io/yq/#installation" ")"
-		return 1
 	fi
+	>&2 echo "Warning: using alternate method to parse XML"
+	_cat_file "$1" | sed -e 's/<\/w:p>/\n/g; s/<[^>]\{1,\}>//g; s/[^[:print:]\n]\{1,\}//g; s/\&amp;/\&/g'
 }
 
 _cat_yaml_file() {
@@ -4168,6 +4188,15 @@ urls() {
 		elif [[ $FORMAT == md ]]; then
 			#TODO: grab with titles sed -En '/\[/{s/[^[]*(\[[^)]*\))[^[]*/\1/g;/\[[^[]*\[/s/\[[^)]*\)/\n&/2g;p}' | grep -oE '\[.*\]\(.*\)'
 			for I in $(_cat_file "$FIL" | grep -Eo "(http|https|gopher|gemini|ftp|ftps|ipfs|ipns|git)://[a-zA-Z0-9./?=_%:-]*"); do
+				IFS=' ' read -ra IARR <<< "$I"
+				for J in "${IARR[@]}"; do
+					if _check_url "$J"; then
+						echo "${J%.}"
+					fi
+				done
+			done | grep "$GREP" | _skip_duplicates
+		elif [[ $FORMAT == docx ]]; then
+			for I in $(_cat_docx_file "$FIL" | sed -e 's/\.\ /\ /g' | sed -e 's/\,\ /\ /g' | sed -e 's/\;\ /\ /g'); do
 				IFS=' ' read -ra IARR <<< "$I"
 				for J in "${IARR[@]}"; do
 					if _check_url "$J"; then
