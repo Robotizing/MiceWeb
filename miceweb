@@ -67,7 +67,7 @@ _ME="$(basename "${0}")"
 # Manually set this to to current version of the program. Adhere to the
 # semantic versioning specification: http://semver.org
 _VERSION="0.3"	#WARNING: affects _upgrade()
-_SUB_VERSION="${_VERSION}.5"
+_SUB_VERSION="${_VERSION}.6"
 
 # MiceWeb Talks
 _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
@@ -1041,7 +1041,7 @@ _print_with_hyperlink() {
 
 _random_value() {
 	local chars=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
-	for i in {1..32} ; do
+	for i in {1..64} ; do
 		echo -n "${chars:RANDOM%${#chars}:1}"
 	done
 	echo
