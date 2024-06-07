@@ -67,7 +67,7 @@ _ME="$(basename "${0}")"
 # Manually set this to to current version of the program. Adhere to the
 # semantic versioning specification: http://semver.org
 _VERSION="0.3"	#WARNING: affects _upgrade()
-_SUB_VERSION="${_VERSION}.6"
+_SUB_VERSION="${_VERSION}.5"
 
 # MiceWeb Talks
 _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
@@ -858,7 +858,7 @@ _hash_string() {
 
 _initiate_saving_url() {
 	local URL="$1"
-	SAVE_HASH=$(hash "$URL")
+	SAVE_HASH=$(_hash_raw "$URL")
 	if [[ "$SAVE_HASH" != "" ]]; then
 		SAVE_MFS_ADDR="/MiceWeb/pages/$SAVE_HASH"
 		return 0
