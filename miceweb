@@ -67,7 +67,7 @@ _ME="$(basename "${0}")"
 # Manually set this to to current version of the program. Adhere to the
 # semantic versioning specification: http://semver.org
 _VERSION="0.3"	#WARNING: affects _upgrade()
-_SUB_VERSION="${_VERSION}.5"
+_SUB_VERSION="${_VERSION}.6"
 
 # MiceWeb Talks
 _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
@@ -1097,6 +1097,7 @@ _reproviding_warning() {
 	#_tip "run 'miceweb tune' to control"
 	local REPROVIDING=$(_reprovider_strategy)
 	if [[ "$REPROVIDING" == "" ]]; then
+		_tip "run 'ipfs config Reprovider.Strategy pinned' to make the library private," "or run 'ipfs config Reprovider.Strategy all' to open the library to the world"
 		>&2 printf '%s' "Warning: "
 		>&2 _print_hyperlink "https://github.com/ipfs/kubo/blob/master/docs/config.md#reproviderstrategy" "Reprovider.Strategy"
 		>&2 echo " is unset"
@@ -1810,6 +1811,9 @@ _temp_file_maybe_in_ram() {
 
 _tip() {
 	>&2 echo "Tip: $1"
+	if [[ "$2" != "" ]]; then
+		>&2 echo " $2"
+	fi
 }
 
 _tip_run_ipfs_daemon() {
@@ -3018,7 +3022,7 @@ present() {
 				if [ "$GATEWAY" != "" ]; then
 					>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 					>&2 echo " in a browser on the local machine"
-					if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+					if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "flat" || "$REPROVIDING" == "" ]]; then
 						local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
 						if [[ "$converted" != "" ]]; then
 							>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
@@ -3066,7 +3070,7 @@ present() {
 				if [ "$GATEWAY" != "" ]; then
 					>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 					>&2 echo " in a browser on the local machine"
-					if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+					if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "flat" || "$REPROVIDING" == "" ]]; then
 						local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
 						if [[ "$converted" != "" ]]; then
 							>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
@@ -3099,7 +3103,8 @@ present() {
 				>&2 echo ""
 				>&2 echo "There is a content identifier of current zites of all the MiceWeb library"
 				>&2 echo "It's not recommended to share it because security and other reasons,"
-				>&2 echo " however, if you need it, pin $CID"
+				>&2 echo " however, if you need it,"
+				>&2 echo " run 'ipfs pin add $CID'"
 				#if [[ "$REPROVIDING" == "roots" ]]; then
 				#	>&2 echo " and run 'ipfs config Reprovider.Strategy pinned'"
 				#fi
@@ -3198,7 +3203,7 @@ present() {
 					if [ "$GATEWAY" != "" ]; then
 						>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID/$suffix" ""
 						>&2 echo " in a browser on the local machine"
-						if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+						if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "flat" || "$REPROVIDING" == "" ]]; then
 							local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
 							if [[ "$converted" != "" ]]; then
 								>&2 _print_with_hyperlink " or " "ipfs://$converted/$suffix" ""
@@ -3234,7 +3239,7 @@ present() {
 				if [ "$GATEWAY" != "" ]; then
 					>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID$suffix" ""
 					>&2 echo " in a browser on the local machine"
-					if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+					if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "flat" || "$REPROVIDING" == "" ]]; then
 						local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
 						if [[ "$converted" != "" ]]; then
 							>&2 _print_with_hyperlink " or " "ipfs://$converted$suffix" ""
@@ -3287,7 +3292,7 @@ present() {
 			else
 				_tip_run_ipfs_daemon
 			fi
-			if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+			if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "flat" || "$REPROVIDING" == "" ]]; then
 				local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
 				if [[ "$converted" != "" ]]; then
 					>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
@@ -3324,7 +3329,7 @@ present() {
 			if [ "$GATEWAY" != "" ]; then
 				>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" ""
 				>&2 echo " in a browser on the local machine"
-				if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+				if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "flat" || "$REPROVIDING" == "" ]]; then
 					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID)"
 					if [[ "$converted" != "" ]]; then
 						>&2 _print_with_hyperlink " or " "ipfs://$converted" ""
@@ -3425,7 +3430,7 @@ present() {
 			>&2 echo ""
 			if [ "$GATEWAY" != "" ]; then
 				>&2 _print_with_hyperlink "Open " "$GATEWAY/ipfs/$CID" " in a browser on the local machine"
-				if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "" ]]; then
+				if [[ "$REPROVIDING" == "all" || "$REPROVIDING" == "flat" || "$REPROVIDING" == "" ]]; then
 					local converted="$(_safe ipfs cid format -v 1 -b base32 $CID0)"
 					if [[ "$converted" != "" ]]; then
 						>&2 _print_with_hyperlink " or " "ipfs://$converted/$HASH" " in an IPFS friendly browser"
