@@ -60,7 +60,7 @@ Run `miceweb commands` to see the possibilities.
 
 ## Development:
 
-The target is to create portable tool, not spending many resources to support different platforms, so using Bash seems a good solutuon. See also [testssl.sh Coding Style](https://github.com/drwetter/testssl.sh/blob/3.2/Coding_Convention.md) to get into the spirit.
+The target is to create portable tool, not spending many resources to support different platforms, so using Bash seems a good solution. See also [testssl.sh Coding Style](https://github.com/drwetter/testssl.sh/blob/3.2/Coding_Convention.md) to get into the spirit.
 
 ---
 
