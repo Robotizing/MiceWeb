@@ -67,7 +67,7 @@ _ME="$(basename "${0}")"
 # Manually set this to to current version of the program. Adhere to the
 # semantic versioning specification: http://semver.org
 _VERSION="0.3"	#WARNING: affects _upgrade()
-_SUB_VERSION="${_VERSION}.6"
+_SUB_VERSION="${_VERSION}.7"
 
 # MiceWeb Talks
 _SITE_ADDRESS="1MiceWebdn35s6pUd3EM54uNveUJNSHsMr"
@@ -1068,10 +1068,11 @@ _random_value() {
 
 _remove_dir() {
 	local DIRPATH="$1"
+	local CMD="$2"
 	local CID="$(_safe ipfs files stat --hash /$DIRPATH)"
 	if [[ "$CID" != "" ]]; then
 		if _safe ipfs files rm -r /$DIRPATH >/dev/null; then
-			echo "Removed $DIRPATH, you can try to undo that right now by running 'ipfs files cp /ipfs/$CID $DIRPATH'"
+			echo "Removed $DIRPATH, you can try to undo that right now by running 'ipfs files cp //ipfs/$CID /$DIRPATH"$CMD"'"
 			return 0
 		fi
 	fi
@@ -1082,7 +1083,7 @@ _remove_file() {
 	local CID="$(_safe ipfs files stat --hash /$FILEPATH)"
 	if [[ "$CID" != "" ]]; then
 		if _safe ipfs files rm /$FILEPATH >/dev/null; then
-			echo "Removed $FILEPATH, you can try to undo that right now by running 'ipfs files cp /ipfs/$CID $FILEPATH'"
+			echo "Removed $FILEPATH, you can try to undo that right now by running 'ipfs files cp //ipfs/$CID /$FILEPATH'"
 			return 0
 		fi
 	fi
@@ -2502,7 +2503,7 @@ cleanup() {
 		>&2 echo "Removed the history of presents"
 		>&2 echo ""
 		>&2 echo "You can try to undo that right now by running"
-		>&2 echo " 'ipfs files cp /ipfs/$CID $MFS_PRESENTS_ADDR'"
+		>&2 echo " 'ipfs files cp //ipfs/$CID /$MFS_PRESENTS_ADDR'"
 		return 0
 	else
 		>&2 echo "Failed to cleanup"
