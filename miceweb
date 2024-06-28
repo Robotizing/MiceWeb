@@ -937,7 +937,7 @@ _ipfs_add_file_to_mfs() {
 _ipfs_add_pipe_to_mfs() {
 	local addr="$1"
 	if [[ "$addr" != "" ]]; then
-		_safe_with_warnings ipfs files write --create /$addr
+		_safe_with_warnings ipfs files write --create --truncate /$addr
 		return $?
 	fi
 	return 1
