@@ -944,7 +944,8 @@ _ipfs_add_pipe_to_mfs() {
 }
 
 _ipfs_gateway() {	# Kubo v.0.15.0+
-	cat "$_IPFS_REPO_PATH/gateway" 2>/dev/null
+	local GATEWAY=$(cat "$_IPFS_REPO_PATH/gateway" 2>/dev/null)
+	echo "${GATEWAY/127.0.0.1/localhost}"
 	return $?
 }
 
