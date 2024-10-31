@@ -1422,8 +1422,8 @@ _save_gemget() {
 	fi
 }
 _save_git() {
-	if [[ $1 == git://* || $1 == *.git || $1 == https://github.com/*/* ]]; then
-		if [[ $1 != https://github.com/*/*/?* ]]; then
+	if [[ $1 == git://* || $1 == *.git || $1 == http*://github.com/*/* ]]; then
+		if [[ $1 != http*://github.com/*/*/?* ]]; then
 			local DT=$(_current_timestamp)
 			SUBDIR="$DT-git"
 			_safe ipfs files ls /$SAVE_MFS_ADDR/$SUBDIR >/dev/null
@@ -1527,7 +1527,7 @@ Description: %(description)s
 }
 _save_wget_ipfs() {
 	local MAIN=$(echo "$1" | awk -F/ '{print $1}')
-	local ADDR=$(_safe_with_warnings ipfs resolve --timeout=60s $MAIN)
+	local ADDR=$(_safe_with_warnings ipfs resolve --timeout=30s $MAIN)
 	if [[ "$ADDR" != "" ]]; then
 		local DT=$(_current_timestamp)
 		SUBDIR="$DT-wget-ipfs"
@@ -1820,6 +1820,10 @@ _tip() {
 
 _tip_run_ipfs_daemon() {
 	_tip "run 'ipfs daemon' using Kubo v.0.15 or newer"
+}
+
+_trim() {
+	echo "$1" | xargs
 }
 
 _upgrade() {
@@ -3488,7 +3492,7 @@ present() {
 			fi
 		fi
 	else
-		#TODO: fix and implement something like >&2 echo "Run 'miceweb save ${@@Q}'"
+		#TODO: fix and implement something like >&2 echo "Run 'miceweb save ${@@Q}'"?
 		return 1
 	fi
 }
