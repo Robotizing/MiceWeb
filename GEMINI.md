@@ -15,11 +15,15 @@ This directory contains `MiceWeb` — a monolithic, highly optimized Bash applic
 4. **Environment Validation:** Use the repository's `./test.sh` strictly to verify syntax integrity after edits, not for manual environment setup.
 
 ## 🛠️ Bash Code Quality Standards (Strict)
-To prevent syntax errors and token-wasting iterations, apply these formatting patterns strictly:
+To prevent syntax errors, state pollution, and token-wasting iterations, apply these patterns strictly:
+
 1. **Variables:** Always wrap variable expansions in double quotes to handle spaces correctly: `"$VARIABLE"` instead of `$VARIABLE`.
 2. **Conditional Checks:** Prefer modern string and file testing syntax. Use `if [ -z "$VAR" ]` or `if [ -f "$FILE" ]`.
 3. **Error Handling:** Check command exit statuses explicitly using `if [ $? -ne 0 ]` or inline short-circuits (`command || error_exit`).
 4. **Subshells:** Use `$(command)` syntax for command substitution. Never use old backticks.
+5. **ShellCheck Compliance:** All generated code must pass `shellcheck` linting without critical warnings. Avoid suppressing rules unless structurally necessary.
+6. **Output Streams:** Direct all errors, debug, and diagnostic messages strictly to `stderr` using `echo "message" >&2`. Keep `stdout` completely clean for actual command data and piping.
+7. **Scope Isolation:** Inside functions, always declare variables as `local` to prevent leaking state into the global monolithic scope.
 
 ## 🧪 Verification Protocol
 - The repository contains an automated validation test suite in `./test.sh`.
